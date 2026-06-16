@@ -408,7 +408,10 @@
 .md-header__source,
 .md-header__button { display: flex; align-items: center; margin-top: 0; margin-bottom: 0; }
 /* Search pushed to the right side of the header */
-.md-search { display: flex; align-items: center; margin-left: auto; }
+/* Search pushed right; GitHub icon sits tightly beside it (drpc-style). */
+.md-search { display: flex; align-items: center; margin-left: auto; margin-right: 0.6rem; }
+.md-header__source { margin-left: 0 !important; padding-left: 0 !important; }
+.md-header__option { margin-left: 0 !important; }
 
 /* Volcanic accent hairline at the very top edge */
 .md-header::before {
@@ -471,8 +474,8 @@
    ============================================================================ */
 
 .md-sidebar--primary {
-  width: 16.5rem;
-  padding-left: 0;
+  width: 17.5rem;
+  padding-left: 1.25rem;       /* inset the nav from the window's left edge */
   border-right: 1px solid var(--border-subtle);
 }
 @media screen and (min-width: 76.25em) {
@@ -512,21 +515,22 @@
   font-weight: 400;
 }
 
-/* Section labels: 12px / 600 / text-strong / capitalized + leading icon */
+/* Section labels (drpc-style): 11px / 600 / UPPERCASE / muted, letter-spaced,
+   non-interactive group headers — clearly distinct from clickable page links. */
 .md-sidebar--primary .md-nav__item--section > .md-nav__link {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: normal;
-  text-transform: capitalize;
-  color: var(--text-strong) !important;
-  margin: 24px 0 8px !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted) !important;
+  margin: 26px 0 8px !important;
   padding: 0 !important;
   background: transparent !important;
   cursor: default;
   display: flex;
   align-items: center;
 }
-.md-sidebar--primary .md-nav__item--section > .md-nav__link:hover { color: var(--text-strong) !important; }
+.md-sidebar--primary .md-nav__item--section > .md-nav__link:hover { color: var(--text-muted) !important; }
 .md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:first-child > .md-nav__link { margin-top: 0 !important; }
 
 /* Section icons — 14×14 currentColor mask, inline before the label */
@@ -534,9 +538,10 @@
   content: '';
   display: inline-block;
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-  margin-right: 8px;
+  width: 13px;
+  height: 13px;
+  margin-right: 7px;
+  opacity: 0.8;
   background-color: currentColor;
   -webkit-mask-position: center; mask-position: center;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
@@ -568,13 +573,16 @@
           mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E");
 }
 
-/* Nested sub-section labels (e.g. Projects, Failover) — lighter, no icon */
+/* Nested sub-section labels (e.g. Projects, Failover) — same family as
+   top-level headers but a touch quieter, no icon. */
 .md-sidebar--primary .md-nav .md-nav .md-nav__item--section > .md-nav__link {
-  font-size: 14px;
-  font-weight: 600;
-  text-transform: capitalize;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted) !important;
-  margin: 12px 0 4px !important;
+  opacity: 0.85;
+  margin: 14px 0 4px !important;
 }
 .md-sidebar--primary .md-nav .md-nav .md-nav__item--section > .md-nav__link::before { display: none; }
 
@@ -603,6 +611,13 @@
   display: flex !important;
   align-items: center;
   justify-content: flex-start !important;
+}
+/* Nested toggle-groups that are NOT top-level sections (e.g. Projects,
+   Failover & retry) read a touch stronger than leaf links, so the 3 tiers
+   (section header → group → leaf) are visually distinct. */
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link {
+  font-weight: 600;
+  color: var(--text-body) !important;
 }
 .md-sidebar--primary .md-nav__item--nested > .md-nav__link > .md-nav__icon {
   margin-left: 6px !important;
@@ -675,21 +690,27 @@
   -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='8' x2='21' y1='6' y2='6'/%3E%3Cline x1='8' x2='21' y1='12' y2='12'/%3E%3Cline x1='8' x2='21' y1='18' y2='18'/%3E%3Cline x1='3' x2='3.01' y1='6' y2='6'/%3E%3Cline x1='3' x2='3.01' y1='12' y2='12'/%3E%3Cline x1='3' x2='3.01' y1='18' y2='18'/%3E%3C/svg%3E");
           mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='8' x2='21' y1='6' y2='6'/%3E%3Cline x1='8' x2='21' y1='12' y2='12'/%3E%3Cline x1='8' x2='21' y1='18' y2='18'/%3E%3Cline x1='3' x2='3.01' y1='6' y2='6'/%3E%3Cline x1='3' x2='3.01' y1='12' y2='12'/%3E%3Cline x1='3' x2='3.01' y1='18' y2='18'/%3E%3C/svg%3E");
 }
-.md-sidebar--secondary .md-nav__list { padding: 0; border-left: none; }
+.md-sidebar--secondary .md-nav__list { padding: 0; margin: 0; border-left: none; }
+.md-sidebar--secondary .md-nav__item { padding: 0; margin: 0; }
 .md-sidebar--secondary .md-nav__link {
   font-size: 14px;
   font-weight: 400;
   color: var(--text-muted);
-  padding: 6px 0 6px 22px;
+  padding: 5px 0 5px 16px;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.35;
   border-left: none;
   background: transparent;
   transition: color var(--t);
 }
 .md-sidebar--secondary .md-nav__link:hover { color: var(--text-strong); }
-/* Active section: darken to text-strong (contrast, not color/box) */
 .md-sidebar--secondary .md-nav__link--active { color: var(--text-strong) !important; font-weight: 400; }
+
+/* Depth-based indentation so the TOC hierarchy is clean & consistent:
+   page title (injected) flush · h2 base · h3 +14px · h4 +28px. */
+.md-sidebar--secondary .md-nav__item--toc-title > .md-nav__link { padding-left: 0; }
+.md-sidebar--secondary .md-nav .md-nav .md-nav__link { padding-left: 30px; }
+.md-sidebar--secondary .md-nav .md-nav .md-nav .md-nav__link { padding-left: 44px; }
 
 /* ============================================================================
    Diagrams & illustrations
@@ -788,3 +809,257 @@
 .md-footer-meta__inner,
 .md-footer__inner { color: var(--text-muted); }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--primary); }
+
+/* ============================================================================
+   Supported-chains catalog — icons + network/interface badges
+   ============================================================================ */
+
+/* Three columns now (Chain · Networks · Interfaces). The spec link lives as a
+   small ↗ on the chain name, so the table is narrower and never scrolls sideways. */
+.md-typeset table:has(.chain-row) { width: 100%; table-layout: fixed; }
+.md-typeset table:has(.chain-row) td,
+.md-typeset table:has(.chain-row) th {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.md-typeset table:has(.chain-row) th:nth-child(1),
+.md-typeset table:has(.chain-row) td:nth-child(1) { width: 38%; }
+.md-typeset table:has(.chain-row) th:nth-child(2),
+.md-typeset table:has(.chain-row) td:nth-child(2) { width: 24%; }
+
+/* Chain icon: sits to the left of the chain name, vertically centred. */
+.md-typeset .chain-row { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; }
+/* Specificity must beat the diagram rule `.md-typeset img[src$=".svg"]`
+   (1.75rem auto) above — chain icons are .svg too. Without this the
+   centring margin inflates every row to ~105px. */
+.md-typeset .chain-row img.chain-ico {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  display: block;
+  border-radius: 50%;
+  /* A faint backing disc + inset ring gives light/near-white icons
+     (Axelar, Casper, Stellar, …) a visible edge against the white page,
+     without changing how dark/coloured icons read. */
+  background: rgb(var(--gray-100));
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+[data-md-color-scheme="slate"] .md-typeset .chain-row img.chain-ico {
+  background: rgb(var(--gray-800));
+}
+.md-typeset .chain-row--noicon { padding-left: calc(22px + 0.45rem); } /* align names that have no icon */
+
+/* Spec link — small ↗ after the chain name; native title attr shows the filename
+   on hover. No underline/border (overrides the prose td-link styling). */
+.md-typeset .chain-row .spec-link {
+  margin-left: 0.3rem;
+  font-size: 0.78em;
+  font-weight: 400;
+  color: var(--text-muted);
+  border-bottom: none;
+  text-decoration: none;
+  opacity: 0.65;
+  transition: opacity var(--t), color var(--t);
+}
+.md-typeset .chain-row .spec-link + .spec-link { margin-left: 0.12rem; }
+.md-typeset .chain-row .spec-link:hover { opacity: 1; color: var(--primary); border-bottom: none; }
+
+/* Pill badges — single shared shape, never wrap. */
+.md-typeset .badge {
+  display: inline-block;
+  padding: 0.02rem 0.4rem;
+  margin: 0 0.15rem 0 0;
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  border: 1px solid var(--border-subtle);
+}
+
+/* Network badges. */
+.md-typeset .badge.net-main {
+  color: var(--primary);
+  background: rgba(255, 57, 0, 0.08);
+  border-color: rgba(255, 57, 0, 0.25);
+}
+.md-typeset .badge.net-test { color: var(--text-muted); background: rgb(var(--gray-200) / 0.5); }
+[data-md-color-scheme="slate"] .md-typeset .badge.net-test { background: rgb(var(--gray-700) / 0.4); }
+
+/* Interface badges — magma-orange family, one soft shade per protocol
+   (deep → pale: JSON-RPC, REST, Tendermint, gRPC). Tinted backgrounds with
+   matching deep-orange text — gentle, not solid fills, and still distinct
+   from the outlined Mainnet badge. */
+.md-typeset .badge.iface { color: #9c2400; border-color: transparent; }
+.md-typeset .badge.iface-rpc  { background: rgba(255, 57, 0, 0.22); }
+.md-typeset .badge.iface-rest { background: rgba(255, 57, 0, 0.16); }
+.md-typeset .badge.iface-tm   { background: rgba(255, 57, 0, 0.10); }
+.md-typeset .badge.iface-grpc { background: rgba(255, 57, 0, 0.05); }
+
+/* Dark scheme: lift the text to a warm light tint so it stays legible. */
+[data-md-color-scheme="slate"] .md-typeset .badge.iface { color: #ffae93; }
+[data-md-color-scheme="slate"] .md-typeset .badge.iface-rpc  { background: rgba(255, 90, 48, 0.30); }
+[data-md-color-scheme="slate"] .md-typeset .badge.iface-rest { background: rgba(255, 90, 48, 0.22); }
+[data-md-color-scheme="slate"] .md-typeset .badge.iface-tm   { background: rgba(255, 90, 48, 0.15); }
+[data-md-color-scheme="slate"] .md-typeset .badge.iface-grpc { background: rgba(255, 90, 48, 0.09); }
+
+/* Sortable chain tables — pointer + arrow affordance on the Chain header. */
+.md-typeset th.th-sortable { cursor: pointer; user-select: none; }
+.md-typeset th.th-sortable::after { content: " ⇅"; opacity: 0.4; font-size: 0.8em; }
+.md-typeset th.th-sortable[aria-sort="ascending"]::after { content: " ↑"; opacity: 0.9; }
+.md-typeset th.th-sortable[aria-sort="descending"]::after { content: " ↓"; opacity: 0.9; }
+
+/* ============================================================================
+   Supported-chains explorer — logo wall + filterable card grid
+   ============================================================================ */
+.md-typeset #chains-explorer { margin: 1.5rem 0 2rem; }
+
+/* Controls: search + ecosystem chips */
+.md-typeset .cx-controls { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.md-typeset .cx-search {
+  flex: 1; min-width: 200px;
+  border: 1px solid var(--border-subtle); border-radius: 0.6rem;
+  padding: 0.55rem 0.8rem; font-size: 0.8rem; background: var(--surface); color: var(--text-strong);
+}
+.md-typeset .cx-search:focus { outline: none; border-color: var(--primary); }
+.md-typeset .cx-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.md-typeset .cx-chip {
+  border: 1px solid var(--border-subtle); background: var(--surface);
+  border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.72rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; transition: all var(--t);
+}
+.md-typeset .cx-chip:hover { color: var(--text-strong); }
+.md-typeset .cx-chip.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Logo wall hero */
+.md-typeset .cx-wall {
+  display: flex; flex-wrap: wrap; gap: 0.45rem;
+  padding: 1rem; margin-bottom: 1.4rem;
+  background: var(--surface-subtle); border-radius: 0.9rem;
+}
+.md-typeset .cx-tile {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: block; border-bottom: none !important;
+  transition: transform 0.12s var(--ease), opacity 0.12s var(--ease);
+}
+.md-typeset .cx-tile:hover { transform: scale(1.18); z-index: 2; }
+.md-typeset .cx-tile.dim { opacity: 0.12; pointer-events: none; }
+.md-typeset .cx-tile img { width: 100%; height: 100%; border-radius: 50%; margin: 0; display: block; }
+
+/* Card grid */
+/* Equal-height cards (stretch), badge blocks bottom-anchored so every card
+   aligns regardless of how many lines the name or badges take. */
+/* V3 — exact translation of the approved mockup (3-col grid, 14px gap). */
+.md-typeset .cx-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 50rem) { .md-typeset .cx-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 30rem) { .md-typeset .cx-cards { grid-template-columns: 1fr; } }
+.md-typeset .cx-card {
+  position: relative;
+  border: 1px solid var(--border-subtle); border-radius: 18px;
+  padding: 20px 16px; background: var(--surface);
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+}
+.md-typeset .cx-card:hover { border-color: var(--primary); box-shadow: 0 6px 20px rgba(255,57,0,0.1); transform: translateY(-2px); }
+.md-typeset .cx-card.flash {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(255, 57, 0, 0.35), 0 8px 26px rgba(255, 57, 0, 0.22);
+  background: var(--md-accent-fg-color--transparent);
+  animation: cx-pulse 1.4s var(--ease);
+}
+@keyframes cx-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 57, 0, 0.55); }
+  18% { transform: scale(1.04); box-shadow: 0 0 0 6px rgba(255, 57, 0, 0.4), 0 10px 30px rgba(255, 57, 0, 0.28); }
+  100% { transform: scale(1); box-shadow: 0 0 0 4px rgba(255, 57, 0, 0.18); }
+}
+
+/* Icon 48px (override Material's phantom .svg margin via specificity). */
+.md-typeset .cx-card img.cx-ico { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 50%; margin: 0; display: block; }
+.md-typeset .cx-wall img { margin: 0; }
+.md-typeset .cx-name {
+  font-weight: 700; font-size: 15px; line-height: 1.25; text-align: center; margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.md-typeset .cx-eco {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted); font-weight: 600; margin-top: -4px;
+}
+
+/* Spec link tucked into the top-right corner */
+.md-typeset .cx-spec-row { position: absolute; top: 14px; right: 14px; display: flex; gap: 0.15rem; }
+.md-typeset .cx-spec {
+  font-size: 0.9rem; color: var(--text-muted);
+  border-bottom: none !important; text-decoration: none; opacity: 0.5; transition: opacity var(--t), color var(--t);
+}
+.md-typeset .cx-spec:hover { opacity: 1; color: var(--primary); border-bottom: none !important; }
+
+/* Badge rows (mockup: 4px gap, centred). */
+.md-typeset .cx-nets, .md-typeset .cx-ifs { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin: 0; }
+.md-typeset .cx-empty { color: var(--text-muted); font-style: italic; padding: 1rem 0; }
+
+/* Badges — exact mockup: 6px rounded-rect, not pills. */
+.md-typeset .cx-card .badge {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  border-radius: 6px; padding: 1px 7px; line-height: 1.6; border: none; letter-spacing: 0;
+}
+.md-typeset .cx-card .badge.net-main { color: var(--primary); background: rgba(255, 57, 0, 0.10); }
+.md-typeset .cx-card .badge.net-test { color: var(--text-muted); background: rgba(23, 26, 24, 0.07); }
+.md-typeset .cx-card .badge.iface { color: #9c2400; background: rgba(255, 57, 0, 0.10); font-size: 10px; padding: 1px 5px; }
+[data-md-color-scheme="slate"] .md-typeset .cx-card .badge.net-test { color: var(--text-muted); background: rgba(255,255,255,0.08); }
+[data-md-color-scheme="slate"] .md-typeset .cx-card .badge.iface { color: #ffae93; }
+
+/* Chains explorer — pagination footer */
+.md-typeset .cx-pager { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.2rem; flex-wrap: wrap; }
+.md-typeset .cx-page-btn, .md-typeset .cx-showall {
+  border: 1px solid var(--border-subtle); background: var(--surface);
+  border-radius: 0.5rem; padding: 0.4rem 0.8rem; font-size: 0.74rem; font-weight: 600;
+  color: var(--text-strong); cursor: pointer; transition: all var(--t);
+}
+.md-typeset .cx-page-btn:hover:not(:disabled), .md-typeset .cx-showall:hover { border-color: var(--primary); color: var(--primary); }
+.md-typeset .cx-page-btn:disabled { opacity: 0.4; cursor: default; }
+.md-typeset .cx-page-info { font-size: 0.74rem; color: var(--text-muted); }
+.md-typeset .cx-showall { margin-left: auto; color: var(--primary); border-color: rgba(255,57,0,0.25); }
+
+/* TOC: the injected page-title (H1) entry reads slightly stronger. */
+.md-nav__item--toc-title > .md-nav__link { font-weight: 600; color: var(--text-strong); }
+
+/* ============================================================================
+   Header — clean GitHub icon + ⌘K search hint (drpc-style)
+   ============================================================================ */
+/* GitHub source: show only the icon, drop the repo name + star/fork facts. */
+.md-header__source .md-source__repository { display: none; }
+.md-header__source { width: auto; min-width: 0; }
+.md-header__source .md-source__icon { margin: 0; }
+.md-source__icon svg { width: 1.4rem; height: 1.4rem; }
+
+/* ⌘K / Ctrl+K hint badge inside the search box */
+.md-search__form { position: relative; }
+.md-search__keyhint {
+  position: absolute; top: 50%; right: 0.6rem; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 0.15rem;
+  font-size: 0.62rem; font-weight: 600; line-height: 1;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle); border-radius: 0.3rem;
+  padding: 0.18rem 0.38rem; pointer-events: none;
+  background: var(--surface-subtle);
+}
+/* hide the hint once the user is typing/focused */
+.md-search__input:focus ~ .md-search__keyhint,
+.md-search__input:not(:placeholder-shown) ~ .md-search__keyhint { opacity: 0; }
+
+/* Theme toggle: a single button sitting just left of the search box, clearly
+   set apart from the search + GitHub cluster. */
+.md-header__option[data-md-component="palette"] {
+  order: 2;                 /* after the title, before search (search has order auto via margin-left:auto) */
+  margin: 0 0.4rem 0 0;
+  display: flex; align-items: center;
+}
+.md-header__option .md-header__button.md-icon { margin: 0; cursor: pointer; }
+/* Show ONLY the toggle for the scheme we'd switch TO (Material renders one
+   <label> per scheme; hide the one whose input is checked = current scheme). */
+.md-header__option input:checked + .md-header__button { display: none; }
