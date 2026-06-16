@@ -1,9 +1,11 @@
 site_name: Smart Router
 site_description: Centralised RPC routing gateway with QoS-based selection, caching, and failover policies.
 site_url: https://magma-devs.github.io/docs/
-repo_url: https://github.com/Magma-Devs/docs
-repo_name: Magma-Devs/docs
-edit_uri: edit/main/docs/
+# Header GitHub icon points at the Smart Router code repo.
+repo_url: https://github.com/Magma-Devs/smart-router
+repo_name: Magma-Devs/smart-router
+# "Edit this page" still targets the docs repo (full URL overrides repo_url).
+edit_uri: https://github.com/Magma-Devs/docs/edit/main/docs/
 
 theme:
   name: material
@@ -32,17 +34,31 @@ theme:
     repo: fontawesome/brands/github
 
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    # Light is the default; the button toggles to dark.
+    - scheme: default
       primary: custom
       accent: custom
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
       primary: custom
       accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 extra_css:
   - stylesheets/extra.css
+
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/tablesort.js
+  - javascripts/toc-title.js
+  - javascripts/search-hint.js
+  - javascripts/nav-top.js
+  - javascripts/chains-data.js
+  - javascripts/chains-explorer.js
 
 markdown_extensions:
   - admonition
