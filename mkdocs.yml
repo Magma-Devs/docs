@@ -23,6 +23,8 @@ theme:
     - navigation.expand
     - navigation.top
     - navigation.tracking
+    - navigation.path
+    - navigation.footer
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
@@ -34,19 +36,18 @@ theme:
     repo: fontawesome/brands/github
 
   palette:
-    # Light is the default; the button toggles to dark.
-    - scheme: default
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+    # Single light scheme — no toggle button (drpc-style clean header).
+    scheme: default
+    primary: custom
+    accent: custom
+
+# Declaring any plugin disables the implicit `search` plugin, so it must be
+# listed explicitly here alongside the git-revision date stamp.
+plugins:
+  - search
+  - git-revision-date-localized:
+      type: date
+      enable_creation_date: false
 
 extra_css:
   - stylesheets/extra.css
