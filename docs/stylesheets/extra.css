@@ -375,10 +375,14 @@
    3. Layout — three columns, ~980px content, sidebars flank
    ============================================================================ */
 
-.md-grid { max-width: 100%; padding: 0; margin: 0; }
+/* Bound the whole page to a centered column (drpc-style). `.md-grid` is the
+   shared width constraint for the header inner, main, and footer inner, so this
+   one rule centers the nav bar, content, and footer together — pulling the logo
+   + search/GitHub in from the window edges. */
+.md-grid { max-width: 1600px; margin: 0 auto; padding: 0; }
 .md-main__inner { margin-top: 0; }
 .md-content {
-  max-width: 980px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 1.5rem 3rem 4rem;
 }
@@ -802,13 +806,64 @@
 }
 
 /* ============================================================================
-   Footer & scrollbar
+   Breadcrumb (navigation.path) — muted trail above the H1, drpc-style
+   ============================================================================ */
+
+.md-content .md-path {
+  font-size: 13px;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+.md-content .md-path__list { gap: 0.2rem; }
+.md-content .md-path__item,
+.md-content .md-path__item a {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.md-content .md-path__item a {
+  border-bottom: none;
+  transition: color var(--t);
+}
+.md-content .md-path__item a:hover {
+  color: var(--text-strong);
+  border-bottom: none;
+}
+/* › separator between crumbs */
+.md-content .md-path__item:not(:last-child)::after { color: var(--text-muted); opacity: 0.6; }
+
+/* ============================================================================
+   Footer — prev/next pager + last-updated stamp + scrollbar
    ============================================================================ */
 
 .md-footer-meta { background-color: var(--surface); border-top: 1px solid var(--border-subtle); }
 .md-footer-meta__inner,
 .md-footer__inner { color: var(--text-muted); }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--primary); }
+
+/* Prev/next page pager (navigation.footer) — quiet cards that tint primary on
+   hover; sit inside the centered .md-grid so they align with the content. */
+[data-md-color-scheme="default"] .md-footer { background-color: #fff; }
+[data-md-color-scheme="slate"]   .md-footer { background-color: var(--surface); }
+.md-footer__inner { padding: 1.2rem 0; }
+.md-footer__link {
+  padding: 0.6rem 0.4rem;
+  opacity: 1;
+  transition: color var(--t);
+}
+.md-footer__link:hover { color: var(--primary); }
+.md-footer__title { color: var(--text-strong); font-weight: 600; }
+.md-footer__direction { color: var(--text-muted); font-size: 12px; }
+.md-footer__button.md-icon { color: var(--text-muted); }
+.md-footer__link:hover .md-footer__button.md-icon { color: var(--primary); }
+
+/* "Last updated on …" stamp (git-revision-date-localized) — small, muted,
+   right-aligned above the meta row, matching drpc. */
+.md-source-file,
+.md-source-file__fact {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.md-content .md-source-file { margin-top: 2rem; text-align: right; }
 
 /* ============================================================================
    Supported-chains catalog — icons + network/interface badges
