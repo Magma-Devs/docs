@@ -30,6 +30,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # Full history so git-revision-date-localized can resolve each page's
+          # last-commit date for the "Last updated" stamp.
+          fetch-depth: 0
 
       - name: Install Python
         uses: actions/setup-python@v5
