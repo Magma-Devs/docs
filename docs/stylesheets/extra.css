@@ -411,9 +411,11 @@
 .md-header__option,
 .md-header__source,
 .md-header__button { display: flex; align-items: center; margin-top: 0; margin-bottom: 0; }
-/* Search pushed to the right side of the header */
-/* Search pushed right; GitHub icon sits tightly beside it (drpc-style). */
-.md-search { display: flex; align-items: center; margin-left: auto; margin-right: 0.6rem; }
+/* Search pushed right; GitHub icon sits tightly beside it (drpc-style).
+   Fixed-width wide pill so it reads as a stable search bar, not a collapsing
+   icon — matches drpc's "Search documentation…  CTRL K" box. */
+.md-search { display: flex; align-items: center; margin-left: auto; margin-right: 0.75rem; }
+.md-search__inner { width: 20rem; }
 .md-header__source { margin-left: 0 !important; padding-left: 0 !important; }
 .md-header__option { margin-left: 0 !important; }
 
@@ -445,15 +447,71 @@
 }
 .md-tabs__link--active { color: var(--text-strong); }
 
-/* Search input — rounded pill */
+/* Search input — wide rounded-rect box (always expanded, drpc-style).
+   Width is left to Material so the form + results dropdown share one width and
+   stay aligned; we only style appearance. Modest 8px radius (not a full pill). */
 .md-search__form {
   background-color: var(--surface-subtle);
-  border-radius: 9999px;
+  border-radius: 8px;
   border: 1px solid var(--border-subtle);
+  height: 2.4rem;
+  box-shadow: none;
+  transition: background-color var(--t), border-color var(--t), border-radius 0s;
 }
-.md-search__input { color: var(--text-strong); border-radius: 9999px; }
+.md-search__input {
+  color: var(--text-strong);
+  border-radius: 8px;
+  width: 100%;
+  padding-left: 2.4rem;   /* room for the magnifier icon */
+}
+
+.md-search__input:hover { background-color: var(--surface); }
+
+/* Focused state: the input fuses with the results dropdown into ONE connected
+   surface — input rounds only its TOP corners, dropdown rounds only its BOTTOM,
+   no gap between them, sharing a soft brand-tinted border + one soft shadow. */
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+  background-color: var(--surface);
+  border-color: rgba(255, 57, 0, 0.45);
+  border-bottom-color: var(--border-subtle);
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+[data-md-toggle="search"]:checked ~ .md-header .md-search__input { border-radius: 10px 10px 0 0; }
+
+/* Results dropdown — flush under the input, rounded bottom corners only, same
+   border + shadow so input + results read as a single floating card. */
+.md-search__output {
+  margin-top: 0;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 57, 0, 0.45);
+  border-top: none;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+[data-md-color-scheme="default"] .md-search__scrollwrap { background-color: #fff; }
+[data-md-color-scheme="slate"]   .md-search__scrollwrap { background-color: var(--surface); }
 .md-search__input::placeholder { color: var(--text-muted); }
 .md-search__icon { color: var(--text-muted); }
+
+/* Results meta row ("Type to start searching" / "N matching documents") —
+   quiet, not a flat gray strip. */
+.md-search-result__meta {
+  background-color: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 2.4;
+  padding: 0 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+/* Result rows — clean hover tint matching the brand */
+.md-search-result__item { box-shadow: none; }
+.md-search-result__link { border-radius: 0; transition: background-color var(--t); }
+.md-search-result__link:hover,
+.md-search-result__link[data-md-state="active"] { background-color: var(--md-accent-fg-color--transparent); }
+.md-search-result__title { font-weight: 600; color: var(--text-strong); }
+.md-search-result mark { color: var(--primary); background: transparent; font-weight: 600; }
 
 /* ============================================================================
    Logo
@@ -535,7 +593,21 @@
   align-items: center;
 }
 .md-sidebar--primary .md-nav__item--section > .md-nav__link:hover { color: var(--text-muted) !important; }
-.md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:first-child > .md-nav__link { margin-top: 0 !important; }
+
+/* Divider line above each top-level section so groups are clearly separated
+   and every section header (incl. Reference) reads consistently. The first
+   section has no divider and no top gap. */
+.md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section {
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 18px !important;
+  padding-top: 18px !important;
+}
+.md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:first-child {
+  border-top: none;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section > .md-nav__link { margin-top: 0 !important; }
 
 /* Section icons — 14×14 currentColor mask, inline before the label */
 .md-sidebar--primary .md-nav__item--section > .md-nav__link::before {
@@ -617,11 +689,15 @@
   justify-content: flex-start !important;
 }
 /* Nested toggle-groups that are NOT top-level sections (e.g. Projects,
-   Failover & retry) read a touch stronger than leaf links, so the 3 tiers
-   (section header → group → leaf) are visually distinct. */
-.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link {
-  font-weight: 600;
-  color: var(--text-body) !important;
+   Failover & retry) get a consistent sub-header treatment: 13px semibold in the
+   strong tier — clearly a group title, distinct from both the tiny uppercase
+   section headers above and the 16px regular leaf links below. */
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link,
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > .md-nav__link {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0;
+  color: var(--text-strong) !important;
 }
 .md-sidebar--primary .md-nav__item--nested > .md-nav__link > .md-nav__icon {
   margin-left: 6px !important;
@@ -974,14 +1050,17 @@
 .md-typeset #chains-explorer { margin: 1.5rem 0 2rem; }
 
 /* Controls: search + ecosystem chips */
-.md-typeset .cx-controls { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.1rem; }
+/* Stack the search box over the chips so the chips get the full content width
+   on their own row — keeps all ecosystem chips on a single line. */
+.md-typeset .cx-controls { display: flex; flex-direction: column; gap: 0.7rem; align-items: stretch; margin-bottom: 1.1rem; }
 .md-typeset .cx-search {
-  flex: 1; min-width: 200px;
+  width: 100%;
   border: 1px solid var(--border-subtle); border-radius: 0.6rem;
   padding: 0.55rem 0.8rem; font-size: 0.8rem; background: var(--surface); color: var(--text-strong);
 }
 .md-typeset .cx-search:focus { outline: none; border-color: var(--primary); }
-.md-typeset .cx-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+/* No wrap — all chips stay on one row. */
+.md-typeset .cx-chips { display: flex; gap: 0.4rem; flex-wrap: nowrap; }
 .md-typeset .cx-chip {
   border: 1px solid var(--border-subtle); background: var(--surface);
   border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.72rem; font-weight: 600;
@@ -1106,15 +1185,3 @@
 /* hide the hint once the user is typing/focused */
 .md-search__input:focus ~ .md-search__keyhint,
 .md-search__input:not(:placeholder-shown) ~ .md-search__keyhint { opacity: 0; }
-
-/* Theme toggle: a single button sitting just left of the search box, clearly
-   set apart from the search + GitHub cluster. */
-.md-header__option[data-md-component="palette"] {
-  order: 2;                 /* after the title, before search (search has order auto via margin-left:auto) */
-  margin: 0 0.4rem 0 0;
-  display: flex; align-items: center;
-}
-.md-header__option .md-header__button.md-icon { margin: 0; cursor: pointer; }
-/* Show ONLY the toggle for the scheme we'd switch TO (Material renders one
-   <label> per scheme; hide the one whose input is checked = current scheme). */
-.md-header__option input:checked + .md-header__button { display: none; }
