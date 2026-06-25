@@ -113,7 +113,7 @@ nav:
       - reference/chains/index.md
       - Chain specs: reference/chains/specs.md
       - Examples:
-          - reference/chains/examples.md
+          - reference/chains/examples/index.md
           - Ethereum: reference/chains/ethereum.md
           - Arbitrum: reference/chains/arbitrum.md
           - Base: reference/chains/base.md
