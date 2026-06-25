@@ -112,8 +112,13 @@ nav:
   - Supported chains:
       - reference/chains/index.md
       - Chain specs: reference/chains/specs.md
-      - Ethereum: reference/chains/ethereum.md
-      - Lava: reference/chains/lava.md
+      - Examples:
+          - reference/chains/examples.md
+          - Ethereum: reference/chains/ethereum.md
+          - Arbitrum: reference/chains/arbitrum.md
+          - Base: reference/chains/base.md
+          - Lava: reference/chains/lava.md
+          - Solana: reference/chains/solana.md
   - Observability:
       - reference/observability/index.md
       - Metrics: reference/metrics.md

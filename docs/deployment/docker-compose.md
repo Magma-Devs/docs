@@ -39,6 +39,10 @@ only binds the listeners it declares, the rest sit idle.
 | `3360` | ETH1 JSON-RPC (eth, multichain) |
 | `3361` | Arbitrum JSON-RPC (multichain) |
 | `3362` | Base JSON-RPC (multichain) |
+| `3363` | Solana JSON-RPC (solana, multichain) |
+| `3364` | Lava REST (multichain) |
+| `3365` | Lava Tendermint RPC (multichain) |
+| `3366` | Lava gRPC (multichain) |
 | `7779` | router Prometheus metrics |
 
 ## Environment variables
