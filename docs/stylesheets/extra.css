@@ -804,6 +804,11 @@ html { scroll-padding-top: 96px; }
     padding: 0.5rem 0.75rem 1.5rem;
     margin: 0;
     width: 100%;
+    /* Material only flips this to auto while the drawer is mid-open; our layout
+       overrides bypass that, leaving it hidden so a tall nav can't scroll.
+       Force it on. */
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
   /* Material gives the inner a large right padding (~130px) to reserve room for
      the drilldown's slid-in panel. With the drilldown flattened, that padding
@@ -933,6 +938,16 @@ html { scroll-padding-top: 96px; }
     > .md-nav > .md-nav__list > .md-nav__item > .md-nav__container > a.md-nav__link {
     padding-left: 0.9rem !important;
   }
+  /* A nested sub-group row is a .md-nav__container (carries .md-nav__link) — the
+     flat-indent rule above + the desktop 22px depth rule both target it, then the
+     inner <a> adds its own 0.9rem, double-indenting the label. The container is
+     just the indent track; zero its padding so only the inner <a>'s 0.9rem counts
+     and the label aligns with every sibling row. Specificity (0,8,1 via the depth
+     chain + .md-nav__container) beats both. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section
+    > .md-nav > .md-nav__list > .md-nav__item > .md-nav__container.md-nav__link {
+    padding-left: 0 !important;
+  }
 
   /* Active row: subtle brand text + light tint, no accent bar (drpc-style) */
   .md-sidebar--primary .md-nav__item .md-nav__link--active,
@@ -951,6 +966,7 @@ html { scroll-padding-top: 96px; }
   .md-sidebar--primary .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link.md-nav__container,
   .md-sidebar--primary .md-nav .md-nav__item--section.md-nav__item--nested > .md-nav__link.md-nav__container {
     padding: 0 !important;
+    padding-left: 0 !important;   /* beat the flat leaf-indent rule; indent lives on the inner <a> */
     margin: 1px 0 !important;
     align-items: stretch !important;
     border-radius: 8px;
