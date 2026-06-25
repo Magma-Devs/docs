@@ -501,14 +501,16 @@ html { scroll-padding-top: 96px; }
 .md-search__icon { color: var(--text-muted); }
 
 /* Results meta row ("Type to start searching" / "N matching documents") —
-   quiet, not a flat gray strip. */
+   quiet, not a flat gray strip. Needs real vertical padding: a tall unitless
+   line-height with zero padding left the text flush to the dropdown's bottom
+   edge, where `overflow: hidden` on .md-search__output clipped it. */
 .md-search-result__meta {
   background-color: transparent;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
-  line-height: 2.4;
-  padding: 0 0.9rem;
+  line-height: 1.6;
+  padding: 0.55rem 0.9rem;
   border-bottom: 1px solid var(--border-subtle);
 }
 /* Result rows — clean hover tint matching the brand */
