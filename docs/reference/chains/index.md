@@ -6,7 +6,7 @@ rest from the [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs
 at startup.
 
 New here? Read [Chain specs](specs.md) first — what a spec is and how the router loads
-it. Then see [Examples](examples.md) for ready-to-run configs and per-chain
+it. Then see [Examples](examples/index.md) for ready-to-run configs and per-chain
 walkthroughs — [Ethereum](ethereum.md), [Arbitrum](arbitrum.md), [Base](base.md),
 [Lava](lava.md), and [Solana](solana.md).
 

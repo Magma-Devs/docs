@@ -8,11 +8,11 @@ The per-chain pages below walk through each one — endpoint, method surface, a 
 
 | Chain | `chain-id` | Interface(s) | Example config | Page |
 | --- | --- | --- | --- | --- |
-| Ethereum | `ETH1` | jsonrpc | `smartrouter_eth.yml` | [Ethereum](ethereum.md) |
-| Arbitrum One | `ARBITRUM` | jsonrpc | `smartrouter_arbitrum.yml` | [Arbitrum](arbitrum.md) |
-| Base | `BASE` | jsonrpc | `smartrouter_base.yml` | [Base](base.md) |
-| Lava | `LAVA` | rest, grpc, tendermintrpc | `smartrouter_lava.yml` | [Lava](lava.md) |
-| Solana | `SOLANA` | jsonrpc | `smartrouter_solana.yml` | [Solana](solana.md) |
+| Ethereum | `ETH1` | jsonrpc | `smartrouter_eth.yml` | [Ethereum](../ethereum.md) |
+| Arbitrum One | `ARBITRUM` | jsonrpc | `smartrouter_arbitrum.yml` | [Arbitrum](../arbitrum.md) |
+| Base | `BASE` | jsonrpc | `smartrouter_base.yml` | [Base](../base.md) |
+| Lava | `LAVA` | rest, grpc, tendermintrpc | `smartrouter_lava.yml` | [Lava](../lava.md) |
+| Solana | `SOLANA` | jsonrpc | `smartrouter_solana.yml` | [Solana](../solana.md) |
 
 Want everything at once? [`smartrouter_multichain.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_multichain.yml) serves **all five chains together**, each on its own port — ETH1 `3360`, Arbitrum `3361`, Base `3362`, Solana `3363`, and Lava REST/Tendermint/gRPC on `3364`/`3365`/`3366` — all via `*.lava.build`:
 
@@ -47,4 +47,4 @@ Swap the filename for any chain above. Then send a request to the listener it op
     when you run it. The EVM examples (Ethereum, Arbitrum, Base) pair each https url
     with a wss one and need no extra flag.
 
-See [Run Smart Router](../../deployment/index.md) for the cache and dashboard overlays, and [The config file](../../configuration/config-file.md) for the config format.
+See [Run Smart Router](../../../deployment/index.md) for the cache and dashboard overlays, and [The config file](../../../configuration/config-file.md) for the config format.

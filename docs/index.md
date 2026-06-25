@@ -63,7 +63,7 @@ cd smart-router
 docker compose -f docker/docker-compose.yml up --build
 ```
 
-This builds the image and starts the Ethereum example on port 3360. Pick another chain with `SR_CONFIG` (see [Examples](reference/chains/examples.md)), or run a native binary / the wizard instead — see [Run Smart Router](deployment/index.md).
+This builds the image and starts the Ethereum example on port 3360. Pick another chain with `SR_CONFIG` (see [Examples](reference/chains/examples/index.md)), or run a native binary / the wizard instead — see [Run Smart Router](deployment/index.md).
 
 ### 3. Make a request
 
