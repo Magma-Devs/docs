@@ -19,17 +19,17 @@ The Base spec **imports `ETH1`**, so it serves the standard Ethereum JSON-RPC me
 
 The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_base.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — a single upstream on the Lava public gateway (`base.lava.build`, HTTP + WS), no API key needed:
 
-=== "Local binary"
-
-    ```bash
-    smartrouter config/smartrouter_examples/smartrouter_base.yml --use-static-spec specs/
-    ```
-
 === "Docker Compose"
 
     ```bash
     SR_CONFIG=config/smartrouter_examples/smartrouter_base.yml \
       docker compose -f docker/docker-compose.yml up --build
+    ```
+
+=== "Local binary"
+
+    ```bash
+    smartrouter config/smartrouter_examples/smartrouter_base.yml --use-static-spec specs/
     ```
 
 Then call it:

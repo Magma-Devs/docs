@@ -83,12 +83,6 @@ If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode ad
 
 The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — three public upstreams (Lava gateway, PublicNode, Tenderly), HTTP + WS, no API key needed:
 
-=== "Local binary"
-
-    ```bash
-    smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
-    ```
-
 === "Docker Compose"
 
     ```bash
@@ -96,12 +90,10 @@ The repo ships a ready-to-run config at [`config/smartrouter_examples/smartroute
       docker compose -f docker/docker-compose.yml up --build
     ```
 
-=== "Init script"
+=== "Local binary"
 
     ```bash
-    ./scripts/pre_setups/init_smartrouter_eth.sh
+    smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
     ```
-
-    Generates the config from your `ETH_RPC_URL_*` env vars and starts the router on port 3360.
 
 It listens on port `3360` — send it a request with any of the [client snippets above](#connect-a-client).

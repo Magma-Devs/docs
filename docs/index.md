@@ -50,23 +50,20 @@ Smart Router is a centralised RPC routing gateway. Point it at upstream RPC endp
     health-checks everything, writes the config, and brings up the stack in one pass.
     See [Config wizard](deployment/wizard.md).
 
-### 1. Get the binary
+### 1. Get the code
 
 ```bash
 git clone https://github.com/Magma-Devs/smart-router.git
 cd smart-router
-make install
 ```
-
-Or run it with Docker Compose or the wizard — see [Run Smart Router](deployment/index.md).
 
 ### 2. Run
 
 ```bash
-./scripts/pre_setups/init_smartrouter_eth.sh
+docker compose -f docker/docker-compose.yml up --build
 ```
 
-This generates a config from [`config/smartrouter_examples/`](https://github.com/Magma-Devs/smart-router/tree/main/config/smartrouter_examples) and starts the router on port 3360.
+This builds the image and starts the Ethereum example on port 3360. Pick another chain with `SR_CONFIG` (see [Examples](reference/chains/examples.md)), or run a native binary / the wizard instead — see [Run Smart Router](deployment/index.md).
 
 ### 3. Make a request
 

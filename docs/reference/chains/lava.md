@@ -75,12 +75,6 @@ If a Cosmos chain you need isn't in the catalog, [request it](https://github.com
 
 The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_lava.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_lava.yml) — it opens all three Lava listeners (REST `3360`, gRPC `3361`, Tendermint RPC `3362`):
 
-=== "Local binary"
-
-    ```bash
-    smartrouter config/smartrouter_examples/smartrouter_lava.yml --use-static-spec specs/
-    ```
-
 === "Docker Compose"
 
     ```bash
@@ -88,12 +82,10 @@ The repo ships a ready-to-run config at [`config/smartrouter_examples/smartroute
       docker compose -f docker/docker-compose.yml up --build
     ```
 
-=== "Init script"
+=== "Local binary"
 
     ```bash
-    ./scripts/pre_setups/init_smartrouter_lava.sh
+    smartrouter config/smartrouter_examples/smartrouter_lava.yml --use-static-spec specs/
     ```
-
-    Runs against PublicNode endpoints by default.
 
 Then send a request with any of the [client snippets above](#connect-a-client). Edit the `node-urls` in the config to point at your own upstreams.

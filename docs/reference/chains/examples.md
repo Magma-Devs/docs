@@ -14,23 +14,30 @@ The per-chain pages below walk through each one — endpoint, method surface, a 
 | Lava | `LAVA` | rest, grpc, tendermintrpc | `smartrouter_lava.yml` | [Lava](lava.md) |
 | Solana | `SOLANA` | jsonrpc | `smartrouter_solana.yml` | [Solana](solana.md) |
 
-The repo also ships multi-chain and cached variants (`smartrouter_multichain.yml`, `smartrouter_eth_cached.yml`, `smartrouter_multichain_cached.yml`) — same shape, more endpoints.
+Want everything at once? [`smartrouter_multichain.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_multichain.yml) serves **all five chains together**, each on its own port — ETH1 `3360`, Arbitrum `3361`, Base `3362`, Solana `3363`, and Lava REST/Tendermint/gRPC on `3364`/`3365`/`3366` — all via `*.lava.build`:
+
+```bash
+SR_CONFIG=config/smartrouter_examples/smartrouter_multichain.yml \
+  docker compose -f docker/docker-compose.yml up --build
+```
+
+The repo also ships cached variants (`smartrouter_eth_cached.yml`, `smartrouter_multichain_cached.yml`) — same shape, plus the cache sidecar.
 
 ## Run any example
 
 Every example is run the same way — pass the config positionally and point `--use-static-spec` at the bundled specs:
-
-=== "Local binary"
-
-    ```bash
-    smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
-    ```
 
 === "Docker Compose"
 
     ```bash
     SR_CONFIG=config/smartrouter_examples/smartrouter_eth.yml \
       docker compose -f docker/docker-compose.yml up --build
+    ```
+
+=== "Local binary"
+
+    ```bash
+    smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
     ```
 
 Swap the filename for any chain above. Then send a request to the listener it opens (port `3360` by default) — each chain page has a copy-paste call.
