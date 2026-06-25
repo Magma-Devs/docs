@@ -1363,6 +1363,15 @@ html { scroll-padding-top: 96px; }
 .md-footer__inner { color: var(--text-muted); }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--primary); }
 
+/* Social icons (extra.social) — Material colors these for its default dark
+   footer, but this footer is light, so the stock near-white icon is invisible.
+   Use the muted footer text color, tinting primary on hover like the pager.
+   Scheme-scoped so it reliably wins over Material's inherited footer color. */
+[data-md-color-scheme="default"] .md-footer .md-social__link { color: var(--text-muted); opacity: 1; }
+[data-md-color-scheme="default"] .md-footer .md-social__link svg { fill: currentcolor; }
+[data-md-color-scheme="default"] .md-footer .md-social__link:hover,
+[data-md-color-scheme="default"] .md-footer .md-social__link:focus { color: var(--primary); }
+
 /* Prev/next page pager (navigation.footer) — quiet cards that tint primary on
    hover; sit inside the centered .md-grid so they align with the content. */
 [data-md-color-scheme="default"] .md-footer { background-color: #fff; }
