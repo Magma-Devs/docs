@@ -79,10 +79,29 @@ Swap the node URL for your Smart Router URL. The JSON-RPC protocol is identical 
 
 If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream nodes expose the equivalent methods. Coverage for a method is determined by the chain spec, which is maintained in the catalog — if something you need isn't covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
 
-## Setup
+## Run this example
 
-```bash
-./scripts/pre_setups/init_smartrouter_eth.sh
-```
+The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — three public upstreams (Lava gateway, PublicNode, Tenderly), HTTP + WS, no API key needed:
 
-Generates [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) and starts the router on port 3360.
+=== "Local binary"
+
+    ```bash
+    smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
+    ```
+
+=== "Docker Compose"
+
+    ```bash
+    SR_CONFIG=config/smartrouter_examples/smartrouter_eth.yml \
+      docker compose -f docker/docker-compose.yml up --build
+    ```
+
+=== "Init script"
+
+    ```bash
+    ./scripts/pre_setups/init_smartrouter_eth.sh
+    ```
+
+    Generates the config from your `ETH_RPC_URL_*` env vars and starts the router on port 3360.
+
+It listens on port `3360` — send it a request with any of the [client snippets above](#connect-a-client).
