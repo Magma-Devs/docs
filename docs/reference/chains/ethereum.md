@@ -16,8 +16,8 @@ Ethereum mainnet over JSON-RPC.
 |---|---|
 | Standard | `eth_blockNumber`, `eth_call`, `eth_getBalance`, `eth_getBlockByNumber`, `eth_getLogs`, `eth_estimateGas`, `eth_gasPrice`, `eth_feeHistory`, `eth_sendRawTransaction` |
 | Tracing (archive) | `debug_traceTransaction`, `debug_traceCall`, `debug_traceBlockByNumber`, `debug_storageRangeAt`, `debug_getRawBlock`, `debug_getRawReceipts` |
-| Mempool | `txpool_*` (provider-dependent) |
-| Account abstraction (ERC-4337) | `eth_estimateUserOperationGas`, `eth_sendUserOperation`, etc. (provider-dependent) |
+| Mempool | `txpool_*` (node-dependent) |
+| Account abstraction (ERC-4337) | `eth_estimateUserOperationGas`, `eth_sendUserOperation`, etc. (node-dependent) |
 | Network / client | `web3_*`, `net_*` |
 
 The full method list lives in the spec file linked above.
@@ -73,9 +73,9 @@ Some methods only work on upstreams with specific capabilities. Mark these as ad
 
 ## Migrating from Alchemy / Infura / QuickNode
 
-Swap the provider URL for your Smart Router URL. The JSON-RPC protocol is identical — your existing client code doesn't change.
+Swap the node URL for your Smart Router URL. The JSON-RPC protocol is identical — your existing client code doesn't change.
 
-If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream providers expose the equivalent methods. Coverage for a method is determined by the chain spec, which is maintained in the catalog — if something you need isn't covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
+If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream nodes expose the equivalent methods. Coverage for a method is determined by the chain spec, which is maintained in the catalog — if something you need isn't covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
 
 ## Setup
 

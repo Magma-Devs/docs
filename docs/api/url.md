@@ -1,6 +1,8 @@
-# Endpoint URL
+# Connect your app
 
-Smart Router opens **one HTTP listener per chain × API interface**. Your client connects to that listener and speaks the chain's native protocol.
+Once Smart Router is running, your client points at a URL and speaks the same protocol it would speak to any other RPC endpoint — JSON-RPC for Ethereum, REST or gRPC for Cosmos, Tendermint RPC for Tendermint chains. No bespoke SDK, no proprietary protocol.
+
+Smart Router opens **one HTTP listener per chain × API interface**. Your client connects to that listener and speaks the chain's native protocol. To override per-request behaviour (pin a node, skip cache, request cross-validation), see [Request headers](directives.md).
 
 ## URL format
 
@@ -76,11 +78,14 @@ Each `endpoints[]` entry has a `network-address` field (e.g. `0.0.0.0:3360`) —
 
 ## TLS
 
-The router listens HTTP. For TLS termination, put a reverse proxy in front (NGINX, HAProxy, or your cloud load balancer). See [Bare metal → Behind a reverse proxy](../deployment/bare-metal.md#behind-a-reverse-proxy) for an NGINX example.
+The router listens HTTP. For TLS termination — along with client authentication, CORS, and rate limiting — put a reverse proxy in front (NGINX, HAProxy, or your cloud load balancer); see [Authentication → Authenticating your clients](../configuration/authentication.md#authenticating-your-clients).
 
 ## CORS, auth, rate limiting
 
-These are configured server-side, not per-client. See [Configuration](../configuration/index.md).
+**CORS** is configurable on the router via the `--cors-*` flags — see the
+[CLI reference](../reference/cli.md#cors-http). **Client authentication** and **rate
+limiting** are not built into the router; put a reverse proxy in front for those — see
+[Authentication → Authenticating your clients](../configuration/authentication.md#authenticating-your-clients).
 
 ## Forwarded client IP
 

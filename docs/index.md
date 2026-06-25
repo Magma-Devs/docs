@@ -2,7 +2,7 @@
 
 # Quickstart
 
-Smart Router is a centralised RPC routing gateway. Point it at upstream RPC endpoints; it serves your traffic with QoS-based provider selection, caching, hedging, retries, and cross-validation.
+Smart Router is a centralised RPC routing gateway. Point it at upstream RPC endpoints; it serves your traffic with QoS-based node selection, caching, hedging, retries, and cross-validation.
 
 <div class="grid cards card-grid" markdown>
 
@@ -14,13 +14,13 @@ Smart Router is a centralised RPC routing gateway. Point it at upstream RPC endp
 
     [Get started →](#three-steps-to-a-running-router)
 
--   ![Using the API](assets/illustrations/api.svg){.card-illustration}
+-   ![Connect your app](assets/illustrations/api.svg){.card-illustration}
 
     **Integrate with your app**
 
     Endpoint URLs, header directives, viem / ethers / web3.py / cosmjs samples.
 
-    [Use the API →](api/index.md)
+    [Connect your app →](api/url.md)
 
 -   ![Configure](assets/illustrations/configure.svg){.card-illustration}
 
@@ -45,15 +45,20 @@ Smart Router is a centralised RPC routing gateway. Point it at upstream RPC endp
 
 ## Three steps to a running router
 
+!!! tip "In a hurry? Use the wizard"
+    `make wizard` launches an interactive TUI that picks chains, collects upstreams,
+    health-checks everything, writes the config, and brings up the stack in one pass.
+    See [Config wizard](deployment/wizard.md).
+
 ### 1. Get the binary
 
 ```bash
 git clone https://github.com/Magma-Devs/smart-router.git
 cd smart-router
-make install-all
+make install
 ```
 
-Or use Docker — see [Deployment → Docker](deployment/docker.md).
+Or run it with Docker Compose or the wizard — see [Run Smart Router](deployment/index.md).
 
 ### 2. Run
 
@@ -73,6 +78,6 @@ curl -X POST http://127.0.0.1:3360 \
 
 ## Where to next
 
-- **Integrating with an app** → [Using the API](api/index.md)
+- **Integrating with an app** → [Connect your app](api/url.md)
 - **Operating the router** → [Configuration](configuration/index.md), [Deployment](deployment/index.md)
 - **Evaluating** → [Why Smart Router?](why.md)
