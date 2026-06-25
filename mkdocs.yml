@@ -49,6 +49,13 @@ plugins:
       type: date
       enable_creation_date: false
 
+# Community / support links — rendered as icons in the footer on every page.
+extra:
+  social:
+    - icon: fontawesome/brands/telegram
+      link: https://t.me/magmadevs
+      name: Support & community on Telegram
+
 extra_css:
   - stylesheets/extra.css
 
