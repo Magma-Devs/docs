@@ -775,12 +775,14 @@ html { scroll-padding-top: 96px; }
    (zeroed padding, 11px labels, hidden chevrons) leak in and break it.
    ============================================================================ */
 
-/* The drawer search box (injected by mobile-nav-search.js) is mobile-only — the
-   desktop sidebar already has the header search bar. Hide it by default; the
-   mobile media query below switches it back on. */
+/* The drawer header + search box (injected by mobile-nav-search.js) are
+   mobile-only — the desktop sidebar already has its own header search bar. Hide
+   them by default; the mobile media query below switches them back on. */
+.lc-drawer-head,
 .lc-drawer-search { display: none; }
 
 @media screen and (max-width: 76.1875em) {
+  .lc-drawer-head { display: flex; }
   .lc-drawer-search { display: block; }
   /* --- Drawer panel: full-width slide-in (drpc-style full-screen overlay) --- */
   .md-sidebar--primary {
@@ -801,6 +803,25 @@ html { scroll-padding-top: 96px; }
   .md-sidebar--primary .md-sidebar__scrollwrap {
     padding: 0.5rem 0.75rem 1.5rem;
     margin: 0;
+    width: 100%;
+  }
+  /* Material gives the inner a large right padding (~130px) to reserve room for
+     the drilldown's slid-in panel. With the drilldown flattened, that padding
+     just squeezes every row into the left ~2/3 of the drawer — zero it so the
+     column fills the full width. */
+  .md-sidebar--primary .md-sidebar__inner {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+  /* Material absolutely-positions the primary nav (drilldown root) at top:0, so
+     it overlaps our injected header + search. Put it back in normal flow so the
+     column stacks: header → search → nav. */
+  .md-sidebar--primary .md-nav--primary {
+    position: static !important;
+    top: auto !important;
+    display: block !important;   /* Material makes it a flex panel that shrinks to
+                                    content; block lets it fill the drawer width */
+    width: 100% !important;
   }
 
   /* === FLATTEN THE DRILLDOWN (drpc-style) ===
@@ -853,11 +874,11 @@ html { scroll-padding-top: 96px; }
     margin-top: 0.4rem !important;
   }
   .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > a.md-nav__link {
-    font-size: 12px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
-    color: var(--text-muted) !important;
+    color: var(--text-strong) !important;
     padding: 0 0 0 0.9rem !important;   /* align label text with the leaf rows below */
     margin: 0 !important;
     flex: 1 1 auto;
@@ -867,7 +888,7 @@ html { scroll-padding-top: 96px; }
      the active-row rule would otherwise give it. */
   .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > a.md-nav__link--active {
     background: transparent !important;
-    color: var(--text-muted) !important;
+    color: var(--text-strong) !important;
     font-weight: 700 !important;
   }
   /* Section headers don't drill down anymore — drop their chevron (the empty
@@ -1002,9 +1023,65 @@ html { scroll-padding-top: 96px; }
     color: var(--text-muted) !important;
   }
 
-  /* === Search box pinned at the top of the drawer (drpc-style) ===
-     Injected by javascripts/mobile-nav-search.js as `.lc-drawer-search` at the
-     top of the nav list. Mirrors drpc's "Search documentation…" field. */
+  /* === Drawer header bar (drpc-style) ===
+     Injected by mobile-nav-search.js as `.lc-drawer-head` at the top of the
+     drawer: logo (left) · GitHub + close ✕ (right), divider below. It spans the
+     full drawer width (cancels the scrollwrap's 0.75rem inset) and sticks to the
+     top so it stays put while the nav list scrolls. */
+  .md-sidebar--primary .lc-drawer-head {
+    position: sticky;
+    top: -0.5rem;                      /* offset the scrollwrap's 0.5rem top pad */
+    z-index: 2;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: -0.5rem -0.75rem 0.5rem;   /* cancel scrollwrap padding → edge to edge */
+    padding: 0 0.9rem;
+    height: 3.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .md-sidebar--primary .lc-drawer-logo {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+  }
+  .md-sidebar--primary .lc-drawer-logo img,
+  .md-sidebar--primary .lc-drawer-logo svg { height: 1.5rem; width: auto; }
+  [data-md-color-scheme="slate"] .md-sidebar--primary .lc-drawer-logo img {
+    content: url('../assets/magma-logo-white.svg');
+  }
+  .md-sidebar--primary .lc-drawer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .md-sidebar--primary .lc-drawer-gh,
+  .md-sidebar--primary .lc-drawer-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color var(--t), background var(--t);
+  }
+  .md-sidebar--primary .lc-drawer-gh:hover,
+  .md-sidebar--primary .lc-drawer-close:hover {
+    color: var(--text-strong);
+    background: var(--surface-subtle);
+  }
+  .md-sidebar--primary .lc-drawer-gh svg { width: 1.4rem; height: 1.4rem; }
+  .md-sidebar--primary .lc-drawer-close svg { width: 1.3rem; height: 1.3rem; }
+
+  /* === Search box pinned below the header (drpc-style) ===
+     Injected by javascripts/mobile-nav-search.js as `.lc-drawer-search`.
+     Mirrors drpc's "Search documentation…" field. */
   .md-sidebar--primary .lc-drawer-search {
     position: relative;
     margin: 0.25rem 0.4rem 0.5rem;
