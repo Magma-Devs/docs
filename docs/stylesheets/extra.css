@@ -774,11 +774,18 @@ html { scroll-padding-top: 96px; }
    restore sane drawer styling here instead of letting the desktop overrides
    (zeroed padding, 11px labels, hidden chevrons) leak in and break it.
    ============================================================================ */
+
+/* The drawer search box (injected by mobile-nav-search.js) is mobile-only — the
+   desktop sidebar already has the header search bar. Hide it by default; the
+   mobile media query below switches it back on. */
+.lc-drawer-search { display: none; }
+
 @media screen and (max-width: 76.1875em) {
-  /* --- Drawer panel: full-width slide-in (mimics info.lavanet.xyz) --- */
+  .lc-drawer-search { display: block; }
+  /* --- Drawer panel: full-width slide-in (drpc-style full-screen overlay) --- */
   .md-sidebar--primary {
     width: 100vw;
-    max-width: none;           /* full-width, edge to edge (mimics info.lavanet.xyz) */
+    max-width: none;
     left: 0 !important;        /* override Material's base left:-12.1rem */
     transform: translateX(-105%);   /* off-screen by its own width — never peeks */
     transition: transform 0.25s cubic-bezier(0.1, 0.7, 0.1, 1);
@@ -796,6 +803,29 @@ html { scroll-padding-top: 96px; }
     margin: 0;
   }
 
+  /* === FLATTEN THE DRILLDOWN (drpc-style) ===
+     Material's mobile drawer is a drilldown: each section's child <nav> is
+     position:absolute and slides in only when its toggle is checked, so the user
+     sees one level at a time and navigates with a back (←) button. drpc instead
+     shows the WHOLE tree expanded inline in one scroll. Undo the drilldown:
+     every nested <nav> becomes a normal in-flow, always-visible block. */
+  .md-sidebar--primary .md-nav .md-nav {
+    position: static !important;
+    transform: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    z-index: auto !important;
+    background: transparent !important;
+  }
+  /* Drop the per-section drilldown title/back-button rows ("Introduction" ←,
+     "Configure" ←, …) and the drawer-root logo title + GitHub source bar — the
+     page header (logo + GitHub + ☰) already sits above the open drawer. Top-level
+     sections render as inline bold headers below. */
+  .md-sidebar--primary .md-nav .md-nav > .md-nav__title,
+  .md-sidebar--primary .md-nav--primary > .md-nav__title,
+  .md-sidebar--primary .md-nav--primary > .md-nav__source { display: none !important; }
+
   /* Reset desktop box-model so the drawer rows lay out cleanly; no row dividers
      (drpc-style clean list) */
   .md-sidebar--primary .md-nav,
@@ -808,7 +838,54 @@ html { scroll-padding-top: 96px; }
     box-shadow: none !important;
   }
 
-  /* --- Rows: generous tap targets, leading icon, flush text --- */
+  /* === Top-level sections as drpc bold headers ===
+     The section's container row (e.g. "Run Smart Router") is a non-interactive
+     group header: small uppercase, spaced above its children. It no longer drills
+     down, so it isn't a navigation target. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link.md-nav__container {
+    display: flex !important;
+    align-items: center;
+    padding: 0 0.9rem !important;
+    margin: 1.4rem 0 0.25rem !important;
+    pointer-events: none;       /* header text isn't a navigation target */
+  }
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section:first-child > .md-nav__link.md-nav__container {
+    margin-top: 0.4rem !important;
+  }
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > a.md-nav__link {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted) !important;
+    padding: 0 0 0 0.9rem !important;   /* align label text with the leaf rows below */
+    margin: 0 !important;
+    flex: 1 1 auto;
+  }
+  /* A section header whose subtree contains the active page is itself marked
+     --active; it's a label, not a destination, so suppress the brand tint/color
+     the active-row rule would otherwise give it. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > a.md-nav__link--active {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    font-weight: 700 !important;
+  }
+  /* Section headers don't drill down anymore — drop their chevron (the empty
+     <label> toggle), their leading section icon (::before), and any nav icon. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > label.md-nav__link,
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > .md-nav__icon,
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > a.md-nav__link > .md-nav__icon {
+    display: none !important;
+  }
+  /* The rocket/server/sliders section icons render as a ::before on the section's
+     container row itself (it carries the .md-nav__link class), so hide it there. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link.md-nav__container::before,
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__container > a.md-nav__link::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* --- Leaf rows + clickable parents: generous tap targets, flush text --- */
   .md-sidebar--primary .md-nav__item .md-nav__link,
   .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > a.md-nav__link {
     display: flex !important;
@@ -817,7 +894,7 @@ html { scroll-padding-top: 96px; }
     font-size: 15px !important;
     font-weight: 400 !important;
     line-height: 1.2;
-    padding: 0.7rem 0.9rem !important;
+    padding: 0.62rem 0.9rem !important;
     margin: 1px 0 !important;
     border-radius: 8px;
     color: var(--text-strong) !important;
@@ -825,6 +902,15 @@ html { scroll-padding-top: 96px; }
   }
   .md-sidebar--primary .md-nav__item .md-nav__link:hover {
     background: var(--surface-subtle);
+  }
+  /* Beat the desktop depth-indent rules (padding-left: 22px / 38px !important):
+     every leaf directly under a top-level section sits at one flat 0.9rem edge,
+     aligned with its section header. */
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section
+    > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link,
+  .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section
+    > .md-nav > .md-nav__list > .md-nav__item > .md-nav__container > a.md-nav__link {
+    padding-left: 0.9rem !important;
   }
 
   /* Active row: subtle brand text + light tint, no accent bar (drpc-style) */
@@ -835,23 +921,14 @@ html { scroll-padding-top: 96px; }
     font-weight: 500 !important;
   }
 
-  /* --- Section header: bold sentence-case (drpc-style), not tiny uppercase --- */
-  .md-sidebar--primary .md-nav__title {
-    font-size: 17px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--text-strong) !important;
-    padding: 1.1rem 0.9rem 0.5rem !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  /* The drilldown back-button row (←) sits in the title; keep it readable */
-  .md-sidebar--primary .md-nav__title .md-nav__button { color: var(--text-strong) !important; }
-
-  /* --- Nested drilldown parents (e.g. "Failover & retry") --- */
+  /* === Nested sub-groups (e.g. "Failover & retry") stay expandable ===
+     drpc keeps deeper groups as inline collapsibles with a chevron. These are
+     nested-but-not-top-level sections: render the parent as a tappable row with
+     a trailing chevron, and let Material's toggle expand/collapse the children
+     (their <nav> is now in-flow, so it grows the list instead of sliding). */
   .md-sidebar--primary .md-nav__icon { display: inline-block !important; }
-  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link.md-nav__container {
+  .md-sidebar--primary .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link.md-nav__container,
+  .md-sidebar--primary .md-nav .md-nav__item--section.md-nav__item--nested > .md-nav__link.md-nav__container {
     padding: 0 !important;
     margin: 1px 0 !important;
     align-items: stretch !important;
@@ -866,7 +943,6 @@ html { scroll-padding-top: 96px; }
     flex: 1 1 auto;
     margin: 0 !important;
     padding-left: 0.9rem !important;
-    margin-left: -22px !important;          /* cancel the drilldown's extra nesting indent */
     border-radius: 8px 0 0 8px;
     color: var(--text-strong) !important;   /* match sibling rows, not dimmed gray */
     opacity: 1 !important;
@@ -874,46 +950,95 @@ html { scroll-padding-top: 96px; }
   .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > label.md-nav__link {
     display: flex !important;
     align-items: center;
-    padding: 0.7rem 0.9rem !important;
+    padding: 0.62rem 0.9rem !important;
     margin: 0 !important;
     border-radius: 0 8px 8px 0;
   }
-  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link.md-nav__container > .md-nav {
-    margin: 0 !important;
+  /* Restore the expand/collapse chevron on nested sub-group toggles — the desktop
+     rules hide it (persistent sidebar is always expanded), but the mobile drawer
+     needs it to signal these groups are collapsible (drpc-style). Higher
+     specificity than the desktop `… > .md-nav__icon { display:none !important }`. */
+  .md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > label.md-nav__link > .md-nav__icon,
+  .md-sidebar--primary .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > label.md-nav__link > .md-nav__icon {
+    display: inline-block !important;
+    width: 1rem;
+    height: 1rem;
+    transition: transform 0.2s var(--ease);
+    /* Material's chevron SVG is empty here, so paint a chevron via mask. */
+    background-color: var(--text-muted);
+    -webkit-mask: center / 0.85rem no-repeat url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+            mask: center / 0.85rem no-repeat url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
   }
-
-  /* --- Active leaf with an integrated page-TOC ---
-     Material puts a <label> (the ☰ toggle) and the <a> (the link) as siblings in
-     the active <li>; as block rows they stack and look like a duplicated entry.
-     Lay them on ONE row: the link takes the space, the label is the trailing ☰. */
-  .md-sidebar--primary .md-nav__item--active {
-    display: flex !important;
-    flex-wrap: wrap;
-    align-items: center;
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > label.md-nav__link > .md-nav__icon > svg {
+    display: none !important;   /* hide the empty native chevron, keep our mask */
   }
-  .md-sidebar--primary .md-nav__item--active > a.md-nav__link--active {
-    flex: 1 1 auto;
-    order: 1;
+  /* Chevron rotates when its group is open */
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__toggle:checked ~ .md-nav__container > label.md-nav__link > .md-nav__icon {
+    transform: rotate(90deg);
   }
-  .md-sidebar--primary .md-nav__item--active > label.md-nav__link {
-    order: 2;
-    flex: 0 0 auto;
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0.7rem 0.9rem !important;
-    margin: 1px 0 !important;
-  }
-  /* The label duplicates the link text ("Config file") alongside its ☰ toggle;
-     hide the redundant text, keep only the toggle icon. */
-  .md-sidebar--primary .md-nav__item--active > label.md-nav__link > .md-ellipsis {
+  /* Collapsed nested group: hide its children until the toggle is checked
+     (drpc behaviour — chevron flips, list expands). Top-level sections are
+     always open; only these deeper groups collapse. */
+  .md-sidebar--primary .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__toggle:not(:checked) ~ .md-nav,
+  .md-sidebar--primary .md-nav .md-nav__item--section.md-nav__item--nested:not(.md-nav__item--section) > .md-nav__toggle:not(:checked) ~ .md-nav {
     display: none !important;
   }
+  /* Indent children of a nested sub-group so the hierarchy reads */
+  .md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav > .md-nav__list > .md-nav__item > .md-nav__link {
+    padding-left: 1.6rem !important;
+  }
+
+  /* --- Active leaf: pure nav row, no embedded page-TOC (drpc-style) ---
+     drpc's mobile drawer is site navigation only — it does NOT inline the current
+     page's "on this page" heading list. Material embeds that TOC under the active
+     leaf (via a <label> ☰ toggle + a nested .md-nav--secondary). Drop both so the
+     active item reads like every other row. Page headings stay reachable by
+     scrolling the content. */
+  .md-sidebar--primary .md-nav__item--active > label.md-nav__link,
   .md-sidebar--primary .md-nav__item--active > .md-nav--secondary {
-    order: 3;
-    flex: 1 0 100%;            /* the embedded TOC drops to its own full-width row */
+    display: none !important;
   }
   .md-sidebar--primary .md-nav__link--active .md-nav__icon {
     color: var(--text-muted) !important;
+  }
+
+  /* === Search box pinned at the top of the drawer (drpc-style) ===
+     Injected by javascripts/mobile-nav-search.js as `.lc-drawer-search` at the
+     top of the nav list. Mirrors drpc's "Search documentation…" field. */
+  .md-sidebar--primary .lc-drawer-search {
+    position: relative;
+    margin: 0.25rem 0.4rem 0.5rem;
+  }
+  .md-sidebar--primary .lc-drawer-search input {
+    width: 100%;
+    height: 2.6rem;
+    padding: 0 0.9rem 0 2.5rem;
+    font-size: 15px;
+    color: var(--text-strong);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color var(--t), background var(--t);
+  }
+  .md-sidebar--primary .lc-drawer-search input::placeholder { color: var(--text-muted); }
+  .md-sidebar--primary .lc-drawer-search input:focus {
+    border-color: rgba(255, 57, 0, 0.45);
+    background: var(--surface);
+  }
+  /* magnifier glyph */
+  .md-sidebar--primary .lc-drawer-search::before {
+    content: '';
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.05rem;
+    height: 1.05rem;
+    background-color: var(--text-muted);
+    -webkit-mask: center / contain no-repeat url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+            mask: center / contain no-repeat url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    pointer-events: none;
   }
 }
 
