@@ -58,6 +58,7 @@ extra_javascript:
   - javascripts/toc-title.js
   - javascripts/search-hint.js
   - javascripts/nav-top.js
+  - javascripts/mobile-nav-search.js
   - javascripts/chains-data.js
   - javascripts/chains-explorer.js
 
