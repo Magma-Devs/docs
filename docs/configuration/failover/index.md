@@ -6,7 +6,7 @@ The umbrella for everything Smart Router does when a relay misbehaves: an RPC no
 
 | Policy | Trigger | What it does |
 |---|---|---|
-| [**Retry**](retry.md) | upstream returns a retryable error | rotates to a different node; up to 10 attempts |
+| [**Retry**](retry.md) | upstream returns a retryable error | rotates to a different node; tolerates `--set-relay-retry-limit` errors (default 2) |
 | [**Hedge**](hedge.md) | request hasn't returned within a tick | fires a parallel attempt to another node; first response wins |
 | [**Timeout**](timeout.md) | per-attempt or overall budget exceeded | aborts; lets retry rotate |
 | [**Integrity**](integrity.md) | out-of-sync node | pre-request lag check skips lagging nodes before they're picked |
@@ -28,9 +28,9 @@ Smart Router's failover policies fall into three groups:
 
 | Group | Examples | Where tuned |
 |---|---|---|
-| CLI flags | `--default-processing-timeout`, `--min-relay-timeout` | startup args |
-| Per-request headers | `lava-relay-timeout`, `Lava-Provider-Address` | HTTP headers — see [Request headers](../../api/directives.md) |
-| Chain-derived defaults | retry count, integrity lag threshold, hedge tick | computed from the chain spec; not currently exposed as YAML |
+| CLI flags | `--set-relay-retry-limit`, `--default-processing-timeout`, `--min-relay-timeout` | startup args |
+| Per-request headers | `lava-relay-timeout`, `lava-select-provider` | HTTP headers — see [Request headers](../../api/directives.md) |
+| Chain-derived defaults | integrity lag threshold, hedge tick | computed from the chain spec; not currently exposed as YAML |
 
 Where a knob isn't tunable, that's called out on the policy's page.
 

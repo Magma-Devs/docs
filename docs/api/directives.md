@@ -6,9 +6,8 @@ Override Smart Router's default behaviour for a single request by setting HTTP h
 
 | Header | Effect |
 |---|---|
-| `Lava-Provider-Address` | [Pin](#pin-to-a-specific-node) the request to one named upstream. |
-| `lava-select-provider` | [Route](#steer-node-selection) to one named node. |
-| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
+| `lava-select-provider` | [Pin](#pin-to-a-specific-node) the request to one named upstream. |
+| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated, **max 2**). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
 | `lava-relay-timeout` | [Override the per-attempt timeout](#override-the-per-attempt-timeout) (Go duration). |
@@ -20,17 +19,23 @@ Each is detailed below. The router's [response headers](#response-headers) carry
 ## Pin to a specific node
 
 ```
-Lava-Provider-Address: <upstream-name>
+lava-select-provider: <upstream-name>
 ```
 
-Bypasses the QoS optimizer for this request. The named upstream serves it directly. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+Routes this request to one named upstream, bypassing the QoS optimizer. The named upstream serves it directly. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+
+!!! warning "`Lava-Provider-Address` is a response header, not a request directive"
+    To pin a request, send **`lava-select-provider`**. `Lava-Provider-Address` is only
+    emitted by the router on the *response* to name the node that served the request
+    (see [Response headers](#response-headers)) — sending it as a *request* header has no
+    effect and is silently ignored.
 
 **When to use:** debugging an upstream, sticky requests within a session, A/B comparing responses.
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
   -H 'Content-Type: application/json' \
-  -H 'Lava-Provider-Address: my-eth-upstream-1' \
+  -H 'lava-select-provider: my-eth-upstream-1' \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
@@ -41,6 +46,8 @@ lava-force-cache-refresh: true
 ```
 
 Bypasses the cache for this request. The relay goes upstream, the response is returned, and the cache entry is refreshed.
+
+The refresh triggers on the header's **presence**, not its value — `lava-force-cache-refresh: false` (or any value) still forces it. Send the header only when you mean it.
 
 **When to use:** known-stale entry, suspected reorg, post-deploy verification.
 
@@ -57,7 +64,7 @@ curl -X POST http://127.0.0.1:3360 \
 lava-relay-timeout: 12s
 ```
 
-Sets the timeout for each upstream attempt of this request. Format: any Go duration string (`500ms`, `5s`, `1m30s`). Subject to the floor set by `--min-relay-timeout` (default 1s).
+Sets the timeout for each upstream attempt of this request. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The value is used **verbatim** — unlike the server-side default it is *not* clamped to the `--min-relay-timeout` floor, so a client can ask for less.
 
 **When to use:** known-slow methods (`debug_traceTransaction` on a deep block), or known-fast methods you don't want to wait for.
 
@@ -82,8 +89,12 @@ lava-providers-block: my-eth-upstream-3,my-eth-upstream-4
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | Route this request to one named node (like `Lava-Provider-Address`). |
+| `lava-select-provider` | Route this request to one named node (the [pin](#pin-to-a-specific-node) header). |
 | `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. |
+
+!!! warning "`lava-providers-block` accepts at most 2 nodes"
+    A list of **3 or more** addresses is silently ignored — *no* nodes are excluded and
+    no error is returned. Keep the exclude list to two entries.
 
 **When to use:** pin away from a node you've seen misbehave, or force a comparison against a specific one. Failover still applies across whatever nodes remain eligible.
 
@@ -115,7 +126,7 @@ Headers stack:
 ```bash
 curl -X POST http://127.0.0.1:3360 \
   -H 'Content-Type: application/json' \
-  -H 'Lava-Provider-Address: my-eth-upstream-2' \
+  -H 'lava-select-provider: my-eth-upstream-2' \
   -H 'lava-relay-timeout: 30s' \
   -H 'lava-debug-relay: true' \
   -d '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x..."],"id":1}'
@@ -137,8 +148,8 @@ Smart Router annotates every response with metadata about how the relay was serv
 | `Smart-Router-Version` | Router build serving the request. |
 | `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
 
-When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
+When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
 
 ## Operator restrictions
 
-Whether each directive is honoured can be restricted server-side. Public-facing deployments often disable `Lava-Provider-Address` to prevent clients from pinning traffic to one upstream. See [Configuration](../configuration/index.md).
+Smart Router honours the request directives above as a fixed set — there is no per-header server-side toggle to disable an individual directive such as node pinning. The one operator-configurable restriction is **cross-validation policy**: an operator can mandate, cap, or forbid cross-validation per `(chain, interface, method)` in the config file. See [Cross-validation](../configuration/failover/consensus.md) and [the config file](../configuration/config-file.md#cross-validation).

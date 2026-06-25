@@ -34,7 +34,7 @@ deployment.
 In **logs** (structured fields on every classified failure):
 
 ```json
-{"level":"warn","error_name":"NODE_RATE_LIMITED","error_category":"External",
+{"level":"warn","error_name":"NODE_RATE_LIMITED","error_category":"external",
  "retryable":true,"chain_id":"ETH1","chain_error_code":429,
  "chain_error_message":"429 Too Many Requests","provider":"eth-publicnode"}
 ```
@@ -113,19 +113,26 @@ or chains.
 | 1012 | `PROTOCOL_PROVIDER_UNAVAILABLE` | Node service unavailable (gRPC UNAVAILABLE) | Yes |
 | 1013 | `PROTOCOL_PROVIDER_ABORTED` | Node aborted (gRPC ABORTED) | Yes |
 | 1014 | `PROTOCOL_PROVIDER_DATA_LOSS` | Node data loss (gRPC DATA_LOSS) | Yes |
+| 1015 | `PROTOCOL_INSUFFICIENT_PROVIDERS` | Insufficient providers available for addon or cross-validation | No |
 | 1020 | `PROTOCOL_RATE_LIMITED` | Lava-side rate limit exceeded | No |
 | 1021 | `PROTOCOL_MAX_CU_EXCEEDED` | Maximum compute units exceeded for session | No |
 | 1022 | `PROTOCOL_BATCH_SIZE_EXCEEDED` | Batch request size exceeded limit | No |
+| 1023 | `PROTOCOL_CU_MISMATCH` | CU accounting inconsistency or security violation | No |
 | 1030 | `PROTOCOL_SESSION_NOT_FOUND` | Session does not exist | No |
 | 1031 | `PROTOCOL_EPOCH_MISMATCH` | Epoch mismatch or too old | No |
 | 1032 | `PROTOCOL_CONSUMER_BLOCKED` | Consumer is blocklisted | No |
 | 1033 | `PROTOCOL_CONSUMER_NOT_REGISTERED` | Consumer not registered | No |
 | 1034 | `PROTOCOL_RELAY_NUMBER_MISMATCH` | Relay number mismatch | No |
 | 1035 | `PROTOCOL_SESSION_OUT_OF_SYNC` | Session out of sync | No |
+| 1036 | `PROTOCOL_INVALID_RELAY_REQUEST` | Relay request validation failed (wrong provider/specID/chainID/seen block/content hash) | No |
+| 1037 | `PROTOCOL_REQUEST_BLOCK_MISMATCH` | Block height mismatch between consumer request and provider state | Yes |
+| 1038 | `PROTOCOL_SESSION_ACCOUNTING_FAILED` | Session accounting (OnSessionDone/OnSessionFailure) failed | No |
+| 1039 | `PROTOCOL_SUBSCRIPTION_CLEANUP_FAILED` | Subscription consumer removal (RemoveConsumer) failed | No |
 | 1040 | `PROTOCOL_FINALIZATION_ERROR` | Node finalization data incorrect | Yes |
 | 1041 | `PROTOCOL_CONSISTENCY_ERROR` | Response consistency validation failed | Yes |
 | 1042 | `PROTOCOL_HASH_CONSENSUS_ERROR` | Conflicting response hashes detected | Yes |
 | 1043 | `PROTOCOL_NO_RESPONSE_TIMEOUT` | Relay race timeout — no node returned within the deadline | Yes |
+| 1044 | `PROTOCOL_RELAY_PROCESSING_FAILED` | Relay response processing failed on consumer side | Yes |
 | 1050 | `PROTOCOL_SUBSCRIPTION_NOT_FOUND` | Subscription not found | No |
 | 1051 | `PROTOCOL_SUBSCRIPTION_INIT_FAILED` | Failed to initialize subscription | No |
 | 1052 | `PROTOCOL_WEBSOCKET_IDLE_TIMEOUT` | WebSocket idle timeout | No |
@@ -155,6 +162,7 @@ errors). "Standard code" is the protocol-level code the matcher keys off.
 | 2013 | `NODE_RESOURCE_UNAVAILABLE` | Resource exists but unavailable | Yes | JSON-RPC -32002 |
 | 2014 | `NODE_GATEWAY_TIMEOUT` | Gateway timeout from node | Yes | HTTP 504 |
 | 2015 | `NODE_BAD_GATEWAY` | Bad gateway from node | Yes | HTTP 502 |
+| 2016 | `NODE_UNAUTHORIZED` | Upstream rejected router credentials (HTTP 401) | No | HTTP 401 |
 | 2101 | `NODE_BITCOIN_WARMUP` | Node still warming up (Bitcoin -28) | Yes | — |
 | 2102 | `NODE_BITCOIN_INITIAL_DOWNLOAD` | Node in initial block download (Bitcoin -10) | Yes | — |
 | 2103 | `NODE_BITCOIN_NOT_CONNECTED` | Node has no peers (Bitcoin -9) | Yes | — |
@@ -217,9 +225,12 @@ retryability differs from the generic pattern.
 Chain-specific Tier-2 ranges also exist for **Solana** (3300–3319), **Starknet**
 (3320–3339), **Bitcoin/UTXO** (3340–3359), and **NEAR** (3360–3379) — see the
 [registry source](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)
-for the full list. Most are non-retryable; the retryable exceptions are NEAR
-block/chunk garbage-collection (`CHAIN_NEAR_UNKNOWN_BLOCK`, `CHAIN_NEAR_UNKNOWN_CHUNK`,
-`CHAIN_NEAR_NOT_SYNCED_YET`) and Solana ledger jumps (`CHAIN_SOLANA_LEDGER_JUMP`).
+for the full list. Most are non-retryable; the retryable exceptions are the Solana
+`CHAIN_SOLANA_LEDGER_JUMP`, `CHAIN_SOLANA_BLOCK_STATUS_UNAVAILABLE`, and
+`CHAIN_SOLANA_MIN_CONTEXT_SLOT_NOT_REACHED`; the Starknet `CHAIN_STARKNET_BLOCK_NOT_FOUND`,
+`CHAIN_STARKNET_TX_HASH_NOT_FOUND`, and `CHAIN_STARKNET_UNEXPECTED_ERROR`; and the NEAR
+block/chunk garbage-collection codes (`CHAIN_NEAR_UNKNOWN_BLOCK`, `CHAIN_NEAR_UNKNOWN_CHUNK`,
+`CHAIN_NEAR_NOT_SYNCED_YET`).
 
 ---
 

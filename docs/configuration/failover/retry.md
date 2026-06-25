@@ -21,15 +21,23 @@ Same-response retries are deduplicated: if two nodes return the identical respon
 
 | Limit | Value | Notes |
 |---|---|---|
-| Max attempts per relay | 10 | hardcoded constant `MaximumNumberOfTickerRelayRetries` |
-| Overall budget | `--default-processing-timeout` | ends retries even if attempts remain |
-| Per-attempt budget | `--min-relay-timeout` floor, or `lava-relay-timeout` header | retries get the same per-attempt timeout |
+| Error-retry limit | `--set-relay-retry-limit` (default `2`) | Errors tolerated before the relay gives up. `0` disables retries entirely. This is the knob you tune. |
+| Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries` — an upper bound on *total* attempts including ticker-driven [hedges](hedge.md), separate from the error-retry limit and not exposed as a flag. |
+| Overall budget | `--default-processing-timeout` (default `30s`) | Ends retries even if attempts remain. |
+| Per-attempt budget | `--min-relay-timeout` floor, or `lava-relay-timeout` header | Retries get the same per-attempt timeout. |
 
-The 10-attempt cap is not currently exposed as a YAML knob.
+The cap you actually control is `--set-relay-retry-limit`: the error-retry path stops
+after that many errors (default 2). The hardcoded `10` is only the ceiling the
+ticker/hedge path can reach — most relays stop far sooner.
 
-## When retries kick in
+## Turning retries down or off
 
-Retries are **always on** for retryable errors. There's no opt-out for individual relays. If you want a single attempt with no retry on failure, the closest control is to lower the overall `--default-processing-timeout` and accept that the first failure surfaces immediately — but you'll lose other failover behaviour at the same time.
+Retries are on by default, tolerating `--set-relay-retry-limit` errors (default 2). Change that with the flag:
+
+- `--set-relay-retry-limit 0` — **disable retries**: the first error surfaces immediately.
+- `--set-relay-retry-limit 5` — tolerate more errors before giving up.
+
+This is a global startup flag, not a per-relay control — there's no per-request header to disable retry for a single call.
 
 ## When retries don't help
 
@@ -43,7 +51,7 @@ The classifier handles these cases without burning the budget.
 
 ## Pinning to one node
 
-The `Lava-Provider-Address` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** — pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
+The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** — pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
 
 ## Observability
 

@@ -63,6 +63,8 @@ Each entry opens one listening socket for one chain + interface.
 | `network-address` | yes | `host:port` to listen on, e.g. `0.0.0.0:3360`. |
 | `chain-id` | yes | Spec chain id (`ETH1`, `ARBITRUM`, `LAVA`, …). Must resolve from `--use-static-spec`. |
 | `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, or `tendermintrpc` — must be supported by the chain spec. |
+| `tls-enabled` | no | Serve this listener over TLS using a self-signed certificate. Default `false`. |
+| `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/lava/health`. |
 
 ```yaml
 endpoints:

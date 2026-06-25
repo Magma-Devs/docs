@@ -29,7 +29,7 @@ Both increment the same retry counter. Both cap at 10 attempts per relay.
 | All nodes slow | no — fastest is still slow |
 | One unresponsive node | yes — but [retry](retry.md) does this too once it errors |
 | Tail latency on indexer-style heavy reads | yes — significant p99 improvement |
-| Write traffic (`sendRawTransaction`) | use [fast TX fanout](../../api/url.md) instead — fans out unconditionally |
+| Write traffic (`sendRawTransaction`) | covered by **stateful fan-out** instead — write paths are sent to all eligible nodes unconditionally, independent of hedging |
 
 ## When to be cautious
 

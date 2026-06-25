@@ -32,7 +32,7 @@ router. See [Authentication → Authenticating your clients](authentication.md#a
 
 ## Chain specs
 
-Chain specs live in [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs). Smart Router ships with two ready-to-use chain specs and three reusable building blocks for the Cosmos ecosystem — see [Supported chains](../reference/chains/index.md).
+Chain specs live in [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs). Smart Router ships with a handful of ready-to-use chain specs (Ethereum, Arbitrum, Base, Lava, Solana) plus three reusable building blocks for the Cosmos ecosystem, and resolves the rest from the catalog at startup — see [Supported chains](../reference/chains/index.md).
 
 Pass the spec directory at startup with `--use-static-spec specs/`.
 

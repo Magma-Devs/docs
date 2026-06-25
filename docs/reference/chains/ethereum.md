@@ -15,8 +15,8 @@ Ethereum mainnet over JSON-RPC.
 | Family | Examples |
 |---|---|
 | Standard | `eth_blockNumber`, `eth_call`, `eth_getBalance`, `eth_getBlockByNumber`, `eth_getLogs`, `eth_estimateGas`, `eth_gasPrice`, `eth_feeHistory`, `eth_sendRawTransaction` |
-| Tracing (archive) | `debug_traceTransaction`, `debug_traceCall`, `debug_traceBlockByNumber`, `debug_storageRangeAt`, `debug_getRawBlock`, `debug_getRawReceipts` |
-| Mempool | `txpool_*` (node-dependent) |
+| Tracing (`debug` add-on) | `debug_traceTransaction`, `debug_traceCall`, `debug_traceBlockByNumber`, `debug_storageRangeAt`, `debug_getRawBlock`, `debug_getRawReceipts` |
+| Tracing (`trace` add-on) | `trace_call`, `trace_block`, `trace_transaction`, `trace_get` |
 | Account abstraction (ERC-4337) | `eth_estimateUserOperationGas`, `eth_sendUserOperation`, etc. (node-dependent) |
 | Network / client | `web3_*`, `net_*` |
 
@@ -28,7 +28,9 @@ Some methods only work on upstreams with specific capabilities. Mark these as ad
 
 | Add-on | Required for |
 |---|---|
-| `archive` | `debug_*`, deep `eth_getLogs`, historical state |
+| `debug` | `debug_*` tracing methods |
+| `trace` | `trace_*` methods (`trace_call`, `trace_block`, …) |
+| `archive` | deep `eth_getLogs` and historical state (also extends the `debug` / `trace` collections for old blocks) |
 | `bundler` | ERC-4337 user-operation methods |
 
 ## Connect a client

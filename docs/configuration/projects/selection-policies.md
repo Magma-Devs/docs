@@ -22,10 +22,10 @@ Source: [`protocol/provideroptimizer/provider_optimizer.go`](https://github.com/
 | `balanced` *(default)* | latency + sync + availability | most workloads |
 | `latency` | lowest response time | latency-sensitive reads (UI, fast quote) |
 | `sync-freshness` | node closest to chain head | indexers, mempool watchers |
-| `accuracy` | response correctness (favors nodes passing cross-validation) | financial / critical reads |
+| `accuracy` | higher accuracy at higher cost — diversifies node selection (like `distributed`; no direct link to cross-validation) | financial / critical reads |
 | `distributed` | spread across nodes | avoiding hot spots, fairness |
 | `cost` | cheapest per compute unit | high-volume non-critical traffic |
-| `privacy` | node diversity per stream | minimising correlation across calls |
+| `privacy` | pins to a single provider per stream *(not fully implemented)* | minimising correlation across calls |
 
 ## Configuring it
 
@@ -35,15 +35,16 @@ Pick a strategy at startup with the `--strategy` flag:
 smartrouter config.yml --use-static-spec specs/ --strategy latency
 ```
 
-To tune the underlying score weights directly (the strategy presets adjust these), use
-the `--qos-*` flags — `--qos-latency-weight`, `--qos-sync-weight`,
-`--qos-availability-weight`, `--qos-stake-weight`, and `--qos-min-selection-chance` (the
-floor that keeps every healthy node in rotation). See the
-[CLI reference](../../reference/cli.md#rpc-node-selection-qos).
+To tune the underlying score weights directly, use the `--qos-*` flags —
+`--qos-latency-weight`, `--qos-sync-weight`, `--qos-availability-weight`,
+`--qos-stake-weight`, and `--qos-min-selection-chance` (the floor that keeps every
+healthy node in rotation). These weights are set independently of `--strategy`: a
+strategy reshapes each node's per-score curve, it does **not** adjust the weights. See
+the [CLI reference](../../reference/cli.md#rpc-node-selection-qos).
 
 ## Per-request override
 
-Pin a single request to a specific node with the `Lava-Provider-Address` header. The optimizer is bypassed for that request; failover policies still apply. See [Directives](../../api/directives.md).
+Pin a single request to a specific node with the `lava-select-provider` header. The optimizer is bypassed for that request; failover policies still apply. See [Directives](../../api/directives.md).
 
 ## Related
 
