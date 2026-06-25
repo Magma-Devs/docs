@@ -2,38 +2,33 @@
 
 Smart Router is driven by:
 
-1. A single YAML file that defines listeners (endpoints) and upstream provider URLs.
+1. A single YAML file that defines listeners (endpoints) and upstream node URLs.
 2. A directory of JSON **chain specs** describing methods, categories, and parser rules.
 
 ```bash
 smartrouter path/to/config.yml --use-static-spec specs/
 ```
 
-Working examples ship under [`config/smartrouter_examples/`](https://github.com/Magma-Devs/smart-router/tree/main/config/smartrouter_examples). The fastest path to a real config is to copy one and edit it.
+Working examples ship under [`config/smartrouter_examples/`](https://github.com/Magma-Devs/smart-router/tree/main/config/smartrouter_examples). The fastest path to a real config is to copy one and edit it — or let the [config wizard](../deployment/wizard.md) build (and health-check) one for you interactively.
 
-## YAML shape
+## Where things are configured
 
-A config file is two top-level lists:
+Two surfaces: the **YAML file** defines *what* the router serves (listeners + upstreams);
+**CLI flags** tune *how* it behaves at runtime.
 
-| Section | What it controls |
-|---|---|
-| `endpoints` | The listeners Smart Router opens — one entry per chain × API interface (e.g. Ethereum JSON-RPC on `:3360`). |
-| `direct-rpc` | The upstream provider URLs for each chain × interface, with per-upstream timeout, TLS, and capability flags. |
+| Concern | Where | See |
+|---|---|---|
+| Listeners & upstream nodes | YAML (`endpoints`, `direct-rpc`) | [The config file](config-file.md) |
+| Upstream auth & secrets | YAML (`auth-config`, `${VAR}`) | [Authentication](authentication.md) |
+| RPC node selection strategy | `--strategy` + `--qos-*` flags | [RPC Node selection](projects/selection-policies.md) |
+| Failover (retry / hedge / timeout / consensus) | CLI flags + chain-spec values | [Failover & retry](failover/index.md) |
+| Cache | `cache-be:` in YAML (or `--cache-be`) | [Add the cache](../deployment/docker-compose.md#add-the-cache) |
+| Metrics & tracing | `--metrics-listen-address`, OTel env | [Metrics](../reference/metrics.md) |
+| Every flag | — | [CLI reference](../reference/cli.md) |
 
-See the [Lava example](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_lava.yml) for the canonical shape. The Lava setup script generates this file from defaults.
-
-## What you can configure today
-
-| Concern | How |
-|---|---|
-| **Routing strategy** | per-endpoint in YAML — see [Selection policies](projects/selection-policies.md) |
-| **Failover behaviour** | a mix of CLI flags and chain-spec values — see [Failover & retry](failover/index.md) |
-| **Per-attempt timeout** | `--min-relay-timeout` flag, `lava-relay-timeout` header — see [Timeout](failover/timeout.md) |
-| **Cache** | run the standalone cache server alongside, point the router at it with `--cache-be host:port` |
-| **Metrics** | `--metrics-listen-address` (default `:7779`); scrape with Prometheus |
-| **Tracing** | standard OTel env vars (`OTEL_EXPORTER_OTLP_ENDPOINT`, etc.) |
-
-Server-side concerns like inbound auth, CORS, and rate limiting are not configurable in v1 of Smart Router — put a reverse proxy (NGINX, your cloud LB) in front to handle them. Future releases will surface these as YAML knobs.
+Client-side concerns — inbound auth, CORS policy beyond the `--cors-*` flags, and
+per-client rate limiting — are deliberately left to a reverse proxy in front of the
+router. See [Authentication → Authenticating your clients](authentication.md#authenticating-your-clients).
 
 ## Chain specs
 
@@ -43,4 +38,6 @@ Pass the spec directory at startup with `--use-static-spec specs/`.
 
 ## Secrets
 
-Sample configs are templates. Use environment variables for upstream API keys and any other sensitive values. Never commit a config with real secrets.
+Sample configs are templates — never commit one with real keys. Keep upstream API keys
+out of YAML with `${VAR}` placeholders rendered from a gitignored `.env`. See
+[Authentication](authentication.md).

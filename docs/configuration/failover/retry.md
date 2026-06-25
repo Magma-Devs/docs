@@ -1,18 +1,21 @@
 # Retry
 
-When an upstream returns a **retryable** error, Smart Router rotates to a different provider and tries again. The pool is filtered to providers that haven't already failed for this relay; the [selection policy](../projects/selection-policies.md) picks the next candidate.
+When an upstream returns a **retryable** error, Smart Router rotates to a different node and tries again. The pool is filtered to nodes that haven't already failed for this relay; the [RPC Node selection](../projects/selection-policies.md) policy picks the next candidate.
 
 ## What's retryable
 
-The error classifier ([`protocol/common/error_classifier.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_classifier.go)) decides per-error:
+The error classifier ([`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)) assigns every failure a coded classification with a **retryable** flag. The flag is the primary signal: a non-retryable classification short-circuits retries for *every* terminal error — connection failures, malformed requests, and chain-level rejections alike.
 
-| Class | Examples | Behaviour |
+| Layer | Examples | Behaviour |
 |---|---|---|
-| **Retryable** | network timeout, 5xx upstream response, RPC `Server error` codes, transient JSON-RPC errors | rotate provider, retry |
-| **Terminal** | client errors (4xx), bad request shape, signed-tx already-known | return to caller immediately |
-| **Unsupported method** | upstream doesn't expose this method (`-32601`, "method not found") | non-retryable; surface to caller |
+| **`PROTOCOL_*`** (connection / session) | network timeout, connection reset, node unavailable | mostly retryable — rotate node |
+| **`NODE_*`** (node response) | 5xx upstream, rate limited, node syncing → retryable; method not found / unimplemented → terminal | per-code; unsupported methods are zero-CU and cached |
+| **`CHAIN_*`** (execution / state) | `eth_call` reverted, out of gas, nonce too low → terminal; block/tx not found, state pruned → retryable | per-code |
+| **`USER_*`** (bad request) | malformed JSON, invalid params, invalid address | always terminal; charges normal CU |
 
-Same-response retries are deduplicated: if two providers return the identical response, Smart Router won't burn a third attempt looking for a different answer. The dedup is a hash cache in [`protocol/lavaprotocol/relay_retries_manager.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/lavaprotocol/relay_retries_manager.go).
+The full code tables and per-code retryability are in [Error codes](../../reference/error-codes.md).
+
+Same-response retries are deduplicated: if two nodes return the identical response, Smart Router won't burn a third attempt looking for a different answer. The dedup is a hash cache in [`protocol/lavaprotocol/relay_retries_manager.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/lavaprotocol/relay_retries_manager.go).
 
 ## Limits
 
@@ -30,15 +33,15 @@ Retries are **always on** for retryable errors. There's no opt-out for individua
 
 ## When retries don't help
 
-Some classes of failure look retryable on the wire but won't recover by switching providers — for example:
+Some classes of failure look retryable on the wire but won't recover by switching nodes — for example:
 
 - A bad request (malformed JSON, unknown method) — always terminal.
-- A consensus-level error returned by every healthy provider (the chain itself rejected it).
-- A method your providers genuinely don't support.
+- A consensus-level error returned by every healthy node (the chain itself rejected it).
+- A method your nodes genuinely don't support.
 
 The classifier handles these cases without burning the budget.
 
-## Pinning to one provider
+## Pinning to one node
 
 The `Lava-Provider-Address` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** — pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
 
@@ -46,7 +49,9 @@ The `Lava-Provider-Address` header pins the request to a specific upstream. If t
 
 | Metric | Meaning |
 |---|---|
-| `smartrouter_relay_retries_total` | total retries attempted |
-| `smartrouter_relay_retries_per_request` | distribution of retry counts per relay |
-| `incident_retry_*` | per-incident retry telemetry (Kafka analytics) |
+| `smartrouter_retries_total` | retry attempts triggered (beyond the first try) |
+| `smartrouter_retries_success_total` / `smartrouter_retries_failed_total` | retried requests that succeeded / failed |
+| `smartrouter_retry_attempts` | histogram of attempts per retried request (buckets 1…10) |
 | Tracing | each retry attempt is a span; correlate via the trace ID in response headers |
+
+See the [Metrics reference](../../reference/metrics.md#retries) for labels and types.

@@ -38,14 +38,19 @@ See [Directives](../../api/directives.md).
 ## Common pitfalls
 
 - **Setting per-attempt > overall.** Doesn't crash, but means the first attempt's timeout is effectively the overall budget and retry never gets to run.
-- **Setting per-attempt below upstream RTT.** Every attempt times out before a healthy provider can respond. Watch the metrics; if your timeout-rate is near 100% even on healthy upstreams, raise the floor.
+- **Setting per-attempt below upstream RTT.** Every attempt times out before a healthy node can respond. Watch the metrics; if your timeout-rate is near 100% even on healthy upstreams, raise the floor.
 - **Header override below the floor.** The floor wins. If a client sends `lava-relay-timeout: 100ms` and your floor is `1s`, the attempt gets `1s`.
 
 ## Observability
 
+There's no dedicated timeout counter — timeouts surface through the latency, retry, and error series:
+
 | Metric | Meaning |
 |---|---|
-| `smartrouter_relay_timeout_total` | total timeouts (per-attempt and overall combined) |
-| `smartrouter_relay_attempt_duration_seconds` | per-attempt duration histogram |
-| `smartrouter_relay_total_duration_seconds` | end-to-end relay duration histogram |
+| `smartrouter_end_to_end_latency_milliseconds` | router-level end-to-end relay latency (histogram; ms buckets to 30 000) |
+| `rpc_endpoint_end_to_end_latency_milliseconds` | per-endpoint latency — spot the slow upstream |
+| `smartrouter_retries_total` | retries triggered when an attempt aborts (a per-attempt timeout drives failover) |
+| `smartrouter_total_errored` | relays that ultimately failed, including overall-budget exhaustion |
 | Tracing | each attempt span has a duration and an outcome status |
+
+See the [Metrics reference](../../reference/metrics.md#core-relay-health) for labels and types.

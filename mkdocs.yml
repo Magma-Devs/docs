@@ -82,32 +82,40 @@ markdown_extensions:
 
 # Nav lists only pages that exist. Add entries as content is written.
 nav:
-  - Get started:
-      - Quick start: index.md
+  - Introduction:
       - Why Smart Router?: why.md
-  - Using the API:
-      - Overview: api/index.md
-      - Endpoint URL: api/url.md
-      - Directives: api/directives.md
-  - Configuration:
-      - Overview: configuration/index.md
-      - Projects:
-          - Selection policies: configuration/projects/selection-policies.md
+      - Quick start: index.md
+  - Run Smart Router:
+      - deployment/index.md
+      - Local binary: deployment/local-binary.md
+      - Docker Compose: deployment/docker-compose.md
+      - Config wizard: deployment/wizard.md
+      - Cache: deployment/cache.md
+      - Dashboard: deployment/dashboard.md
+  - Configure:
+      - configuration/index.md
+      - Connect your app: api/url.md
+      - Config file: configuration/config-file.md
+      - Authentication: configuration/authentication.md
+      - Request headers: api/directives.md
+      - RPC Node selection: configuration/projects/selection-policies.md
+      - Cross-validation: configuration/failover/consensus.md
       - Failover & retry:
-          - Overview: configuration/failover/index.md
+          - configuration/failover/index.md
           - Retry: configuration/failover/retry.md
           - Hedge: configuration/failover/hedge.md
           - Timeout: configuration/failover/timeout.md
-          - Consensus: configuration/failover/consensus.md
           - Integrity: configuration/failover/integrity.md
           - Circuit breaker: configuration/failover/circuit-breaker.md
-  - Deployment (on-premise):
-      - Overview: deployment/index.md
-      - Docker: deployment/docker.md
-      - Kubernetes: deployment/kubernetes.md
-      - Bare metal: deployment/bare-metal.md
-  - Reference:
-      - Supported chains:
-          - Overview: reference/chains/index.md
-          - Ethereum: reference/chains/ethereum.md
-          - Lava: reference/chains/lava.md
+      - CLI flags: reference/cli.md
+  - Supported chains:
+      - reference/chains/index.md
+      - Chain specs: reference/chains/specs.md
+      - Ethereum: reference/chains/ethereum.md
+      - Lava: reference/chains/lava.md
+  - Observability:
+      - reference/observability/index.md
+      - Metrics: reference/metrics.md
+      - Traces: reference/traces.md
+      - Profiling: reference/profiling.md
+      - Error codes: reference/error-codes.md

@@ -93,6 +93,12 @@
   color: var(--text-body);     /* body copy is one tier lighter than headings */
 }
 
+/* Anchor-jump offset for the 80px fixed header. Material's TOC scrolls the
+   container directly (bypassing heading scroll-margin), so set scroll-padding on
+   the scroll root too — otherwise a clicked heading lands under the header and
+   gets clipped. */
+html { scroll-padding-top: 96px; }
+
 .md-typeset h1,
 .md-typeset h2,
 .md-typeset h3,
@@ -628,25 +634,25 @@
   -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z'/%3E%3Cpath d='m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z'/%3E%3Cpath d='M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0'/%3E%3Cpath d='M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5'/%3E%3C/svg%3E");
           mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z'/%3E%3Cpath d='m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z'/%3E%3Cpath d='M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0'/%3E%3Cpath d='M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5'/%3E%3C/svg%3E");
 }
-/* Using the API — code */
+/* Run Smart Router — server */
 .md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:nth-of-type(2) > .md-nav__link::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='16 18 22 12 16 6'/%3E%3Cpolyline points='8 6 2 12 8 18'/%3E%3C/svg%3E");
-          mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='16 18 22 12 16 6'/%3E%3Cpolyline points='8 6 2 12 8 18'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='8' x='2' y='2' rx='2'/%3E%3Crect width='20' height='8' x='2' y='14' rx='2'/%3E%3Cline x1='6' x2='6.01' y1='6' y2='6'/%3E%3Cline x1='6' x2='6.01' y1='18' y2='18'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='8' x='2' y='2' rx='2'/%3E%3Crect width='20' height='8' x='2' y='14' rx='2'/%3E%3Cline x1='6' x2='6.01' y1='6' y2='6'/%3E%3Cline x1='6' x2='6.01' y1='18' y2='18'/%3E%3C/svg%3E");
 }
 /* Configuration — sliders */
 .md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:nth-of-type(3) > .md-nav__link::before {
   -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' x2='4' y1='21' y2='14'/%3E%3Cline x1='4' x2='4' y1='10' y2='3'/%3E%3Cline x1='12' x2='12' y1='21' y2='12'/%3E%3Cline x1='12' x2='12' y1='8' y2='3'/%3E%3Cline x1='20' x2='20' y1='21' y2='16'/%3E%3Cline x1='20' x2='20' y1='12' y2='3'/%3E%3Cline x1='2' x2='6' y1='14' y2='14'/%3E%3Cline x1='10' x2='14' y1='8' y2='8'/%3E%3Cline x1='18' x2='22' y1='16' y2='16'/%3E%3C/svg%3E");
           mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' x2='4' y1='21' y2='14'/%3E%3Cline x1='4' x2='4' y1='10' y2='3'/%3E%3Cline x1='12' x2='12' y1='21' y2='12'/%3E%3Cline x1='12' x2='12' y1='8' y2='3'/%3E%3Cline x1='20' x2='20' y1='21' y2='16'/%3E%3Cline x1='20' x2='20' y1='12' y2='3'/%3E%3Cline x1='2' x2='6' y1='14' y2='14'/%3E%3Cline x1='10' x2='14' y1='8' y2='8'/%3E%3Cline x1='18' x2='22' y1='16' y2='16'/%3E%3C/svg%3E");
 }
-/* Deployment — server */
+/* Supported chains — link */
 .md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:nth-of-type(4) > .md-nav__link::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='8' x='2' y='2' rx='2'/%3E%3Crect width='20' height='8' x='2' y='14' rx='2'/%3E%3Cline x1='6' x2='6.01' y1='6' y2='6'/%3E%3Cline x1='6' x2='6.01' y1='18' y2='18'/%3E%3C/svg%3E");
-          mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='20' height='8' x='2' y='2' rx='2'/%3E%3Crect width='20' height='8' x='2' y='14' rx='2'/%3E%3Cline x1='6' x2='6.01' y1='6' y2='6'/%3E%3Cline x1='6' x2='6.01' y1='18' y2='18'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
 }
-/* Reference — book */
+/* Observability — activity */
 .md-sidebar--primary .md-nav > .md-nav__list > .md-nav__item--section:nth-of-type(5) > .md-nav__link::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E");
-          mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-4l-3 9L9 3l-3 9H2'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-4l-3 9L9 3l-3 9H2'/%3E%3C/svg%3E");
 }
 
 /* Nested sub-section labels (e.g. Projects, Failover) — same family as
@@ -708,6 +714,33 @@
 }
 .md-sidebar--primary .md-nav__icon svg { width: 100%; height: 100%; }
 
+/* === Parent rows render like regular leaf links ===
+   Failover & retry / Supported chains are clickable group parents, but should
+   read identically to non-parent items: same 16px/400/muted as a leaf link, and
+   no expand chevron. The children stay nested + visible (nav is expanded). This
+   overrides the "group title" treatment above. */
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link,
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > .md-nav__link {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  color: var(--text-muted) !important;
+}
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link:hover,
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > .md-nav__link:hover {
+  color: var(--primary) !important;
+}
+/* Active parent matches active leaf (primary, same weight) */
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > .md-nav__link--active {
+  color: var(--primary) !important;
+  font-weight: 400 !important;
+}
+/* Drop the expand/collapse chevron on these parents */
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link > .md-nav__icon,
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > .md-nav__link > .md-nav__icon,
+.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > .md-nav__icon {
+  display: none !important;
+}
+
 /* === Active nested section ===
    The current section renders via a `div.md-nav__container` wrapping a separate
    <a> (text) and <label> (chevron). Left as-is it double-indents and floats the
@@ -732,6 +765,156 @@
   width: 0.85rem;
   height: 0.85rem;
   color: var(--text-muted);
+}
+
+/* ============================================================================
+   Mobile drawer (< 76.25em)
+   The desktop nav rules above are tuned for the persistent left sidebar. On
+   mobile Material renders a slide-out drilldown drawer with different needs, so
+   restore sane drawer styling here instead of letting the desktop overrides
+   (zeroed padding, 11px labels, hidden chevrons) leak in and break it.
+   ============================================================================ */
+@media screen and (max-width: 76.1875em) {
+  /* --- Drawer panel: full-width slide-in (mimics info.lavanet.xyz) --- */
+  .md-sidebar--primary {
+    width: 100vw;
+    max-width: none;           /* full-width, edge to edge (mimics info.lavanet.xyz) */
+    left: 0 !important;        /* override Material's base left:-12.1rem */
+    transform: translateX(-105%);   /* off-screen by its own width — never peeks */
+    transition: transform 0.25s cubic-bezier(0.1, 0.7, 0.1, 1);
+    padding: 0;
+    border-right: none;
+    box-shadow: none;
+    background: var(--surface);
+  }
+  [data-md-toggle="drawer"]:checked ~ .md-container .md-sidebar--primary {
+    transform: translateX(0);
+    box-shadow: 0 0 0 100vmax rgba(10, 13, 12, 0.45);   /* scrim over the page */
+  }
+  .md-sidebar--primary .md-sidebar__scrollwrap {
+    padding: 0.5rem 0.75rem 1.5rem;
+    margin: 0;
+  }
+
+  /* Reset desktop box-model so the drawer rows lay out cleanly; no row dividers
+     (drpc-style clean list) */
+  .md-sidebar--primary .md-nav,
+  .md-sidebar--primary .md-nav .md-nav,
+  .md-sidebar--primary .md-nav__list,
+  .md-sidebar--primary .md-nav__item {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* --- Rows: generous tap targets, leading icon, flush text --- */
+  .md-sidebar--primary .md-nav__item .md-nav__link,
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > a.md-nav__link {
+    display: flex !important;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    line-height: 1.2;
+    padding: 0.7rem 0.9rem !important;
+    margin: 1px 0 !important;
+    border-radius: 8px;
+    color: var(--text-strong) !important;
+    text-align: left !important;
+  }
+  .md-sidebar--primary .md-nav__item .md-nav__link:hover {
+    background: var(--surface-subtle);
+  }
+
+  /* Active row: subtle brand text + light tint, no accent bar (drpc-style) */
+  .md-sidebar--primary .md-nav__item .md-nav__link--active,
+  .md-sidebar--primary .md-nav__container > a.md-nav__link--active {
+    color: var(--primary) !important;
+    background: rgba(255, 57, 0, 0.06) !important;
+    font-weight: 500 !important;
+  }
+
+  /* --- Section header: bold sentence-case (drpc-style), not tiny uppercase --- */
+  .md-sidebar--primary .md-nav__title {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-strong) !important;
+    padding: 1.1rem 0.9rem 0.5rem !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  /* The drilldown back-button row (←) sits in the title; keep it readable */
+  .md-sidebar--primary .md-nav__title .md-nav__button { color: var(--text-strong) !important; }
+
+  /* --- Nested drilldown parents (e.g. "Failover & retry") --- */
+  .md-sidebar--primary .md-nav__icon { display: inline-block !important; }
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link.md-nav__container {
+    padding: 0 !important;
+    margin: 1px 0 !important;
+    align-items: stretch !important;
+    border-radius: 8px;
+  }
+  /* Specificity must beat the desktop rule
+     `.md-sidebar--primary .md-nav .md-nav .md-nav__item--nested... { color: muted !important }`
+     (three .md-nav levels), so match that depth here. */
+  .md-sidebar--primary .md-nav .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > a.md-nav__link,
+  .md-sidebar--primary .md-nav .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > a.md-nav__link,
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > a.md-nav__link {
+    flex: 1 1 auto;
+    margin: 0 !important;
+    padding-left: 0.9rem !important;
+    margin-left: -22px !important;          /* cancel the drilldown's extra nesting indent */
+    border-radius: 8px 0 0 8px;
+    color: var(--text-strong) !important;   /* match sibling rows, not dimmed gray */
+    opacity: 1 !important;
+  }
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__container > label.md-nav__link {
+    display: flex !important;
+    align-items: center;
+    padding: 0.7rem 0.9rem !important;
+    margin: 0 !important;
+    border-radius: 0 8px 8px 0;
+  }
+  .md-sidebar--primary .md-nav__item--nested:not(.md-nav__item--section) > .md-nav__link.md-nav__container > .md-nav {
+    margin: 0 !important;
+  }
+
+  /* --- Active leaf with an integrated page-TOC ---
+     Material puts a <label> (the ☰ toggle) and the <a> (the link) as siblings in
+     the active <li>; as block rows they stack and look like a duplicated entry.
+     Lay them on ONE row: the link takes the space, the label is the trailing ☰. */
+  .md-sidebar--primary .md-nav__item--active {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .md-sidebar--primary .md-nav__item--active > a.md-nav__link--active {
+    flex: 1 1 auto;
+    order: 1;
+  }
+  .md-sidebar--primary .md-nav__item--active > label.md-nav__link {
+    order: 2;
+    flex: 0 0 auto;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0.7rem 0.9rem !important;
+    margin: 1px 0 !important;
+  }
+  /* The label duplicates the link text ("Config file") alongside its ☰ toggle;
+     hide the redundant text, keep only the toggle icon. */
+  .md-sidebar--primary .md-nav__item--active > label.md-nav__link > .md-ellipsis {
+    display: none !important;
+  }
+  .md-sidebar--primary .md-nav__item--active > .md-nav--secondary {
+    order: 3;
+    flex: 1 0 100%;            /* the embedded TOC drops to its own full-width row */
+  }
+  .md-sidebar--primary .md-nav__link--active .md-nav__icon {
+    color: var(--text-muted) !important;
+  }
 }
 
 /* ============================================================================
@@ -772,13 +955,23 @@
 }
 .md-sidebar--secondary .md-nav__list { padding: 0; margin: 0; border-left: none; }
 .md-sidebar--secondary .md-nav__item { padding: 0; margin: 0; }
+/* Material gives nested TOC lists a negative bottom margin to tighten them; that
+   pulls the next entry up and overlaps a wrapped item above it. Zero it so every
+   row keeps its own height and spacing. */
+.md-sidebar--secondary .md-nav .md-nav { margin: 0; }
 .md-sidebar--secondary .md-nav__link {
+  /* display:block (not Material's default flex) so the link's height grows with
+     wrapped text — a flex link mis-sizes and the next entry overlaps it. */
+  display: block;
   font-size: 14px;
   font-weight: 400;
   color: var(--text-muted);
-  padding: 5px 0 5px 16px;
+  /* Base indent 22px aligns entries under the "Table of contents" header text
+     (icon 14 + gap 8). With display:block, wrapped lines hang to the padding
+     edge automatically, staying left-aligned with the first line. */
+  padding: 5px 8px 5px 22px;
   margin: 0;
-  line-height: 1.35;
+  line-height: 1.4;
   border-left: none;
   background: transparent;
   transition: color var(--t);
@@ -786,11 +979,14 @@
 .md-sidebar--secondary .md-nav__link:hover { color: var(--text-strong); }
 .md-sidebar--secondary .md-nav__link--active { color: var(--text-strong) !important; font-weight: 400; }
 
-/* Depth-based indentation so the TOC hierarchy is clean & consistent:
-   page title (injected) flush · h2 base · h3 +14px · h4 +28px. */
-.md-sidebar--secondary .md-nav__item--toc-title > .md-nav__link { padding-left: 0; }
-.md-sidebar--secondary .md-nav .md-nav .md-nav__link { padding-left: 30px; }
-.md-sidebar--secondary .md-nav .md-nav .md-nav .md-nav__link { padding-left: 44px; }
+/* Depth-based indentation — even 16px step per heading level. Injected page
+   title (H1) + H2 share the 22px base edge; H3 = 38; H4 = 54. */
+.md-sidebar--secondary .md-nav__item--toc-title > .md-nav__link {
+  padding-left: 22px;
+  font-weight: 600;
+}
+.md-sidebar--secondary .md-nav .md-nav .md-nav__link { padding-left: 38px; }
+.md-sidebar--secondary .md-nav .md-nav .md-nav .md-nav__link { padding-left: 54px; }
 
 /* ============================================================================
    Diagrams & illustrations
