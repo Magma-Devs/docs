@@ -10,7 +10,7 @@ it. The pages for [Ethereum](ethereum.md) and [Lava](lava.md) cover those two in
 
 ## Browse chains
 
-The catalog holds **75 spec files** spanning **67 mainnets and 64 testnets**. Search or
+The catalog holds **67 spec files** spanning **59 mainnets and 60 testnets**. Search or
 filter by ecosystem below; each card shows the chain's networks (Mainnet / Testnet) and
 the API protocols it exposes. The **↗** opens the chain's spec on GitHub.
 

@@ -75,7 +75,7 @@ metrics manager.
 
 | Path | Format | Description |
 | --- | --- | --- |
-| `/metrics` | Prometheus | All registered metrics ([`promhttp.Handler()`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go#L623)) |
+| `/metrics` | Prometheus | All registered metrics ([`promhttp.Handler()`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go#L647)) |
 | `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy` |
 | `/metrics/health-overall` | text | Alias of the above (backward-compat path) |
 
@@ -93,7 +93,7 @@ curl http://localhost:7779/metrics
 ```
 
 The flag name and the `disabled` sentinel live in
-[`flags.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/flags.go#L8).
+[`flags.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/flags.go#L8-L25).
 
 !!! note "Optimizer scores are always on"
     The optimizer-QoS client is created unconditionally, so

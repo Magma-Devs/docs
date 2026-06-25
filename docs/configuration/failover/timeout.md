@@ -6,7 +6,7 @@ Two timeouts apply to every relay: an **overall budget** for the whole request, 
 
 | Timeout | Default | Set by |
 |---|---|---|
-| Overall (whole relay) | implementation default | `--default-processing-timeout` CLI flag |
+| Overall (whole relay) | `30s` | `--default-processing-timeout` CLI flag |
 | Per-attempt (each upstream try) | `1s` floor | `--min-relay-timeout` CLI flag, or `lava-relay-timeout` header |
 
 If both are set:
@@ -22,7 +22,7 @@ Clients can override the per-attempt timeout for a specific request:
 lava-relay-timeout: 12s
 ```
 
-Format: any Go duration (`500ms`, `5s`, `1m30s`). The override is subject to the `--min-relay-timeout` floor — you can ask for less but the floor applies. Use this for known-slow methods (`debug_traceTransaction` on a deep block) without raising the global default.
+Format: any Go duration (`500ms`, `5s`, `1m30s`). The override is used **verbatim** — unlike the server-derived default it is *not* clamped to the `--min-relay-timeout` floor, so a client can request less than the floor. Use this for known-slow methods (`debug_traceTransaction` on a deep block) without raising the global default.
 
 See [Directives](../../api/directives.md).
 
@@ -39,7 +39,7 @@ See [Directives](../../api/directives.md).
 
 - **Setting per-attempt > overall.** Doesn't crash, but means the first attempt's timeout is effectively the overall budget and retry never gets to run.
 - **Setting per-attempt below upstream RTT.** Every attempt times out before a healthy node can respond. Watch the metrics; if your timeout-rate is near 100% even on healthy upstreams, raise the floor.
-- **Header override below the floor.** The floor wins. If a client sends `lava-relay-timeout: 100ms` and your floor is `1s`, the attempt gets `1s`.
+- **Header override below the floor.** The header is *not* clamped to the floor. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `100ms` even when `--min-relay-timeout` is `1s` — the floor only governs the server-derived default, not an explicit override.
 
 ## Observability
 

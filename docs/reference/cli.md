@@ -17,8 +17,9 @@ smartrouter <config.yml> --use-static-spec specs/ [flags...]
 | --- | --- |
 | `smartrouter <config.yml>` | Start the router (default; config file is positional). |
 | `smartrouter cache <host:port>` | Run the standalone cache server. Address is positional. |
+| `smartrouter health <config.yml>` | One-shot, spec-driven health probe over every node, URL, websocket, and add-on in a config; prints a JSON report and exits. Flags: `--include-backup`, `--timeout` (default `30s`), `--skip-websocket-verification`, `--use-static-spec` (required). |
 | `smartrouter version` | Print version + commit (first line is just the version, for scripting). |
-| `smartrouter test …` | Internal test commands (`rpc-smart-router`, connection probes). |
+| `smartrouter test …` | Internal test commands (`rpcsmartrouter`, `connection-server`, `connection-probe`). |
 
 ## Specs
 
