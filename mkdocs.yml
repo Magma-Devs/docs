@@ -11,7 +11,7 @@ theme:
   name: material
 
   # Magma brand — real logos shipped from design
-  logo: assets/magma-logo-black.svg
+  logo: assets/magma-devs-logo.png
   favicon: assets/magma-mark.svg
   font:
     text: Inter
