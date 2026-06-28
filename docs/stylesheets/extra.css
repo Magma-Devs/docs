@@ -920,15 +920,15 @@ html { scroll-padding-top: 96px; }
   }
 
   /* === Top-level sections as drpc bold headers ===
-     The section's container row (e.g. "Run Smart Router") is a non-interactive
-     group header: small uppercase, spaced above its children. It no longer drills
-     down, so it isn't a navigation target. */
+     The section's container row (e.g. "Run Smart Router") is a bold uppercase
+     group header, spaced above its children. Each section owns an index page
+     (configuration/index.md, reference/chains/index.md, …), so the title text is
+     a real link to that landing page — tapping it navigates there. */
   .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link.md-nav__container {
     display: flex !important;
     align-items: center;
     padding: 0 0.9rem !important;
     margin: 1.4rem 0 0.25rem !important;
-    pointer-events: none;       /* header text isn't a navigation target */
   }
   .md-sidebar--primary .md-nav--primary > .md-nav__list > .md-nav__item--section:first-child > .md-nav__link.md-nav__container {
     margin-top: 0.4rem !important;
@@ -942,6 +942,7 @@ html { scroll-padding-top: 96px; }
     padding: 0 0 0 0.9rem !important;   /* align label text with the leaf rows below */
     margin: 0 !important;
     flex: 1 1 auto;
+    cursor: pointer;
   }
   /* A section header whose subtree contains the active page is itself marked
      --active; it's a label, not a destination, so suppress the brand tint/color
@@ -1552,12 +1553,15 @@ html { scroll-padding-top: 96px; }
   padding: 0.55rem 0.8rem; font-size: 0.8rem; background: var(--surface); color: var(--text-strong);
 }
 .md-typeset .cx-search:focus { outline: none; border-color: var(--primary); }
-/* No wrap — all chips stay on one row. */
-.md-typeset .cx-chips { display: flex; gap: 0.4rem; flex-wrap: nowrap; }
+/* Wrap chips onto multiple rows so they never clip past the container edge on
+   narrow (mobile) viewports. */
+.md-typeset .cx-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .md-typeset .cx-chip {
+  flex: 0 0 auto;
   border: 1px solid var(--border-subtle); background: var(--surface);
   border-radius: 999px; padding: 0.35rem 0.75rem; font-size: 0.72rem; font-weight: 600;
   color: var(--text-muted); cursor: pointer; transition: all var(--t);
+  white-space: nowrap;
 }
 .md-typeset .cx-chip:hover { color: var(--text-strong); }
 .md-typeset .cx-chip.on { background: var(--primary); color: #fff; border-color: var(--primary); }
