@@ -12,7 +12,7 @@ The umbrella for everything Smart Router does when a relay misbehaves: an RPC no
 | [**Integrity**](integrity.md) | out-of-sync node | pre-request lag check skips lagging nodes before they're picked |
 | [**Circuit breaker**](circuit-breaker.md) | the node pool is exhausted | trips the relay early instead of retrying forever |
 
-For catching *wrong* data by comparing answers across nodes, see [Cross-validation](consensus.md) — a related correctness control that lives alongside failover.
+For catching *wrong* data by comparing answers across nodes, see [Cross-validation](cross-validation.md) — a related correctness control that lives alongside failover.
 
 ## How they compose
 

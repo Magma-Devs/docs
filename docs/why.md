@@ -10,7 +10,7 @@ Smart Router sits between your application and a fleet of RPC nodes. It picks th
 A standalone cache absorbs repeat reads — calls against finalised blocks, archive lookups, contract-state reads. Multiple router replicas can share one cache. For high-volume reads, the cache hit rate is often the largest contributor to lower monthly RPC spend.
 
 ### Reliability
-Every relay flows through a configurable failover pipeline. Bad responses retry on a different node. Slow responses get hedged in parallel against a second node. Critical reads can require consensus across multiple nodes before the response is returned.
+Every relay flows through a configurable failover pipeline. Bad responses retry on a different node. Slow responses get hedged in parallel against a second node. Critical reads can require cross-validation across multiple nodes before the response is returned.
 
 ### Visibility
 Prometheus metrics, OpenTelemetry traces, and structured logs cover the full request lifecycle — inbound listener, node selection, retries, hedging, cache lookups, outbound response.
@@ -33,7 +33,7 @@ A drop-in routing layer in front of your own RPC nodes plus paid nodes. Same eng
 | Routing | round-robin / least-conn | QoS-weighted (latency, sync, availability) per method category |
 | Bad node | retry on the same connection | rotate to a different node |
 | Slow node | wait | hedge in parallel against a second node |
-| Disagreeing nodes | last response wins | require consensus across N nodes |
+| Disagreeing nodes | last response wins | require cross-validation across N nodes |
 | Caching | URL-keyed, TTL | block-aware, reorg-safe, JSON-RPC native |
 | Heavy methods (`eth_getLogs`, `debug_*`) | treated identically | routed only to capable upstreams (archive, bundler, …) |
 

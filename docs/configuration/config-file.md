@@ -87,7 +87,7 @@ Each entry is one named backend serving one chain + interface, with one or more 
 | `api-interface` | yes | Interface this backend serves; must match the listener. |
 | `node-urls` | yes | One or more URL entries (below). |
 | `stake` | no | Optional weight (in ulava) for selection scoring. Omit (or `0`) to apply the default static-node boost. |
-| `group-label` | no | Optional provider-group id (e.g. `tier-1`, `external`) for [cross-validation](failover/consensus.md) group-diversity policies. No effect unless a policy requires group spread. |
+| `group-label` | no | Optional provider-group id (e.g. `tier-1`, `external`) for [cross-validation](failover/cross-validation.md) group-diversity policies. No effect unless a policy requires group spread. |
 
 ```yaml
 direct-rpc:
@@ -138,7 +138,7 @@ Only relevant for `grpc` interfaces.
 ## Cross-validation
 
 An optional top-level block sets per-method operator policies for
-[cross-validation](failover/consensus.md) — to **mandate** it (with floors/caps clients
+[cross-validation](failover/cross-validation.md) — to **mandate** it (with floors/caps clients
 can't weaken), or **forbid** clients from requesting it. Without this block,
 cross-validation is purely client-driven via the
 [request headers](../api/directives.md#request-cross-validation).

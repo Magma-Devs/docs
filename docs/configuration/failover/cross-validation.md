@@ -45,7 +45,57 @@ lava-cross-validation-agreement-threshold: 2
 
 See [Directives](../../api/directives.md). The router returns the outcome on the response headers (`lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, and on failure `lava-cross-validation-failure-reason`).
 
-**2. Operator policy.** An operator can **mandate** cross-validation for a `(chain, interface, method)` — setting floors and caps — or **forbid** clients from requesting it for a method. When an enabled policy applies, each knob is `clamp(caller-or-floor, floor, cap)`: a client may *raise* `MaxParticipants` above the floor but can't shrink the quorum below the operator's minimum.
+**2. Operator policy.** An operator can **mandate** cross-validation for a `(chain, interface, method)` — setting floors and caps — or **forbid** clients from requesting it for a method. Policies live in a top-level `cross-validation` block in the [smart router config file](../config-file.md#cross-validation):
+
+```yaml
+cross-validation:
+  policies:
+    # Mandate consensus for a sensitive read, capped so clients can't fan out wider.
+    - chain-id: "ETH1"
+      api-interface: "jsonrpc"
+      method: "eth_getLogs"
+      enabled: true
+      agreement-threshold: { floor: 2 }
+      max-participants: { floor: 3, cap: 5 }
+    # Forbid clients from cross-validating a non-deterministic method.
+    - chain-id: "ETH1"
+      api-interface: "jsonrpc"
+      method: "eth_blockNumber"
+      forbid-caller-cv: true
+```
+
+When an enabled policy applies, each knob is `clamp(caller-or-floor, floor, cap)`: a client may *raise* `MaxParticipants` above the floor but can't shrink the quorum below the operator's minimum. `forbid-caller-cv` disables cross-validation for the method even when a client sends the headers (mutually exclusive with `enabled`). See the [config-file reference](../config-file.md#cross-validation) for the full field list.
+
+Each bound takes `{ floor, cap }`, but a **bare number** is shorthand for a floor with no cap — `agreement-threshold: 2` is identical to `agreement-threshold: { floor: 2 }`. Use it for the common "mandate at least N, no upper bound" case.
+
+### Group diversity
+
+A quorum of nodes that all share a vendor, image, or data source can agree on the *same wrong answer* — so a plain count of agreeing nodes can mask a correlated fault. Group-diversity policies guard against this by requiring the quorum to span multiple **independent** operator groups.
+
+Groups come from the `group-label` you set on each provider in the config file (e.g. `tier-1`, `external`, a vendor name) — see [`group-label`](../config-file.md#direct-rpc-upstream-nodes) under `direct-rpc`. Providers with no label fall into a single default group. Two policy knobs act on them:
+
+| Field | Meaning |
+|---|---|
+| `min-groups` | The agreeing nodes must come from at least this many distinct `group-label`s. |
+| `per-group-quorum` | Require each of `min-groups` groups to *independently* reach `agreement-threshold` (needs `min-groups > 1`). |
+
+```yaml
+cross-validation:
+  policies:
+    - chain-id: "ETH1"
+      api-interface: "jsonrpc"
+      method: "eth_getLogs"
+      enabled: true
+      agreement-threshold: { floor: 2 }
+      max-participants: { floor: 4, cap: 6 }
+      min-groups: 2          # the quorum must span ≥ 2 distinct group-labels
+      per-group-quorum: true # …and each group must independently agree
+```
+
+Diversity is only as real as your labels: if every upstream carries the same `group-label`, `min-groups` can never be satisfied and the relay fails the policy. Label providers by their actual independence — distinct vendors / regions / clients — not by name alone.
+
+!!! tip "Runnable example"
+    The repo ships a ready-to-run multi-chain config that pairs two vendor groups (`lava` + `publicnode`) per chain and mandates `min-groups: 2` cross-validation on several read methods: [`config/smartrouter_examples/smartrouter_multichain_cross_validation.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_multichain_cross_validation.yml).
 
 With no operator policy, the caller's headers alone decide; with no headers and no policy, cross-validation is off (`{MaxParticipants: 1, AgreementThreshold: 1}` is effectively disabled). The `CrossValidationParams` shape lives in [`protocol/common/types.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/types.go).
 

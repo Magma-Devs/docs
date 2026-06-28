@@ -115,7 +115,7 @@ lava-cross-validation-max-participants: 3
 lava-cross-validation-agreement-threshold: 2
 ```
 
-Fans this request out to `max-participants` nodes in parallel and only returns once `agreement-threshold` of them return matching responses. Both headers are required together. Subject to operator policy (an operator can mandate, cap, or forbid cross-validation per method). See [Cross-validation](../configuration/failover/consensus.md).
+Fans this request out to `max-participants` nodes in parallel and only returns once `agreement-threshold` of them return matching responses. Both headers are required together. Subject to operator policy (an operator can mandate, cap, or forbid cross-validation per method). See [Cross-validation](../configuration/failover/cross-validation.md).
 
 **When to use:** correctness-critical reads (`eth_getLogs`, `debug_*`, `eth_call` at a fixed block) where one lying node is unacceptable. It multiplies upstream cost — pair with caching.
 
@@ -152,4 +152,4 @@ When cross-validation runs, the router also returns `lava-cross-validation-statu
 
 ## Operator restrictions
 
-Smart Router honours the request directives above as a fixed set — there is no per-header server-side toggle to disable an individual directive such as node pinning. The one operator-configurable restriction is **cross-validation policy**: an operator can mandate, cap, or forbid cross-validation per `(chain, interface, method)` in the config file. See [Cross-validation](../configuration/failover/consensus.md) and [the config file](../configuration/config-file.md#cross-validation).
+Smart Router honours the request directives above as a fixed set — there is no per-header server-side toggle to disable an individual directive such as node pinning. The one operator-configurable restriction is **cross-validation policy**: an operator can mandate, cap, or forbid cross-validation per `(chain, interface, method)` in the config file. See [Cross-validation](../configuration/failover/cross-validation.md) and [the config file](../configuration/config-file.md#cross-validation).

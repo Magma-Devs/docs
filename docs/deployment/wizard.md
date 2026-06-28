@@ -124,4 +124,4 @@ outside the repo).
 - A chain not in the bundled `specs/` only resolves when `SR_SPEC` points at the remote
   lava-specs repo — which the wizard sets automatically for a remote catalog.
 - `cross-validation:` is emitted as a documented TODO in the config header; configure it
-  afterwards (see [Cross-validation](../configuration/failover/consensus.md)).
+  afterwards (see [Cross-validation](../configuration/failover/cross-validation.md)).
