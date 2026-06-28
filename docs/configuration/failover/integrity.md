@@ -26,7 +26,7 @@ The lag check is conservative: with `EnableWaitForCatchup: false` (the default),
 
 ## What integrity doesn't do
 
-- It doesn't catch *wrong* data when nodes all agree on the wrong answer. For that, see [cross-validation](consensus.md).
+- It doesn't catch *wrong* data when nodes all agree on the wrong answer. For that, see [cross-validation](cross-validation.md).
 - It doesn't validate signatures, Merkle proofs, or anything cryptographic. The reorg-aware cache handles those concerns separately.
 - It doesn't check responses *after* they return — once a node passes the lag filter, its response is accepted (subject to [retry](retry.md) on transport-level errors).
 

@@ -50,4 +50,4 @@ Pin a single request to a specific node with the `lava-select-provider` header. 
 
 - [Failover & retry](../failover/index.md) — what happens when the picked node fails or returns suspect data
 - [Hedge](../failover/hedge.md) — race two nodes in parallel
-- [Cross-validation](../failover/consensus.md) — require agreement across RPC nodes
+- [Cross-validation](../failover/cross-validation.md) — require agreement across RPC nodes

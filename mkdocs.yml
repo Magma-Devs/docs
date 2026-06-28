@@ -100,7 +100,7 @@ nav:
       - Authentication: configuration/authentication.md
       - Request headers: api/directives.md
       - RPC Node selection: configuration/projects/selection-policies.md
-      - Cross-validation: configuration/failover/consensus.md
+      - Cross-validation: configuration/failover/cross-validation.md
       - Failover & retry:
           - configuration/failover/index.md
           - Retry: configuration/failover/retry.md
