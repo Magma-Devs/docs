@@ -501,14 +501,16 @@ html { scroll-padding-top: 96px; }
 .md-search__icon { color: var(--text-muted); }
 
 /* Results meta row ("Type to start searching" / "N matching documents") —
-   quiet, not a flat gray strip. */
+   quiet, not a flat gray strip. Needs real vertical padding: a tall unitless
+   line-height with zero padding left the text flush to the dropdown's bottom
+   edge, where `overflow: hidden` on .md-search__output clipped it. */
 .md-search-result__meta {
   background-color: transparent;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
-  line-height: 2.4;
-  padding: 0 0.9rem;
+  line-height: 1.6;
+  padding: 0.55rem 0.9rem;
   border-bottom: 1px solid var(--border-subtle);
 }
 /* Result rows — clean hover tint matching the brand */
@@ -518,6 +520,23 @@ html { scroll-padding-top: 96px; }
 .md-search-result__link[data-md-state="active"] { background-color: var(--md-accent-fg-color--transparent); }
 .md-search-result__title { font-weight: 600; color: var(--text-strong); }
 .md-search-result mark { color: var(--primary); background: transparent; font-weight: 600; }
+
+/* Normalize result text size. Each result is an `.md-typeset` article rendering
+   the page's real content (h1/h2/p/code/table…), so excerpts inherited the
+   theme's full document sizes and came out wildly inconsistent — some huge,
+   some tiny. Collapse them to one title size + one body size across all results. */
+.md-search-result__article.md-typeset :where(h1, h2, h3, h4, h5, h6) {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 600;
+  margin: 0;
+}
+.md-search-result__article.md-typeset :where(p, ul, ol, li, dl, dd, table, td, th, blockquote, pre, code) {
+  font-size: 0.64rem;
+  line-height: 1.55;
+  font-weight: 400;
+}
+.md-search-result__article.md-typeset :where(p, ul, ol, table, pre, blockquote) { margin: 0.25rem 0 0; }
 
 /* ============================================================================
    Logo
