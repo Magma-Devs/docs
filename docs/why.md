@@ -1,3 +1,8 @@
+---
+title: "Why Smart Router?"
+description: "Cut RPC costs with caching, add reliability with automatic failover, and get full request visibility — and how Smart Router differs from a plain reverse proxy."
+---
+
 # Why Smart Router?
 
 Smart Router sits between your application and a fleet of RPC nodes. It picks the right one per request, retries the wrong one, fans out when correctness matters, and caches what it can.

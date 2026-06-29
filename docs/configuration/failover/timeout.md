@@ -1,3 +1,8 @@
+---
+title: "Timeout"
+description: "Configure per-request and per-provider timeouts."
+---
+
 # Timeout
 
 Two timeouts apply to every relay: an **overall budget** for the whole request, and a **per-attempt budget** for each upstream try. Hedging and retries operate inside these budgets.

@@ -1,3 +1,8 @@
+---
+title: "Cosmos"
+description: "Run Smart Router for Cosmos — example config across Tendermint RPC and REST."
+---
+
 # Cosmos
 
 Cosmos Hub mainnet (`cosmoshub-4`) over REST, gRPC, and Tendermint RPC. Includes the full Cosmos-ecosystem method surface (Cosmos SDK, CosmWasm, IBC, Tendermint).

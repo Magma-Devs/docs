@@ -1,3 +1,8 @@
+---
+title: "Config wizard"
+description: "Run `make wizard`, an interactive TUI that picks chains, collects upstreams, health-checks them, writes the config, and brings up the stack in one pass."
+---
+
 # Config wizard
 
 The fastest way to a running Smart Router. The wizard is an interactive terminal

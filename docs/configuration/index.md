@@ -1,3 +1,8 @@
+---
+title: "Configure"
+description: "Configure routing, node selection, caching, and the failover pipeline for Smart Router."
+---
+
 # Configuration
 
 Smart Router is driven by:

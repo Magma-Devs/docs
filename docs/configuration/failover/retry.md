@@ -1,3 +1,8 @@
+---
+title: "Retry"
+description: "Retry failed responses automatically on a different provider."
+---
+
 # Retry
 
 When an upstream returns a **retryable** error, Smart Router rotates to a different node and tries again. The pool is filtered to nodes that haven't already failed for this relay; the [RPC Node selection](../projects/selection-policies.md) policy picks the next candidate.

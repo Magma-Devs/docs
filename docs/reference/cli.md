@@ -1,3 +1,8 @@
+---
+title: "CLI flags"
+description: "Command-line flags and options for the Smart Router binary."
+---
+
 # CLI reference
 
 Every command-line flag the `smartrouter` binary accepts, grouped by purpose. The

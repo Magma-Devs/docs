@@ -1,3 +1,8 @@
+---
+title: "Circuit breaker"
+description: "Trip a circuit breaker to stop routing traffic to unhealthy providers until they recover."
+---
+
 # Circuit breaker
 
 Protects against the case where the **node pool itself is exhausted** — every retry returns "no nodes available" and the relay would otherwise loop until the overall timeout fires.

@@ -1,0 +1,78 @@
+# Smart Router — Documentation
+
+> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 75+ chain specs. For product, pricing, security, and company details, see https://www.magmadevs.com/llms.txt.
+
+Smart Router sits between your application and a fleet of RPC providers (Alchemy, Infura, QuickNode, Helius, self-hosted nodes, and others). It picks a healthy, performant provider per request, retries the bad one, hedges the slow one, validates responses across providers, and caches what it can — so no single provider's uptime or data integrity becomes a point of failure. Think of it as Cloudflare for blockchain RPC.
+
+These docs are for the open-source core (PolyForm Noncommercial license); managed Pro and Enterprise tiers are described on the main site. Smart Router speaks JSON-RPC, REST, gRPC, and Tendermint RPC; the default local endpoint is `http://127.0.0.1:3360`. Chains are described by JSON specs — 75 specs spanning 67 mainnets and 64 testnets (100+ networks) across EVM, Cosmos/Tendermint, Solana, and more.
+
+## Getting started
+
+- [Quick start](https://docs.magmadevs.com/): Get Smart Router running in three commands — clone the repo, start it with Docker Compose, and send your first JSON-RPC relay.
+- [Why Smart Router?](https://docs.magmadevs.com/why/): Cost reduction via caching, reliability via failover, full request visibility, target use cases, and how it differs from a reverse proxy.
+
+## Run Smart Router
+
+- [Run Smart Router](https://docs.magmadevs.com/deployment/): Overview of the ways to run Smart Router.
+- [Local binary](https://docs.magmadevs.com/deployment/local-binary/): Build and run the Smart Router binary natively on your host.
+- [Docker Compose](https://docs.magmadevs.com/deployment/docker-compose/): Run Smart Router and its dependencies with the bundled Docker Compose stack.
+- [Config wizard](https://docs.magmadevs.com/deployment/wizard/): An interactive TUI (`make wizard`) that picks chains, collects upstreams, health-checks them, writes the config, and brings up the stack.
+- [Cache](https://docs.magmadevs.com/deployment/cache/): Deploy the standalone, block-aware, reorg-safe cache that absorbs repeat reads and can be shared across router replicas.
+- [Dashboard](https://docs.magmadevs.com/deployment/dashboard/): Run the monitoring dashboard for routing, cache, and provider health.
+
+## Configure
+
+- [Configure](https://docs.magmadevs.com/configuration/): Overview of routing, node selection, caching, and failover configuration.
+- [Connect your app](https://docs.magmadevs.com/api/url/): Endpoint URLs and client samples for viem, ethers, web3.py, and cosmjs.
+- [Config file](https://docs.magmadevs.com/configuration/config-file/): Structure of the Smart Router YAML config file — projects, upstreams, selection, and failover.
+- [Authentication](https://docs.magmadevs.com/configuration/authentication/): Secure your router endpoints with authentication and access control.
+- [Request headers](https://docs.magmadevs.com/api/directives/): Per-request header directives to pin a provider, force a cache refresh, override the timeout, or enable debug logging.
+- [RPC node selection](https://docs.magmadevs.com/configuration/projects/selection-policies/): QoS-weighted provider selection by latency, sync status, and availability, tuned per method category.
+- [Cross-validation](https://docs.magmadevs.com/configuration/failover/cross-validation/): Require consensus across multiple providers before returning a response — the layer that defends against RPC data-poisoning.
+- [CLI flags](https://docs.magmadevs.com/reference/cli/): Command-line flags and options for the Smart Router binary.
+
+## Failover & retry
+
+- [Failover & retry](https://docs.magmadevs.com/configuration/failover/): The configurable failover pipeline that every relay flows through.
+- [Retry](https://docs.magmadevs.com/configuration/failover/retry/): Retry failed responses on a different provider.
+- [Hedge](https://docs.magmadevs.com/configuration/failover/hedge/): Hedge slow requests in parallel against a second provider.
+- [Timeout](https://docs.magmadevs.com/configuration/failover/timeout/): Configure per-request and per-provider timeouts.
+- [Integrity](https://docs.magmadevs.com/configuration/failover/integrity/): Validate response integrity before returning it to the client.
+- [Circuit breaker](https://docs.magmadevs.com/configuration/failover/circuit-breaker/): Stop routing to unhealthy providers until they recover.
+
+## Supported chains
+
+- [Supported chains](https://docs.magmadevs.com/reference/chains/): Chain-agnostic JSON specs — 75 specs spanning 67 mainnets and 64 testnets (100+ networks) across EVM, Cosmos/Tendermint, Solana, and more.
+- [Chain specs](https://docs.magmadevs.com/reference/chains/specs/): How specs declare API methods, parser rules, finality parameters, and capability flags.
+- [Examples](https://docs.magmadevs.com/reference/chains/examples/): Ready-to-run example configurations per chain.
+- [Ethereum](https://docs.magmadevs.com/reference/chains/ethereum/): Example config for Ethereum.
+- [Solana](https://docs.magmadevs.com/reference/chains/solana/): Example config for Solana.
+- [Bitcoin](https://docs.magmadevs.com/reference/chains/bitcoin/): Example config for Bitcoin.
+- [Hyperliquid](https://docs.magmadevs.com/reference/chains/hyperliquid/): Example config for Hyperliquid.
+- [Cosmos](https://docs.magmadevs.com/reference/chains/cosmos/): Example config for Cosmos.
+- [Aptos](https://docs.magmadevs.com/reference/chains/aptos/): Example config for Aptos.
+
+## Observability
+
+- [Observability](https://docs.magmadevs.com/reference/observability/): Metrics, traces, logs, and profiling across the request lifecycle.
+- [Metrics](https://docs.magmadevs.com/reference/metrics/): Prometheus metrics for routing, cache, and provider health.
+- [Traces](https://docs.magmadevs.com/reference/traces/): OpenTelemetry traces for the full request lifecycle.
+- [Profiling](https://docs.magmadevs.com/reference/profiling/): Profile Smart Router to find CPU and memory hotspots.
+- [Error codes](https://docs.magmadevs.com/reference/error-codes/): Reference of Smart Router error codes.
+
+## Resources
+
+- [Magma Devs (main site)](https://www.magmadevs.com): Product, positioning, customers, and company.
+- [Magma Devs llms.txt](https://www.magmadevs.com/llms.txt): Product, pricing, security, and citation facts for Smart Router.
+- [Smart Router (product)](https://www.magmadevs.com/product/smart-router): How the orchestration layer works.
+- [Pricing](https://www.magmadevs.com/pricing): Open Source, Pro, and Enterprise tiers.
+- [GitHub: Magma-Devs/smart-router](https://github.com/Magma-Devs/smart-router): The open-source core — source, issues, and releases.
+- [Chain spec catalog (lava-specs)](https://github.com/Magma-Devs/lava-specs): The maintained catalog of chain specs.
+- [Contact](https://www.magmadevs.com/contact): Talk to the team about Cloud or Enterprise.
+
+## Optional
+
+- [Blog](https://www.magmadevs.com/blog): Engineering deep dives and RPC security analysis.
+- [Case studies](https://www.magmadevs.com/case-studies): Kraken, Fireblocks, and Hypernative.
+- [Community on Telegram](https://t.me/magmadevs): Support and discussion.
+- [X / Twitter (@magmadevs)](https://x.com/magmadevs): Updates and announcements.

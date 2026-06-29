@@ -1,3 +1,8 @@
+---
+title: "Examples"
+description: "Ready-to-run example configurations for popular chains."
+---
+
 # Examples
 
 Every chain bundled in the repo's [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs) ships a **ready-to-run example config** under [`config/smartrouter_examples/`](https://github.com/Magma-Devs/smart-router/tree/main/config/smartrouter_examples). Each one points at public RPC vendors — [PublicNode](https://publicnode.com) and each chain's official/community endpoints — so it runs with **no API key**. Copy it, swap in your own upstreams when you're ready, and go.

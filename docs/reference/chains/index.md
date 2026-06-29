@@ -1,3 +1,8 @@
+---
+title: "Supported chains"
+description: "Chain-agnostic JSON specs — 75 specs covering 100+ networks across EVM, Cosmos/Tendermint, Solana, and more."
+---
+
 # Supported chains
 
 Smart Router serves any chain described by a JSON [chain spec](specs.md) — no code

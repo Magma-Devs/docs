@@ -1,3 +1,8 @@
+---
+title: "Integrity"
+description: "Validate response integrity before returning it to the client."
+---
+
 # Integrity
 
 A pre-request check that filters out nodes too far behind the chain head. Protects against single-node data quality issues caused by lag.

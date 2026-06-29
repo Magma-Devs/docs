@@ -1,3 +1,8 @@
+---
+title: "Observability"
+description: "Metrics, traces, logs, and profiling across the full Smart Router request lifecycle."
+---
+
 # Observability
 
 How to watch Smart Router in production and diagnose what it's doing. Four pillars:

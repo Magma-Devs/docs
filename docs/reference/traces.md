@@ -1,3 +1,8 @@
+---
+title: "Traces"
+description: "OpenTelemetry traces covering inbound listener, provider selection, retries, hedging, and cache lookups."
+---
+
 # Traces
 
 Smart Router emits OpenTelemetry spans covering the whole relay lifecycle — inbound

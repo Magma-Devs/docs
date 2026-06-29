@@ -1,3 +1,8 @@
+---
+title: "Hedge"
+description: "Hedge slow requests in parallel against a second provider and take the first good response."
+---
+
 # Hedge
 
 If a relay hasn't returned by a fixed deadline, Smart Router fires the **same request** to a second node in parallel. The first response back wins; the slower attempt is discarded.

@@ -1,3 +1,8 @@
+---
+title: "Run Smart Router"
+description: "Ways to run Smart Router — a native local binary, the Docker Compose stack, or the interactive config wizard."
+---
+
 # Run Smart Router
 
 Smart Router runs on your own infrastructure — the router, and an optional cache sidecar,

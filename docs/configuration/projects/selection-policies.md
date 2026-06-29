@@ -1,3 +1,8 @@
+---
+title: "RPC node selection"
+description: "QoS-weighted provider selection by latency, sync status, and availability — tuned per method category."
+---
+
 # RPC Node selection
 
 Smart Router doesn't pick RPC nodes randomly. Every relay flows through a QoS-weighted selector that scores nodes on latency, sync freshness, and reliability — then picks one according to the **strategy** you configure.

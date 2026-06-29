@@ -1,3 +1,8 @@
+---
+title: "Authentication"
+description: "Secure your Smart Router endpoints with authentication and access control."
+---
+
 # Authentication
 
 There are two distinct authentication concerns with Smart Router, and they're easy to

@@ -1,3 +1,8 @@
+---
+title: "Aptos"
+description: "Run Smart Router for Aptos — example config and supported REST endpoints."
+---
+
 # Aptos
 
 Aptos mainnet over the REST fullnode API.

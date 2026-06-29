@@ -1,3 +1,8 @@
+---
+title: "Docker Compose"
+description: "Run Smart Router and its dependencies with the bundled Docker Compose stack."
+---
+
 # Docker Compose
 
 Run a config you already have (or one copied from the examples) with a single
