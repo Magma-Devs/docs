@@ -46,16 +46,23 @@ Then call it:
 
 ```bash
 # ledger info (chain id, block height, ledger version)
-curl http://127.0.0.1:3360/v1
+curl http://127.0.0.1:3360/
 ```
+
+!!! note "The `/v1` prefix lives in the node-url, not your request path"
+    The example config's upstream URLs already end in `/v1`
+    (`https://aptos-rest.publicnode.com/v1`), and the router forwards your
+    request path onto that base. So call the listener at the **root** —
+    `GET /`, `GET /accounts/0x1`, `GET /blocks/by_height/{n}` — **not**
+    `GET /v1/...` (that would resolve to `/v1/v1/...` upstream and 404).
 
 ## Connect a client
 
 === "curl"
 
     ```bash
-    # account resources
-    curl http://127.0.0.1:3360/v1/accounts/0x1/resources
+    # account resources — note the root-relative path (no /v1 prefix)
+    curl http://127.0.0.1:3360/accounts/0x1/resources
     ```
 
 === "Aptos TS SDK"
@@ -63,7 +70,10 @@ curl http://127.0.0.1:3360/v1
     ```ts
     import { Aptos, AptosConfig } from '@aptos-labs/ts-sdk';
 
-    const aptos = new Aptos(new AptosConfig({ fullnode: 'http://127.0.0.1:3360/v1' }));
+    // The SDK appends /v1 itself, so point it at a node-url that does NOT
+    // bake in /v1 — drop the /v1 from the example config's upstreams and use
+    // the bare listener here.
+    const aptos = new Aptos(new AptosConfig({ fullnode: 'http://127.0.0.1:3360' }));
     const info = await aptos.getLedgerInfo();
     ```
 
