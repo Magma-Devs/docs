@@ -1,4 +1,4 @@
-# Ethereum
+# ![](../../assets/chains/ethereum.svg){ .chain-title-icon } Ethereum
 
 Ethereum mainnet over JSON-RPC.
 

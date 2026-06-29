@@ -8,12 +8,12 @@ The per-chain pages below walk through each one — endpoint, method surface, a 
 
 | Chain | `chain-id` | Interface(s) | Example config | Page |
 | --- | --- | --- | --- | --- |
-| Ethereum | `ETH1` | jsonrpc | `smartrouter_eth.yml` | [Ethereum](../ethereum.md) |
-| Solana | `SOLANA` | jsonrpc | `smartrouter_solana.yml` | [Solana](../solana.md) |
-| Bitcoin | `BTC` | jsonrpc | `smartrouter_bitcoin.yml` | [Bitcoin](../bitcoin.md) |
-| Hyperliquid | `HYPERLIQUID` | jsonrpc | `smartrouter_hyperliquid.yml` | [Hyperliquid](../hyperliquid.md) |
-| Cosmos Hub | `COSMOSHUB` | rest, grpc, tendermintrpc | `smartrouter_cosmos.yml` | [Cosmos](../cosmos.md) |
-| Aptos | `APT1` | rest | `smartrouter_aptos.yml` | [Aptos](../aptos.md) |
+| ![](../../../assets/chains/ethereum.svg){ .chain-row-icon } Ethereum | `ETH1` | jsonrpc | `smartrouter_eth.yml` | [Ethereum](../ethereum.md) |
+| ![](../../../assets/chains/solana.svg){ .chain-row-icon } Solana | `SOLANA` | jsonrpc | `smartrouter_solana.yml` | [Solana](../solana.md) |
+| ![](../../../assets/chains/bitcoin.svg){ .chain-row-icon } Bitcoin | `BTC` | jsonrpc | `smartrouter_bitcoin.yml` | [Bitcoin](../bitcoin.md) |
+| ![](../../../assets/chains/hyperliquid.svg){ .chain-row-icon } Hyperliquid | `HYPERLIQUID` | jsonrpc | `smartrouter_hyperliquid.yml` | [Hyperliquid](../hyperliquid.md) |
+| ![](../../../assets/chains/cosmos-hub.svg){ .chain-row-icon } Cosmos Hub | `COSMOSHUB` | rest, grpc, tendermintrpc | `smartrouter_cosmos.yml` | [Cosmos](../cosmos.md) |
+| ![](../../../assets/chains/aptos.svg){ .chain-row-icon } Aptos | `APT1` | rest | `smartrouter_aptos.yml` | [Aptos](../aptos.md) |
 
 Want everything at once? [`smartrouter_multichain.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_multichain.yml) serves **all six chains together**, each on its own port — ETH1 `3360`, Solana `3361`, Bitcoin `3362`, Hyperliquid `3363`, Cosmos Hub REST/Tendermint/gRPC on `3364`/`3365`/`3366`, and Aptos `3367` — all via public RPC vendors (PublicNode + each chain's official/community endpoint):
 

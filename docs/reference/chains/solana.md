@@ -1,4 +1,4 @@
-# Solana
+# ![](../../assets/chains/solana.svg){ .chain-title-icon } Solana
 
 Solana mainnet over JSON-RPC.
 
