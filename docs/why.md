@@ -1,42 +1,49 @@
 # Why Smart Router?
 
-Smart Router sits between your application and a fleet of RPC nodes. It picks the right one per request, retries the wrong one, fans out when correctness matters, and caches what it can.
+RPC proxies have been built in-house thousands of times — along with the failover, caching, and monitoring that surround them. Smart Router is that layer as a standard, actively maintained component.
 
-![Smart Router topology — your app to nodes via Smart Router with shared cache](assets/diagrams/topology.svg)
+<p class="intro-lede">Instead of building and maintaining your own RPC proxy, you get multi-chain support across EVM and non-EVM networks, automatic failover, data cross-validation, built-in observability, caching, and more.</p>
 
-## What you get
+![Smart Router topology — your app to upstreams via Smart Router with shared cache](assets/diagrams/topology.svg)
 
-### Cost reduction
-A standalone cache absorbs repeat reads — calls against finalised blocks, archive lookups, contract-state reads. Multiple router replicas can share one cache. For high-volume reads, the cache hit rate is often the largest contributor to lower monthly RPC spend.
+## Failover
 
-### Reliability
-Every relay flows through a configurable failover pipeline. Bad responses retry on a different node. Slow responses get hedged in parallel against a second node. Critical reads can require cross-validation across multiple nodes before the response is returned.
+Smart Router's failovers kick in under different scenarios, or "incidents" — for example, if an upstream is unavailable, returns errors, returns stale data, takes too long, or times out.
 
-### Visibility
-Prometheus metrics, OpenTelemetry traces, and structured logs cover the full request lifecycle — inbound listener, node selection, retries, hedging, cache lookups, outbound response.
+[Failover & retry →](configuration/failover/index.md)
 
-## Built for these use cases
+## Cross-validation
 
-### dApp / frontend
-Stable RPC for production traffic without locking yourself to one node. Mix paid and free upstreams. Fall back automatically when one stutters. Use [directives](api/directives.md) from the client to bypass cache or pin a node when debugging.
+Reads can be sent to several upstreams in parallel and returned successfully only once the quorum criteria are reached. This stops conflicting or potentially malicious responses from flowing downstream.
 
-### Data indexing
-Indexers hammer `eth_getLogs`, `debug_traceBlock`, and similar heavy reads. Smart Router caches finalised-block reads aggressively and rotates nodes based on which one currently serves your block range fastest. Cross-validation catches one-off lying nodes before bad data hits your index.
+[Cross-validation →](configuration/failover/cross-validation.md)
 
-### Self-hosted RPC infrastructure
-A drop-in routing layer in front of your own RPC nodes plus paid nodes. Same engine across dev, staging, and production. Same config shape on bare metal or Kubernetes.
+## Caching
 
-## What's distinctive
+A block-aware cache serves repeat reads without hitting an upstream, while avoiding serving stale data. It can be shared across router replicas, significantly reducing upstream calls and latency.
 
-| | A reverse proxy | Smart Router |
-|---|---|---|
-| Routing | round-robin / least-conn | QoS-weighted (latency, sync, availability) per method category |
-| Bad node | retry on the same connection | rotate to a different node |
-| Slow node | wait | hedge in parallel against a second node |
-| Disagreeing nodes | last response wins | require cross-validation across N nodes |
-| Caching | URL-keyed, TTL | block-aware, reorg-safe, JSON-RPC native |
-| Heavy methods (`eth_getLogs`, `debug_*`) | treated identically | routed only to capable upstreams (archive, bundler, …) |
+[Cache →](deployment/cache.md)
 
-## Beyond EVM
+## Transaction broadcasting
 
-Most routing layers in the ecosystem are EVM-only. Smart Router serves **REST, gRPC, and Tendermint RPC** alongside JSON-RPC, with first-class support for the Cosmos ecosystem (Lava, Cosmos SDK, IBC, Tendermint). One router, one config shape, every chain you care about. See [Supported chains](reference/chains/index.md).
+Write methods (`eth_sendRawTransaction` and equivalents) are broadcast to all eligible upstreams in parallel to increase the success rate and speed of transactions.
+
+[Write fan-out →](configuration/failover/hedge.md)
+
+## Multi-chain
+
+Serves all standard blockchain API formats: JSON-RPC, REST, gRPC, Tendermint, and WebSocket. Supports EVM chains, Solana, UTXO chains, Cosmos chains, and other custom networks. Chains are defined by JSON specs, so adding one requires no code change.
+
+[Supported chains →](reference/chains/index.md)
+
+## Observability
+
+Prometheus metrics, OpenTelemetry traces, structured logs, and a typed error taxonomy cover the full request lifecycle — along with a prebuilt dashboard for easy, immediate observability out of the box.
+
+[Observability →](reference/observability/index.md) · [Metrics →](reference/metrics.md) · [Dashboard →](deployment/dashboard.md)
+
+## Enterprise
+
+These docs cover the self-hosted, source-available edition. Enterprise support, SLAs, and custom features are available under a separate license.
+
+[Talk to us →](https://magmadevs.com/contact)
