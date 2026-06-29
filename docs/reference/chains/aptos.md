@@ -13,7 +13,11 @@ Aptos mainnet over the REST fullnode API.
 
 ## Supported method families
 
-Aptos exposes a REST API (not JSON-RPC). Paths are served under `/v1`.
+Aptos exposes a REST API (not JSON-RPC). The native fullnode paths below are
+served under `/v1` — but when you call them **through the example config's
+listener**, the `/v1` is already baked into the upstream URL, so drop it from
+your request path (e.g. native `GET /v1/accounts/{address}` → call
+`GET /accounts/{address}` on the router). See the run section below.
 
 | Family | Examples |
 |---|---|
