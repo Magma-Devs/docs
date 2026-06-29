@@ -51,6 +51,10 @@ plugins:
 
 # Community / support links — rendered as icons in the footer on every page.
 extra:
+  # Google Analytics 4 — Material injects gtag.js on every page automatically.
+  analytics:
+    provider: google
+    property: G-GQQEQ7XVPL
   social:
     - icon: fontawesome/brands/telegram
       link: https://t.me/magmadevs
