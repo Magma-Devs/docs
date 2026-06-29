@@ -1,3 +1,8 @@
+---
+title: "Bitcoin"
+description: "Run Smart Router for Bitcoin — example config and supported JSON-RPC methods."
+---
+
 # Bitcoin
 
 Bitcoin mainnet over Bitcoin Core JSON-RPC.

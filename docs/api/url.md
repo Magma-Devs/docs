@@ -1,3 +1,8 @@
+---
+title: "Connect your app"
+description: "Endpoint URLs and ready-to-paste client samples for viem, ethers, web3.py, and cosmjs."
+---
+
 # Connect your app
 
 Once Smart Router is running, your client points at a URL and speaks the same protocol it would speak to any other RPC endpoint — JSON-RPC for Ethereum, REST or gRPC for Cosmos, Tendermint RPC for Tendermint chains. No bespoke SDK, no proprietary protocol.

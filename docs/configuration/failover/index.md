@@ -1,3 +1,8 @@
+---
+title: "Failover & retry"
+description: "The configurable failover pipeline — retry, hedge, timeout, integrity checks, and circuit breaking."
+---
+
 # Failover & retry
 
 The umbrella for everything Smart Router does when a relay misbehaves: an RPC node is slow, returns an error, or falls behind chain head. Each policy is independent; they compose during a single relay's lifetime.

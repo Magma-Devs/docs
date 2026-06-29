@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{#
+  SEO + social meta tags.
+
+  Material already emits <title>, <meta name="description"> (from page
+  front-matter `description` or site_description), and <link rel="canonical">
+  (from site_url). Here we add the tags Material does NOT emit by default:
+  author, robots, Open Graph, and Twitter Card — driven per page off the same
+  front-matter title/description so there's a single source of truth.
+#}
+{% block extrahead %}
+  {#- Effective per-page values, mirroring Material's own fallbacks. -#}
+  {% set page_title = page.meta.title if page and page.meta and page.meta.title else (page.title if page and page.title else config.site_name) %}
+  {% set page_desc = page.meta.description if page and page.meta and page.meta.description else config.site_description %}
+  {% set page_url = page.canonical_url if page and page.canonical_url else config.site_url %}
+  {% set og_image = "https://www.magmadevs.com/og/smart-router.png" %}
+
+  <meta name="author" content="Magma Devs">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+
+  <meta property="og:site_name" content="Magma Devs">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ page_title }}">
+  <meta property="og:description" content="{{ page_desc }}">
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:image" content="{{ og_image }}">
+  <meta property="og:image:alt" content="Smart Router by Magma Devs">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@magmadevs">
+  <meta name="twitter:title" content="{{ page_title }}">
+  <meta name="twitter:description" content="{{ page_desc }}">
+  <meta name="twitter:image" content="{{ og_image }}">
+
+  {#- Brand colour for mobile browser chrome. -#}
+  <meta name="theme-color" content="#E8541E">
+{% endblock %}

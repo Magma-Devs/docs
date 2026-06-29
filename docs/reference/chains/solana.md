@@ -1,3 +1,8 @@
+---
+title: "Solana"
+description: "Run Smart Router for Solana — example config and supported methods."
+---
+
 # Solana
 
 Solana mainnet over JSON-RPC.

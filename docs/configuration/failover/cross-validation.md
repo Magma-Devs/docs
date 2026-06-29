@@ -1,3 +1,8 @@
+---
+title: "Cross-validation"
+description: "Require consensus across multiple providers before returning a response, catching one-off providers that return bad data."
+---
+
 # Cross-validation
 
 Send the **same request** to multiple RPC nodes in parallel and require **agreement** before returning the response. Catches one-off lying or buggy nodes before bad data reaches your client. (Also called *consensus* — the two terms are used interchangeably here.)

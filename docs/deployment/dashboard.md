@@ -1,3 +1,8 @@
+---
+title: "Dashboard"
+description: "Run the Smart Router monitoring dashboard to watch routing, cache, and provider health in real time."
+---
+
 # Dashboard
 
 The [Smart Router Dashboard](https://github.com/Magma-Devs/smart-router-dashboard) is an

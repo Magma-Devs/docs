@@ -1,3 +1,8 @@
+---
+title: "Ethereum"
+description: "Run Smart Router for Ethereum — example config and supported methods."
+---
+
 # Ethereum
 
 Ethereum mainnet over JSON-RPC.

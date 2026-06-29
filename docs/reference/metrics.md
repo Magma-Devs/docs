@@ -1,3 +1,8 @@
+---
+title: "Metrics"
+description: "Prometheus metrics exposed by Smart Router for routing, cache, and provider health."
+---
+
 # Metrics
 
 Every metric the Smart Router exposes over Prometheus, with its type, labels, and

@@ -1,3 +1,8 @@
+---
+title: "Cache"
+description: "Deploy the standalone, block-aware cache that absorbs repeat reads and can be shared across multiple router replicas."
+---
+
 # Cache
 
 The cache is an optional in-memory (RAM) server that stores RPC responses so repeat

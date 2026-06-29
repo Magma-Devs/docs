@@ -1,3 +1,8 @@
+---
+title: "Error codes"
+description: "Reference of Smart Router error codes and what each one means."
+---
+
 # Error codes
 
 Smart Router classifies every upstream failure into an internal **error code** used

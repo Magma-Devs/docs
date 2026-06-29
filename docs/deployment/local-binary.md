@@ -1,3 +1,8 @@
+---
+title: "Local binary"
+description: "Build and run the Smart Router binary natively on your host machine."
+---
+
 # Local binary
 
 Run Smart Router as a native binary on the host — no Docker. Best when you want the

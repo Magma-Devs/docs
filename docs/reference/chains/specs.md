@@ -1,3 +1,8 @@
+---
+title: "Chain specs"
+description: "How chain specs declare API methods, parser rules, finality parameters, and capability flags."
+---
+
 # Chain specs
 
 Smart Router is **chain-agnostic**. It has no chain logic baked in — every chain it

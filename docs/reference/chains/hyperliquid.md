@@ -1,3 +1,8 @@
+---
+title: "Hyperliquid"
+description: "Run Smart Router for Hyperliquid — example config and supported methods."
+---
+
 # Hyperliquid
 
 Hyperliquid EVM mainnet over JSON-RPC.

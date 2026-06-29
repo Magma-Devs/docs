@@ -1,3 +1,8 @@
+---
+title: "Quick start"
+description: "Get Smart Router running in three commands — clone the repo, start it with Docker Compose, and send your first JSON-RPC relay."
+---
+
 <p class="eyebrow">GETTING STARTED</p>
 
 # Quickstart

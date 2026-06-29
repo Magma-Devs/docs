@@ -1,3 +1,8 @@
+---
+title: "Profiling"
+description: "Profile Smart Router to find CPU and memory hotspots."
+---
+
 # Profiling
 
 For diagnosing CPU, memory, or contention issues, Smart Router can ship continuous

@@ -1,3 +1,8 @@
+---
+title: "Config file"
+description: "Reference for the Smart Router YAML config file — projects, upstreams, selection, and failover."
+---
+
 # The config file
 
 A Smart Router config is a single YAML file with two required lists — the **listeners**

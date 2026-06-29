@@ -1,3 +1,8 @@
+---
+title: "Request headers"
+description: "Per-request header directives to bypass the cache, pin a specific provider, or override routing while debugging."
+---
+
 # Directives
 
 Override Smart Router's default behaviour for a single request by setting HTTP headers. Use them when the default routing, caching, or timeout policy isn't what you want for this specific call.
