@@ -5,55 +5,11 @@ description: "Get Smart Router running in three commands — clone the repo, sta
 
 <p class="eyebrow">GETTING STARTED</p>
 
-# Quickstart
+# Quick start
 
-Smart Router is a centralised RPC routing gateway. Point it at upstream RPC endpoints; it serves your traffic with QoS-based node selection, caching, hedging, retries, and cross-validation.
-
-<div class="grid cards card-grid" markdown>
-
--   ![Quickstart](assets/illustrations/quickstart.svg){.card-illustration}
-
-    **Run your first relay**
-
-    Install the binary, point it at an RPC, send a curl request. Three commands.
-
-    [Get started →](#three-steps-to-a-running-router)
-
--   ![Connect your app](assets/illustrations/api.svg){.card-illustration}
-
-    **Integrate with your app**
-
-    Endpoint URLs, header directives, viem / ethers / web3.py / cosmjs samples.
-
-    [Connect your app →](api/url.md)
-
--   ![Configure](assets/illustrations/configure.svg){.card-illustration}
-
-    **Configure routing & failover**
-
-    Selection strategies, retry, hedging, consensus, timeouts.
-
-    [Configuration →](configuration/index.md)
-
--   ![Supported chains](assets/illustrations/chains.svg){.card-illustration}
-
-    **Supported chains**
-
-    Ethereum, Lava, and 75+ chains across every major ecosystem out of the box.
-
-    [Supported chains →](reference/chains/index.md)
-
-</div>
-
-!!! tip "Want it managed?"
-    These docs cover the **self-hosted** Smart Router. If you'd rather not operate it yourself, [talk to us](https://magmadevs.com/contact).
+Smart Router is a reliability and security layer that sits between your app and the chain. It monitors your RPC upstreams and optimizes routing in real time — so teams can easily manage complex RPC setups using a standard solution, rather than building one in-house. Any chain, any provider.
 
 ## Three steps to a running router
-
-!!! tip "In a hurry? Use the wizard"
-    `make wizard` launches an interactive TUI that picks chains, collects upstreams,
-    health-checks everything, writes the config, and brings up the stack in one pass.
-    See [Config wizard](deployment/wizard.md).
 
 ### 1. Get the code
 
@@ -78,8 +34,39 @@ curl -X POST http://127.0.0.1:3360 \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
+That request now flows through the full pipeline — upstream selection, retry, hedging, and caching — instead of hitting a single RPC directly.
+
+??? tip "In a hurry? Use the wizard"
+    `make wizard` launches an interactive TUI that picks chains, collects upstreams,
+    health-checks everything, writes the config, and brings up the stack in one pass.
+    See [Config wizard](deployment/wizard.md).
+
 ## Where to next
 
-- **Integrating with an app** → [Connect your app](api/url.md)
-- **Operating the router** → [Configuration](configuration/index.md), [Deployment](deployment/index.md)
-- **Evaluating** → [Why Smart Router?](why.md)
+<div class="grid cards card-grid-compact" markdown>
+
+-   **Connect your app**
+
+    Point viem, ethers, web3.py, or cosmjs at your endpoint.
+
+    [Connect your app →](api/url.md)
+
+-   **Configure routing & failover**
+
+    Tune upstream selection, retry, hedging, timeouts, and consensus.
+
+    [Configuration →](configuration/index.md)
+
+-   **Supported chains**
+
+    Ethereum, Lava, and 75+ chains, each configured by a chain spec.
+
+    [Browse chains →](reference/chains/index.md)
+
+-   **Why Smart Router?**
+
+    The problems it solves and how it compares to a plain proxy.
+
+    [Read the overview →](why.md)
+
+</div>
