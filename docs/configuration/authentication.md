@@ -20,10 +20,10 @@ The common case (Alchemy `Authorization: Bearer`, custom `x-api-key`, etc.):
 
 ```yaml
 node-urls:
-  - url: "https://base.lava.build"
+  - url: "https://your-eth-provider.example.com"
     auth-config:
       auth-headers:
-        x-api-key: "${RPC_KEY_BASE}"
+        x-api-key: "${RPC_KEY_ETH}"
 ```
 
 `auth-headers` is a map, so you can send several headers. Every request to that URL

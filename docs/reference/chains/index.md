@@ -7,8 +7,8 @@ at startup.
 
 New here? Read [Chain specs](specs.md) first — what a spec is and how the router loads
 it. Then see [Examples](examples/index.md) for ready-to-run configs and per-chain
-walkthroughs — [Ethereum](ethereum.md), [Arbitrum](arbitrum.md), [Base](base.md),
-[Lava](lava.md), and [Solana](solana.md).
+walkthroughs — [Ethereum](ethereum.md), [Solana](solana.md), [Bitcoin](bitcoin.md),
+[Hyperliquid](hyperliquid.md), [Cosmos](cosmos.md), and [Aptos](aptos.md).
 
 ## Browse chains
 

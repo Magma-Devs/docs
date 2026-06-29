@@ -81,7 +81,7 @@ If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode ad
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — three public upstreams (Lava gateway, PublicNode, Tenderly), HTTP + WS, no API key needed:
+The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — two public upstreams (PublicNode, Tenderly), HTTP + WS, no API key needed:
 
 === "Docker Compose"
 
