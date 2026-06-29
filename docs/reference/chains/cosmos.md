@@ -1,4 +1,4 @@
-# Cosmos
+# ![](../../assets/chains/cosmos-hub.svg){ .chain-title-icon } Cosmos
 
 Cosmos Hub mainnet (`cosmoshub-4`) over REST, gRPC, and Tendermint RPC. Includes the full Cosmos-ecosystem method surface (Cosmos SDK, CosmWasm, IBC, Tendermint).
 

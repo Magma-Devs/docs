@@ -1682,3 +1682,64 @@ html { scroll-padding-top: 96px; }
 /* hide the hint once the user is typing/focused */
 .md-search__input:focus ~ .md-search__keyhint,
 .md-search__input:not(:placeholder-shown) ~ .md-search__keyhint { opacity: 0; }
+
+/* ============================================================================
+   Per-chain icons — page titles, the Examples "Bundled chains" table,
+   and the left nav (TOC). Icons live in docs/assets/chains/<chain>.svg.
+   ============================================================================ */
+
+/* Inline icon in a chain page's H1 title (md_in_html image with this class).
+   This repo's CSS sets `.md-typeset img[src$=".svg"] { display: block }`
+   (specificity 0,2,1), so match the same shape AND the class to win, and force
+   inline so the icon sits beside the title instead of stacking above it. */
+.md-typeset h1 img.chain-title-icon[src$=".svg"] {
+  display: inline-block;
+  height: 0.85em;
+  width: auto;
+  vertical-align: middle;
+  margin: 0 0.5rem 0.12em 0;
+}
+
+/* Inline icon in the Examples "Bundled chains" table rows. */
+.md-typeset td img.chain-row-icon[src$=".svg"] {
+  display: inline-block;
+  height: 1.15em;
+  width: auto;
+  vertical-align: middle;
+  margin: 0 0.4rem 0.1em 0;
+}
+
+/* Keep the icon and chain name on one line in the first column. */
+.md-typeset td:first-child:has(img.chain-row-icon) {
+  white-space: nowrap;
+}
+
+/* Left-nav (TOC) icons: prefix each chain page's nav link with its SVG.
+   Material emits RELATIVE sibling hrefs in the sidebar (e.g. "../ethereum/",
+   and "./"/"../cosmos/" for the active page), so match on the trailing
+   "<chain>/" segment. site_url is served under /docs/, so the background
+   asset paths carry that prefix. */
+.md-nav__link[href$="ethereum/"]::before,
+.md-nav__link[href$="solana/"]::before,
+.md-nav__link[href$="bitcoin/"]::before,
+.md-nav__link[href$="hyperliquid/"]::before,
+.md-nav__link[href$="/cosmos/"]::before,
+.md-nav__link[href$="aptos/"]::before {
+  content: "";
+  display: inline-block;
+  height: 1.1em;
+  width: 1.1em;
+  margin-right: 0.5rem;
+  vertical-align: -0.2em;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex: 0 0 auto;
+}
+
+.md-nav__link[href$="ethereum/"]::before    { background-image: url("/docs/assets/chains/ethereum.svg"); }
+.md-nav__link[href$="solana/"]::before       { background-image: url("/docs/assets/chains/solana.svg"); }
+.md-nav__link[href$="bitcoin/"]::before      { background-image: url("/docs/assets/chains/bitcoin.svg"); }
+.md-nav__link[href$="hyperliquid/"]::before  { background-image: url("/docs/assets/chains/hyperliquid.svg"); }
+.md-nav__link[href$="/cosmos/"]::before      { background-image: url("/docs/assets/chains/cosmos-hub.svg"); }
+.md-nav__link[href$="aptos/"]::before        { background-image: url("/docs/assets/chains/aptos.svg"); }

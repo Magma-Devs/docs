@@ -1,4 +1,4 @@
-# Hyperliquid
+# ![](../../assets/chains/hyperliquid.svg){ .chain-title-icon } Hyperliquid
 
 Hyperliquid EVM mainnet over JSON-RPC.
 

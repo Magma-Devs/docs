@@ -1,4 +1,4 @@
-# Aptos
+# ![](../../assets/chains/aptos.svg){ .chain-title-icon } Aptos
 
 Aptos mainnet over the REST fullnode API.
 

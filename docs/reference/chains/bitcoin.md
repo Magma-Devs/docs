@@ -1,4 +1,4 @@
-# Bitcoin
+# ![](../../assets/chains/bitcoin.svg){ .chain-title-icon } Bitcoin
 
 Bitcoin mainnet over Bitcoin Core JSON-RPC.
 
