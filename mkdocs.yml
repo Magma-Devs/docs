@@ -133,10 +133,11 @@ nav:
       - Examples:
           - reference/chains/examples/index.md
           - Ethereum: reference/chains/ethereum.md
-          - Arbitrum: reference/chains/arbitrum.md
-          - Base: reference/chains/base.md
-          - Lava: reference/chains/lava.md
           - Solana: reference/chains/solana.md
+          - Bitcoin: reference/chains/bitcoin.md
+          - Hyperliquid: reference/chains/hyperliquid.md
+          - Cosmos: reference/chains/cosmos.md
+          - Aptos: reference/chains/aptos.md
   - Observability:
       - reference/observability/index.md
       - Metrics: reference/metrics.md
