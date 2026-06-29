@@ -78,6 +78,7 @@ extra_javascript:
   - javascripts/mobile-nav-search.js
   - javascripts/chains-data.js
   - javascripts/chains-explorer.js
+  - javascripts/managed-popup.js
 
 markdown_extensions:
   - admonition
@@ -100,7 +101,7 @@ markdown_extensions:
 
 # Nav lists only pages that exist. Add entries as content is written.
 nav:
-  - Introduction:
+  - Quickstart:
       - Why Smart Router?: why.md
       - Quick start: index.md
   - Run Smart Router:
@@ -132,11 +133,10 @@ nav:
       - Examples:
           - reference/chains/examples/index.md
           - Ethereum: reference/chains/ethereum.md
+          - Arbitrum: reference/chains/arbitrum.md
+          - Base: reference/chains/base.md
+          - Lava: reference/chains/lava.md
           - Solana: reference/chains/solana.md
-          - Bitcoin: reference/chains/bitcoin.md
-          - Hyperliquid: reference/chains/hyperliquid.md
-          - Cosmos: reference/chains/cosmos.md
-          - Aptos: reference/chains/aptos.md
   - Observability:
       - reference/observability/index.md
       - Metrics: reference/metrics.md
