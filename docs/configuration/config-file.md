@@ -61,7 +61,7 @@ Each entry opens one listening socket for one chain + interface.
 | Field | Required | Description |
 | --- | --- | --- |
 | `network-address` | yes | `host:port` to listen on, e.g. `0.0.0.0:3360`. |
-| `chain-id` | yes | Spec chain id (`ETH1`, `ARBITRUM`, `LAVA`, …). Must resolve from `--use-static-spec`. |
+| `chain-id` | yes | Spec chain id (`ETH1`, `SOLANA`, `COSMOSHUB`, …). Must resolve from `--use-static-spec`. |
 | `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, or `tendermintrpc` — must be supported by the chain spec. |
 | `tls-enabled` | no | Serve this listener over TLS using a self-signed certificate. Default `false`. |
 | `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/lava/health`. |
@@ -69,10 +69,10 @@ Each entry opens one listening socket for one chain + interface.
 ```yaml
 endpoints:
   - network-address: "0.0.0.0:3360"
-    chain-id: "LAVA"
+    chain-id: "COSMOSHUB"
     api-interface: "rest"
   - network-address: "0.0.0.0:3361"
-    chain-id: "LAVA"
+    chain-id: "COSMOSHUB"
     api-interface: "grpc"
 ```
 
@@ -91,12 +91,12 @@ Each entry is one named backend serving one chain + interface, with one or more 
 
 ```yaml
 direct-rpc:
-  - name: "eth-lava-build"
+  - name: "eth-publicnode"
     chain-id: "ETH1"
     api-interface: "jsonrpc"
     node-urls:
-      - url: "https://eth1.lava.build"
-      - url: "wss://eth1.lava.build/websocket"
+      - url: "https://ethereum-rpc.publicnode.com"
+      - url: "wss://ethereum-rpc.publicnode.com"
 ```
 
 ### `node-urls[]` — per-URL options
@@ -115,13 +115,13 @@ direct-rpc:
 
 ```yaml
     node-urls:
-      - url: "https://base.lava.build"
+      - url: "https://your-eth-provider.example.com"
         timeout: 10s
         addons: ["bundler", "debug"]
         auth-config:
           auth-headers:
-            x-api-key: "${RPC_KEY_BASE}"
-      - url: "wss://base.lava.build/websocket"
+            x-api-key: "${RPC_KEY_ETH}"
+      - url: "wss://your-eth-provider.example.com/websocket"
 ```
 
 ### `grpc-config` — gRPC descriptors

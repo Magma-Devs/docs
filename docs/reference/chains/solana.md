@@ -32,7 +32,7 @@ The full method list lives in the spec file linked above.
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_solana.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — a single upstream on the Lava public gateway (`solana.lava.build`), no API key needed. The example is HTTP-only, so run it with `--skip-websocket-verification`:
+The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_solana.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — two public upstreams (PublicNode and the Solana Labs public RPC), no API key needed. The example is HTTP-only, so run it with `--skip-websocket-verification`:
 
 === "Docker Compose"
 
