@@ -41,6 +41,10 @@ curl -X POST http://localhost:3360 \
      -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
+A non-error JSON-RPC result means the listener is live; the metrics server also answers
+`:7779/metrics/overall-health`. See [Confirm it's healthy](docker-compose.md#confirm-its-healthy)
+for the full set of checks.
+
 - The **config file is positional** — there's no `--config` flag.
 - `--use-static-spec` accepts a local directory (the bundled `specs/`) **or** a
   GitHub/GitLab URL to resolve chains that aren't bundled (e.g. `LAV1`). Repeatable.

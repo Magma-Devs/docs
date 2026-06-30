@@ -49,7 +49,9 @@ cd smart-router
   [Authentication](../configuration/authentication.md).
 - **Observability** — scrape `:7779` (see [Metrics](../reference/metrics.md)); set
   `OTEL_EXPORTER_OTLP_ENDPOINT` for [tracing](../configuration/index.md).
-- **Health checks** — each listener answers a basic chain-id query; the cache exposes
-  `/metrics` on its metrics port.
+- **Health checks** — each listener answers a basic chain-id query; the metrics server
+  exposes an aggregate `:7779/metrics/overall-health` probe (`200 Health status OK` /
+  `503 Unhealthy`), and the cache exposes `/metrics` on its metrics port. See
+  [Confirm it's healthy](docker-compose.md#confirm-its-healthy).
 - **Tuning** — node selection, failover, and timeouts are all configurable; see the
   [CLI reference](../reference/cli.md) and [Failover & retry](../configuration/failover/index.md).
