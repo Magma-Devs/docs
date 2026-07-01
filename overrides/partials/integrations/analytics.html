@@ -1,0 +1,37 @@
+{#-
+  Analytics dispatcher — override of Material's built-in
+  partials/integrations/analytics.html.
+
+  Verbatim copy of the upstream dispatcher (defines + gates Google Analytics),
+  extended to also register the LinkedIn Insight Tag under the SAME consent
+  check. Both trackers only fire once the visitor accepts the `analytics`
+  cookie category in the consent banner (extra.consent in mkdocs.yml). Without
+  a consent banner configured, both fire on load — matching upstream behaviour.
+
+  Keep the GA branch in sync if you bump mkdocs-material; diff against
+  .venv/.../material/templates/partials/integrations/analytics.html on upgrade.
+-#}
+{% if config.extra.analytics %}
+  {% set provider = config.extra.analytics.provider %}
+{% endif %}
+
+{#- Register the LinkedIn Insight loader (defines __md_linkedin, no auto-fire). -#}
+{% include "partials/integrations/linkedin.html" %}
+
+{% if provider %}
+  {% include "partials/integrations/analytics/" ~ provider ~ ".html" %}
+  {% if config.extra.consent %}
+    <script>if("undefined"!=typeof __md_analytics){var consent=__md_get("__consent");consent&&consent.analytics&&__md_analytics()}</script>
+    <script>if("undefined"!=typeof __md_linkedin){var consent=__md_get("__consent");consent&&consent.analytics&&__md_linkedin()}</script>
+  {% else %}
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+    <script>"undefined"!=typeof __md_linkedin&&__md_linkedin()</script>
+  {% endif %}
+{% else %}
+  {#- No analytics provider, but still honour LinkedIn under the same gate. -#}
+  {% if config.extra.consent %}
+    <script>if("undefined"!=typeof __md_linkedin){var consent=__md_get("__consent");consent&&consent.analytics&&__md_linkedin()}</script>
+  {% else %}
+    <script>"undefined"!=typeof __md_linkedin&&__md_linkedin()</script>
+  {% endif %}
+{% endif %}
