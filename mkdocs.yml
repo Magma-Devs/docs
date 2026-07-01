@@ -61,6 +61,26 @@ extra:
   analytics:
     provider: google
     property: G-GQQEQ7XVPL
+  # LinkedIn Insight Tag partner id — consumed by
+  # overrides/partials/integrations/linkedin.html and fired under the same
+  # consent gate as GA (see the analytics dispatcher override). Unset → no tag.
+  linkedin_partner_id: "9287986"
+  # Cookie-consent banner. Both GA and the LinkedIn Insight Tag are gated on
+  # the `analytics` category — neither fires until the visitor accepts.
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to measure the effectiveness of our documentation and
+      whether visitors find what they're looking for. With your consent, you
+      help us improve these docs.
+    cookies:
+      analytics:
+        name: Google Analytics & LinkedIn
+        checked: false
+    actions:
+      - accept
+      - reject
+      - manage
   social:
     - icon: fontawesome/brands/telegram
       link: https://t.me/magmadevs
