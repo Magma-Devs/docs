@@ -70,9 +70,7 @@ extra:
   consent:
     title: Cookie consent
     description: >-
-      We use cookies to measure the effectiveness of our documentation and
-      whether visitors find what they're looking for. With your consent, you
-      help us improve these docs.
+      We use cookies to measure and improve these docs.
     cookies:
       analytics:
         name: Google Analytics & LinkedIn

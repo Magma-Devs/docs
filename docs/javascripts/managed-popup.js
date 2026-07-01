@@ -55,9 +55,58 @@
     }
   }
 
+  // The cookie-consent card owns the bottom-right corner and must be answered
+  // first. While it's unresolved, hold the managed nudge back so the two don't
+  // stack; re-arm once the visitor accepts/rejects.
+  //
+  // Material stores the decision in localStorage — NOT a cookie — under a
+  // path-scoped key like "/.__consent" (base path + ".__consent"). Rather than
+  // hardcode the base, treat consent as resolved when any "*.__consent" key
+  // holds a value. This is what survives base-path changes and Material's
+  // internals; checking `!el.hidden` alone races the un-hide on load.
+  function consentResolved() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && /__consent$/.test(k) && localStorage.getItem(k)) return true;
+      }
+    } catch (e) {
+      return true; // storage unavailable — don't block the nudge indefinitely
+    }
+    return false;
+  }
+  function consentPending() {
+    var el = document.getElementById("__consent");
+    if (!el) return false;                 // consent not configured — nothing to wait on
+    return !consentResolved();             // wait until a choice is recorded
+  }
+
+  function start() {
+    if (dismissed()) return;
+
+    // Consent already answered on a clean load — show via the normal path.
+    if (!consentPending()) { init(); return; }
+
+    // Consent still open. Wait for the choice, but DON'T build the instant it
+    // resolves: Material reacts to accept/reject by calling location.reload(),
+    // which would wipe a just-built popup (the "flash then gone"). Instead, once
+    // resolved, wait a short grace period — if the reload comes, this whole
+    // script is torn down and the fresh load's `init()` shows the popup cleanly;
+    // if no reload comes (e.g. reject with no analytics), we build after the
+    // grace period so the nudge still appears.
+    var iv = setInterval(function () {
+      if (!consentPending()) {
+        clearInterval(iv);
+        setTimeout(function () {
+          if (!document.querySelector(".sr-managed-popup")) init();
+        }, 1200);
+      }
+    }, 300);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    init();
+    start();
   }
 })();

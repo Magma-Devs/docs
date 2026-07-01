@@ -1825,3 +1825,152 @@ html { scroll-padding-top: 96px; }
 @media (max-width: 480px) {
   .sr-managed-popup { right: 0.75rem; left: 0.75rem; bottom: 0.75rem; width: auto; }
 }
+
+/* ============================================================================
+   Cookie consent — brand-matched floating card
+   Material ships a plain full-width gray bar; restyle it as a rounded card
+   (sibling to .sr-managed-popup) with the magma pill CTA and outlined
+   secondary actions. Gates GA + the LinkedIn Insight Tag.
+   ============================================================================ */
+
+/* Dim the page behind the dialog, matching the search-overlay scrim tone. */
+.md-consent__overlay {
+  background-color: rgba(10, 13, 12, 0.45);
+  backdrop-filter: blur(1px);
+}
+
+/* The card itself — compact, floats bottom-right, sibling to .sr-managed-popup. */
+.md-consent__inner {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  left: auto;
+  width: min(360px, calc(100vw - 2.5rem));
+  padding: 18px 18px 16px;
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.16), 0 3px 10px rgba(255, 57, 0, 0.08);
+  font-family: "Inter", sans-serif;
+}
+
+.md-consent__inner .md-typeset {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-body);
+}
+
+/* Heading with a small cookie accent, matching the managed-popup title scale. */
+.md-consent__inner .md-typeset h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.md-consent__inner .md-typeset h4::before {
+  content: "🍪";
+  margin-right: 7px;
+  font-size: 14px;
+}
+.md-consent__inner .md-typeset p {
+  margin: 0;
+  color: var(--text-body);
+}
+
+/* "Manage settings" toggle list — tighten and de-emphasise. */
+.md-consent__settings { margin-top: 10px; }
+.md-consent__settings ul { margin: 0; }
+.md-consent__settings label { color: var(--text-body); font-size: 13px; }
+
+/* Action row: divider on top, then buttons. */
+.md-consent__inner form { margin-top: 14px; }
+.md-consent__inner .md-consent__controls,
+.md-consent__inner form > :last-child {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Buttons.
+   NOTE: Material ships BOTH accept and reject as .md-button--primary (reject
+   is <button type="reset">). We only want ACCEPT to read as the brand action,
+   so styling is keyed off structure, not the --primary class:
+     • accept  → button.md-button--primary NOT [type=reset]  → magma pill
+     • reject  → button[type=reset]                          → quiet outline
+     • manage  → label.md-button                             → quiet outline
+*/
+.md-consent__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.md-consent__controls .md-button {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  border-radius: 9999px;
+  padding: 0.5em 16px;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface);
+  color: var(--text-muted);
+  box-shadow: none;
+  transition: color var(--t), background-color var(--t), border-color var(--t);
+}
+/* Quiet actions: reject + manage. */
+.md-consent__controls button[type="reset"].md-button,
+.md-consent__controls label.md-button:hover,
+.md-consent__controls label.md-button {
+  background-color: var(--surface);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+.md-consent__controls button[type="reset"].md-button:hover,
+.md-consent__controls label.md-button:hover {
+  color: var(--text-strong);
+  background-color: var(--surface-subtle);
+  border-color: var(--border-subtle);
+}
+/* Accept — the one true brand action (primary, and NOT the reset button). */
+.md-consent__controls button.md-button--primary:not([type="reset"]) {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  transition: background-color var(--t), transform var(--t);
+}
+.md-consent__controls button.md-button--primary:not([type="reset"]):hover,
+.md-consent__controls button.md-button--primary:not([type="reset"]):focus {
+  background-color: var(--primary-dark);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  /* Dock as a full-width bottom sheet: flush to all edges, top corners only. */
+  .md-consent__inner {
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 14px 14px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+  /* Accept spans the top row; reject + manage share the row below.
+     Order forces Accept first regardless of the configured actions order. */
+  .md-consent__controls {
+    gap: 8px;
+  }
+  .md-consent__controls button.md-button--primary:not([type="reset"]) {
+    order: -1;
+    flex: 1 0 100%;
+    text-align: center;
+  }
+  .md-consent__controls button[type="reset"].md-button,
+  .md-consent__controls label.md-button {
+    flex: 1;
+    text-align: center;
+  }
+}
