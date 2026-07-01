@@ -1,0 +1,8 @@
+# Security contact for Magma Devs / Smart Router — RFC 9116.
+# https://docs.magmadevs.com/.well-known/security.txt
+
+Contact: mailto:security@magmadevs.com
+Expires: 2027-07-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://docs.magmadevs.com/.well-known/security.txt
+Policy: https://github.com/Magma-Devs/smart-router/blob/main/SECURITY.md

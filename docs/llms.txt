@@ -1,6 +1,6 @@
 # Smart Router — Documentation
 
-> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 75+ chain specs. For product, pricing, security, and company details, see https://www.magmadevs.com/llms.txt.
+> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 75+ chain specs. For product, pricing, security, and company details, see https://www.magmadevs.com/llms.txt. The full text of every page in this documentation is available as a single file at https://docs.magmadevs.com/llms-full.txt.
 
 Smart Router sits between your application and a fleet of RPC providers (Alchemy, Infura, QuickNode, Helius, self-hosted nodes, and others). It picks a healthy, performant provider per request, retries the bad one, hedges the slow one, validates responses across providers, and caches what it can — so no single provider's uptime or data integrity becomes a point of failure. Think of it as Cloudflare for blockchain RPC.
 

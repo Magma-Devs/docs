@@ -9,3 +9,4 @@ Allow: /
 Sitemap: https://docs.magmadevs.com/sitemap.xml
 
 # LLM-friendly index: https://docs.magmadevs.com/llms.txt
+# LLM full-text corpus: https://docs.magmadevs.com/llms-full.txt

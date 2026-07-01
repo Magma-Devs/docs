@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+
+{#
+  Branded 404. Material ships a bare default; this replaces the page content
+  with an on-brand "not found" that keeps the header, search, and nav so a lost
+  visitor can recover in one click. Rendered to site/404.html and served by
+  GitHub Pages on any unknown path.
+#}
+
+{% block htmltitle %}
+  <title>Page not found — {{ config.site_name }}</title>
+{% endblock %}
+
+{% block content %}
+  <div class="mdx-404">
+    <p class="mdx-404__code">404</p>
+    <h1 class="mdx-404__title">This page took a bad route</h1>
+    <p class="mdx-404__lead">
+      The page you’re looking for doesn’t exist or has moved. Smart Router would
+      have failed this one over to a healthy provider — let’s do the same.
+    </p>
+    <div class="mdx-404__actions">
+      <a class="md-button md-button--primary" href="{{ '/' | url }}">Go to Quick start</a>
+      <a class="md-button" href="{{ 'reference/chains/' | url }}">Supported chains</a>
+      <a class="md-button" href="https://github.com/Magma-Devs/smart-router">GitHub</a>
+    </div>
+    <p class="mdx-404__hint">
+      Or use the search box above to find what you need.
+    </p>
+  </div>
+{% endblock %}
