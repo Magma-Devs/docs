@@ -35,4 +35,93 @@
 
   {#- Brand colour for mobile browser chrome. -#}
   <meta name="theme-color" content="#E8541E">
+
+  {#- Home-screen / PWA icons. Material emits only the SVG favicon from
+      theme.favicon; these cover iOS "Add to Home Screen" and Android/Chrome. -#}
+  <link rel="apple-touch-icon" href="{{ 'assets/apple-touch-icon.png' | url }}">
+  <link rel="manifest" href="{{ 'manifest.webmanifest' | url }}">
+
+  {#- Google Consent Mode v2. Initialise gtag with every storage type DENIED
+      before gtag.js loads, so GA4 sends cookieless "modeled" pings for visitors
+      who never touch the banner (recovering EEA traffic that would otherwise be
+      invisible). The consent banner's accept handler flips this to `granted`
+      via a `consent: update` call — see javascripts/consent-mode.js. This runs
+      independently of Material's loader gate: gtag.js is still only injected
+      after accept, but when it loads it inherits the correct consent state. -#}
+  {% if config.extra.analytics and config.extra.analytics.property %}
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'wait_for_update': 500
+      });
+    </script>
+  {% endif %}
+
+  {#- Structured data: Organization + WebSite (site-wide) and TechArticle +
+      BreadcrumbList (per content page). Drives rich results and gives search
+      engines / AI crawlers a machine-readable authorship + navigation graph. -#}
+  {#- Treat the site-root page as home even when it isn't the first nav item
+      (Material's page.is_homepage requires both): compare canonical URL to
+      site_url. On the root page we emit only Organization + WebSite and skip
+      the self-referential TechArticle/duplicate breadcrumb. -#}
+  {% set is_home = (page and page.is_homepage) or (page_url == config.site_url) %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.magmadevs.com/#organization",
+        "name": "Magma Devs",
+        "url": "https://www.magmadevs.com",
+        "logo": "https://www.magmadevs.com/og/smart-router.png",
+        "sameAs": [
+          "https://github.com/Magma-Devs",
+          "https://x.com/magmadevs",
+          "https://t.me/magmadevs"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "{{ config.site_url }}#website",
+        "url": "{{ config.site_url }}",
+        "name": "{{ config.site_name }} Documentation",
+        "description": "{{ config.site_description }}",
+        "publisher": { "@id": "https://www.magmadevs.com/#organization" }
+      }{% if page and not is_home %},
+      {
+        "@type": "TechArticle",
+        "headline": "{{ page_title }}",
+        "description": "{{ page_desc }}",
+        "url": "{{ page_url }}",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "{{ config.site_url }}#website" },
+        "author": { "@id": "https://www.magmadevs.com/#organization" },
+        "publisher": { "@id": "https://www.magmadevs.com/#organization" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "{{ config.site_name }}",
+            "item": "{{ config.site_url }}"
+          }{% if page and page.title %},
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "{{ page_title }}",
+            "item": "{{ page_url }}"
+          }{% endif %}
+        ]
+      }{% endif %}
+    ]
+  }
+  </script>
 {% endblock %}

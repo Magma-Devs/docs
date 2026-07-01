@@ -55,12 +55,34 @@ plugins:
       type: date
       enable_creation_date: false
 
+# Build hooks. llms_full.py concatenates every page into site/llms-full.txt
+# (the LLM-ingestion corpus) in nav order at post-build — always in sync with
+# content, no manual upkeep. The curated index is the hand-written docs/llms.txt.
+hooks:
+  - hooks/llms_full.py
+
 # Community / support links — rendered as icons in the footer on every page.
 extra:
   # Google Analytics 4 — Material injects gtag.js on every page automatically.
   analytics:
     provider: google
     property: G-GQQEQ7XVPL
+    # "Was this page helpful?" widget. Emits GA4 feedback events per page so the
+    # docs team can see which pages underperform. Only records once the visitor
+    # has accepted analytics cookies (same consent gate as gtag).
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/thumb-up-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for the feedback.
+        - icon: material/thumb-down-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks — <a href="https://github.com/Magma-Devs/docs/issues/new" target="_blank" rel="noopener">tell us what was missing</a>.
   # LinkedIn Insight Tag partner id — consumed by
   # overrides/partials/integrations/linkedin.html and fired under the same
   # consent gate as GA (see the analytics dispatcher override). Unset → no tag.
@@ -89,6 +111,7 @@ extra_css:
 
 extra_javascript:
   - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/consent-mode.js
   - javascripts/tablesort.js
   - javascripts/toc-title.js
   - javascripts/search-hint.js
