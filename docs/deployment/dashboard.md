@@ -25,8 +25,8 @@ up from the router repo.
 
 ```bash
 git clone https://github.com/Magma-Devs/smart-router-dashboard
-cd smart-router-dashboard/v2
-make up          # router + Prometheus + api (:8000) + web (:3000)
+cd smart-router-dashboard
+make up          # router + Prometheus + api (:8000) + web (:3000) + logs (Grafana :3001)
 ```
 
 | URL | Service |
@@ -34,13 +34,14 @@ make up          # router + Prometheus + api (:8000) + web (:3000)
 | <http://localhost:3000> | Dashboard UI |
 | <http://localhost:8000> | Dashboard API (`/docs` for the OpenAPI UI) |
 | <http://localhost:9090> | Prometheus |
+| <http://localhost:3001> | Grafana logs (`admin`/`admin`; anonymous viewer enabled) |
 | <http://localhost:3360> | router ETH1 JSON-RPC |
 | <http://localhost:7779> | router metrics (scraped by Prometheus) |
 
 Already running a router on the host's `:7779`? Bring up just the dashboard + Prometheus
 with `docker compose up` (no router profile). Full configuration — authentication, the
 values file, the logs profile, and pointing it at an existing router — is in the
-[dashboard README](https://github.com/Magma-Devs/smart-router-dashboard/blob/main/v2/README.md).
+[dashboard README](https://github.com/Magma-Devs/smart-router-dashboard/blob/main/README.md).
 
 ## How it fits together
 

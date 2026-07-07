@@ -85,7 +85,7 @@ separate repo that ships its own self-contained stack (router + Prometheus + das
 
 ```bash
 git clone https://github.com/Magma-Devs/smart-router-dashboard
-cd smart-router-dashboard/v2 && make up
+cd smart-router-dashboard && make up
 ```
 
 The UI is on <http://localhost:3000>. See the [Dashboard](dashboard.md) page for what it
