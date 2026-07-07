@@ -80,15 +80,16 @@ shared state — is on the [Cache](cache.md) page.
 
 ## Add the dashboard
 
-A second overlay brings up Prometheus plus the dashboard UI (prebuilt GHCR images):
+The [Smart Router Dashboard](https://github.com/Magma-Devs/smart-router-dashboard) is a
+separate repo that ships its own self-contained stack (router + Prometheus + dashboard):
 
 ```bash
-docker compose -f docker/docker-compose.dashboard.yml up
+git clone https://github.com/Magma-Devs/smart-router-dashboard
+cd smart-router-dashboard/v2 && make up
 ```
 
-The UI is on <http://localhost:3000> (login `admin` / `password`). See the
-[Dashboard](dashboard.md) page for what it shows, the full port map, and changing the
-credentials.
+The UI is on <http://localhost:3000>. See the [Dashboard](dashboard.md) page for what it
+shows, the full port map, and configuration (auth, values file, logs).
 
 ## Confirm it's healthy
 

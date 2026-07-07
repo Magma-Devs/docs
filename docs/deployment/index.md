@@ -14,7 +14,7 @@ Pick how you want to run it:
 | Method | Best for |
 | --- | --- |
 | [**Config wizard**](wizard.md) | The fastest start — an interactive TUI picks chains, collects upstreams, health-checks everything, writes the config, and brings up the stack in one pass. Start here if you don't have a config yet. |
-| [**Docker Compose**](docker-compose.md) | A config you already have (or copied from the examples), run with one `docker compose` command. Adds optional cache + dashboard overlays. |
+| [**Docker Compose**](docker-compose.md) | A config you already have (or copied from the examples), run with one `docker compose` command. Adds an optional cache overlay; the [dashboard](dashboard.md) runs from its own repo. |
 | [**Local binary**](local-binary.md) | Native process, no Docker — smallest footprint, or wiring into your own service manager. |
 
 !!! note "Looking for a managed option?"
