@@ -118,13 +118,42 @@ The flag name and the `disabled` sentinel live in
     - `endpoint_id` — the configured upstream RPC endpoint.
     - `provider_address` — node the relay was routed to.
     - `method` — RPC method name.
-    - `function` — relay function class; the `function` label lets one metric serve both
-      the per-function breakdown and (via `sum by (...)`) the aggregate.
+    - `function` — the RPC method / REST path the relay invoked, as carried by the
+      latency histograms and relay counters (same values as `method`; `sum by (...)`
+      over it gives the aggregate). Requests to methods outside the spec appear as
+      `Default-<method>`.
 - **Boolean gauges** encode `1 = true / healthy / present`, `0 = false / unhealthy / absent`.
 - **Protocol version** gauges encode `major*1e6 + minor*1e3 + patch`.
 - Metrics are registered with `registerOrReuse`, which returns the already-registered
   collector instead of panicking on a duplicate — so re-registration (e.g. across test
   runs sharing the default registry) is safe.
+
+### Counting semantics — relays vs client requests
+
+Verified against a live router with a controlled load; these distinctions matter for
+any dashboard or alert built on the request counters:
+
+- **`smartrouter_requests_total` counts *relays*, not client requests.** A
+  cross-validated request increments it once per participant, cache-served requests
+  appear under `provider_address="Cached"`, and the router's own chain-tracker /
+  verification traffic lands in it even with zero client load. Use it for
+  per-provider and relay-level views.
+- **`smartrouter_end_to_end_latency_milliseconds_count` increments exactly once per
+  client request** (cache hits included, internal probes excluded) — it is the honest
+  source for "requests served" and RPS, and its `function` label doubles as the
+  per-method breakdown.
+- **`requests_success_total` is transport-level success.** An upstream that answers
+  with a JSON-RPC *error object* (invalid params, method not found, execution
+  reverted) still counts as a successful relay — the error is recorded separately in
+  `node_errors_total` and the classified `smartrouter_errors_total`. `total −
+  success` therefore measures transport/routing failures, not "callers who got an
+  error".
+- **Consistency counters:** `consistency_total` = reads that enforced a minimum seen
+  block, `consistency_success_total` = checks that **passed**, and
+  `consistency_failed_total` = stale responses actually caught. Lazily-registered
+  families (retries, hedge, cache, cross-validation, ws, classified errors) are
+  absent from `/metrics` until the feature first fires — an absent family means zero
+  events, not missing instrumentation.
 
 ---
 
