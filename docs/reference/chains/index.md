@@ -17,7 +17,7 @@ walkthroughs — [Ethereum](ethereum.md), [Solana](solana.md), [Bitcoin](bitcoin
 
 ## Browse chains
 
-The catalog holds **67 spec files** spanning **59 mainnets and 60 testnets**. Search or
+The catalog holds **119 spec files** spanning **104 mainnets and 111 testnets**. Search or
 filter by ecosystem below; each card shows the chain's networks (Mainnet / Testnet) and
 the API protocols it exposes. The **↗** opens the chain's spec on GitHub.
 
