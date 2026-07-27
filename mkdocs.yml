@@ -56,8 +56,9 @@ plugins:
       enable_creation_date: false
 
 # Build hooks. llms_full.py concatenates every page into site/llms-full.txt
-# (the LLM-ingestion corpus) in nav order at post-build — always in sync with
-# content, no manual upkeep. The curated index is the hand-written docs/llms.txt.
+# (the LLM-ingestion corpus) in nav order at post-build, and emits a per-page
+# Markdown twin next to each page (URL minus trailing slash + .md) — always in
+# sync with content, no manual upkeep. The curated index is docs/llms.txt.
 hooks:
   - hooks/llms_full.py
 

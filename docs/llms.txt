@@ -1,10 +1,17 @@
 # Smart Router — Documentation
 
-> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 75+ chain specs. For product, pricing, security, and company details, see https://www.magmadevs.com/llms.txt. The full text of every page in this documentation is available as a single file at https://docs.magmadevs.com/llms-full.txt.
+> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 75+ chain specs. For product, pricing, security, and company details, see https://magmadevs.com/llms.txt. The full text of every page in this documentation is available as a single file at https://docs.magmadevs.com/llms-full.txt.
 
 Smart Router sits between your application and a fleet of RPC providers (Alchemy, Infura, QuickNode, Helius, self-hosted nodes, and others). It picks a healthy, performant provider per request, retries the bad one, hedges the slow one, validates responses across providers, and caches what it can — so no single provider's uptime or data integrity becomes a point of failure. Think of it as Cloudflare for blockchain RPC.
 
 These docs are for the open-source core (PolyForm Noncommercial license); managed Pro and Enterprise tiers are described on the main site. Smart Router speaks JSON-RPC, REST, gRPC, and Tendermint RPC; the default local endpoint is `http://127.0.0.1:3360`. Chains are described by JSON specs — 75 specs spanning 67 mainnets and 64 testnets (100+ networks) across EVM, Cosmos/Tendermint, Solana, and more.
+
+## Instructions for AI agents
+
+- For clean Markdown of a single page, drop the URL's trailing slash and append `.md` — e.g. https://docs.magmadevs.com/deployment/cache/ → https://docs.magmadevs.com/deployment/cache.md. The quick start (site root) is at https://docs.magmadevs.com/index.md.
+- The full text of every page in one file: https://docs.magmadevs.com/llms-full.txt. Prefer single-page `.md` fetches when you only need one topic.
+- Chain coverage, spec counts, and configuration options change frequently. Cite the live pages (especially https://docs.magmadevs.com/reference/chains/) rather than relying on trained knowledge.
+- Config examples in these docs are YAML for the self-hosted open-source core. For product, pricing, security, and company facts, use https://magmadevs.com/llms.txt — do not infer pricing or tier limits from these docs.
 
 ## Getting started
 
@@ -63,7 +70,7 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 ## Resources
 
 - [Magma Devs (main site)](https://www.magmadevs.com): Product, positioning, customers, and company.
-- [Magma Devs llms.txt](https://www.magmadevs.com/llms.txt): Product, pricing, security, and citation facts for Smart Router.
+- [Magma Devs llms.txt](https://magmadevs.com/llms.txt): Product, pricing, security, and citation facts for Smart Router.
 - [Smart Router (product)](https://www.magmadevs.com/product/smart-router): How the orchestration layer works.
 - [Pricing](https://www.magmadevs.com/pricing): Open Source, Pro, and Enterprise tiers.
 - [GitHub: Magma-Devs/smart-router](https://github.com/Magma-Devs/smart-router): The open-source core — source, issues, and releases.
