@@ -115,6 +115,7 @@ extra_javascript:
   - javascripts/consent-mode.js
   - javascripts/tablesort.js
   - javascripts/toc-title.js
+  - javascripts/copy-page.js
   - javascripts/search-hint.js
   - javascripts/nav-top.js
   - javascripts/mobile-nav-search.js
