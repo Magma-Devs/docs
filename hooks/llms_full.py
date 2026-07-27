@@ -1,5 +1,5 @@
 """
-MkDocs hook: generate `llms-full.txt` at build time.
+MkDocs hook: generate `llms-full.txt` and per-page `.md` twins at build time.
 
 `llms.txt` (hand-maintained in docs/) is the *index* — a curated map of the
 docs with one-line descriptions. `llms-full.txt` is the *corpus* — the full
@@ -7,9 +7,15 @@ Markdown body of every page concatenated in nav order, which is what LLM
 crawlers (ChatGPT, Claude, Perplexity) ingest to answer questions about Smart
 Router accurately.
 
-We derive it from the rendered page set so it never drifts from the real docs:
-on `on_page_markdown` we capture each page's source Markdown; on
-`on_post_build` we write them out in nav order to site/llms-full.txt.
+Each page is also emitted as a standalone Markdown file next to its HTML
+(the Stripe/Supabase/ElevenLabs convention): drop the page URL's trailing
+slash and append `.md` — /deployment/cache/ → /deployment/cache.md, section
+indexes like /deployment/ → /deployment.md, and the root page → /index.md.
+This lets an agent fetch one page cheaply instead of the whole corpus.
+
+We derive everything from the rendered page set so it never drifts from the
+real docs: on `on_page_markdown` we capture each page's source Markdown; on
+`on_post_build` we write site/llms-full.txt and the per-page twins.
 
 Wired via `hooks:` in mkdocs.yml. No manual upkeep.
 """
@@ -95,6 +101,26 @@ def on_post_build(*, config):
     out_path = os.path.join(site_dir, "llms-full.txt")
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines).rstrip() + "\n")
+
+    # Per-page Markdown twins. src_uri "deployment/cache.md" already matches
+    # its public path; section indexes collapse ("deployment/index.md" →
+    # "deployment.md") so the URL rule is uniformly "trailing slash → .md".
+    # The root "index.md" stays as-is and serves at /index.md.
+    for uri in ordered:
+        title, md = _PAGES[uri]
+        if uri != "index.md" and uri.endswith("/index.md"):
+            dest_uri = uri[: -len("/index.md")] + ".md"
+        else:
+            dest_uri = uri
+        page_url = f"{site_url}/{uri[:-3].rstrip('/')}/" if uri.endswith(".md") else f"{site_url}/{uri}"
+        page_url = page_url.replace("/index/", "/")
+        dest_path = os.path.join(site_dir, *dest_uri.split("/"))
+        os.makedirs(os.path.dirname(dest_path) or site_dir, exist_ok=True)
+        text = md.strip()
+        # Only synthesize a title when the page body doesn't open with its own H1.
+        heading = "" if text.startswith("# ") else f"# {title}\n\n"
+        with open(dest_path, "w", encoding="utf-8") as fh:
+            fh.write(f"{heading}Source: {page_url}\n\n{text}\n")
 
     # MkDocs skips dot-directories in docs/, so docs/.well-known/ is not copied
     # to the build. Copy it through explicitly so /.well-known/security.txt
