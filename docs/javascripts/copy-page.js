@@ -83,6 +83,15 @@ document$.subscribe(function () {
       });
   });
 
+  // Safety net: ChatGPT/Claude drop the ?q= prompt when they bounce the
+  // visitor through login. Copy the prompt on click so it can be pasted.
+  var promptText = "Read " + mdUrl + " so I can ask questions about this documentation page.";
+  menu.querySelectorAll('a[href*="chatgpt.com"], a[href*="claude.ai"]').forEach(function (a) {
+    a.addEventListener("click", function () {
+      copyText(promptText).catch(function () {});
+    });
+  });
+
   caret.addEventListener("click", function (e) {
     e.stopPropagation();
     var open = !menu.hidden;
