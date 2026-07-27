@@ -2013,3 +2013,76 @@ html { scroll-padding-top: 96px; }
   font-size: 0.85rem;
   color: var(--text-muted, rgb(var(--gray-500)));
 }
+
+/* ============================================================
+   "Copy page" button (javascripts/copy-page.js) — Mintlify-style
+   LLM affordance floated to the right of each page's H1.
+   ============================================================ */
+.mdx-copy-page {
+  position: relative;
+  float: right;
+  display: inline-flex;
+  align-items: stretch;
+  margin: 0.4rem 0 0.5rem 1rem;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+.mdx-copy-page__btn,
+.mdx-copy-page__caret {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid var(--md-default-fg-color--lightest, rgb(var(--gray-200)));
+  background: var(--surface, #fff);
+  color: var(--text-body, rgb(var(--gray-700)));
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+}
+.mdx-copy-page__btn {
+  border-radius: 0.35rem 0 0 0.35rem;
+}
+.mdx-copy-page__caret {
+  border-left: none;
+  border-radius: 0 0.35rem 0.35rem 0;
+  padding: 0.38rem 0.3rem;
+}
+.mdx-copy-page__btn:hover,
+.mdx-copy-page__caret:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.mdx-copy-page__btn--done,
+.mdx-copy-page__btn--done:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.mdx-copy-page__menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 10;
+  min-width: 10.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--md-default-fg-color--lightest, rgb(var(--gray-200)));
+  border-radius: 0.4rem;
+  background: var(--surface, #fff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.mdx-copy-page__menu a {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.3rem;
+  color: var(--text-body, rgb(var(--gray-700)));
+}
+.mdx-copy-page__menu a:hover {
+  background: var(--md-default-bg-color--light, rgb(var(--gray-50)));
+  color: var(--primary);
+}
+@media screen and (max-width: 44.9375em) {
+  .mdx-copy-page {
+    float: none;
+    margin: 0 0 0.75rem;
+  }
+}
