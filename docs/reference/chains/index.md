@@ -1,6 +1,6 @@
 ---
 title: "Supported chains"
-description: "Chain-agnostic JSON specs — 127 specs covering 230+ networks across EVM, Cosmos/Tendermint, Solana, and more."
+description: "Chain-agnostic JSON specs — 127 specs covering 238 networks across EVM, Cosmos/Tendermint, Solana, and more."
 ---
 
 # Supported chains
