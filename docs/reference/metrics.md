@@ -29,6 +29,7 @@ If you only graph a handful of things, graph these:
 | How much load does the router itself put on my node? | `rpc_endpoint_tracker_requests_total` (by `kind`) — the router's own polling, separate from the relays you sent it |
 | Is failover working hard? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
 | Is the cache earning its keep? | `smartrouter_cache_success_total` / `smartrouter_cache_requests_total` |
+| What do batched calls look like? | `smartrouter_requests_total{method=~"batch:.*"}`, `smartrouter_batch_size` |
 
 ## Querying — PromQL recipes
 
@@ -59,6 +60,15 @@ rpc_endpoint_overall_health == 0
 
 # Per-node request share (is selection lopsided?)
 sum by (provider_address) (rate(smartrouter_requests_total[5m]))
+
+# Busiest batch shapes, and how big those batches run
+topk(10, sum by (method) (rate(smartrouter_requests_total{method=~"batch:.*"}[5m])))
+histogram_quantile(0.95,
+  sum by (spec, le) (rate(smartrouter_batch_size_bucket[5m])))
+
+# Error ratio per batch shape (which shapes are failing?)
+sum by (method) (rate(smartrouter_requests_failed_total{method=~"batch:.*"}[5m]))
+  / sum by (method) (rate(smartrouter_requests_total{method=~"batch:.*"}[5m]))
 ```
 
 ## Suggested alerts
@@ -73,6 +83,7 @@ Starting points — tune thresholds to your traffic.
 | Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
 | Cache cold | hit-ratio recipe `< 0.2 for 30m` | Cache misconfigured or bypassed — cost/latency risk. |
 | Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data — high-signal correctness alert. |
+| Batch shapes merging | `increase(smartrouter_batch_signature_overflow_total[1h]) > 0` | Clients send more batch shapes than the breakdown can name — shapes are collapsing into `batch:other`. |
 
 ## Exposition
 
@@ -118,7 +129,8 @@ The flag name and the `disabled` sentinel live in
     - `apiInterface` — `jsonrpc`, `tendermintrpc`, `rest`, `grpc`.
     - `endpoint_id` — the configured upstream RPC endpoint.
     - `provider_address` — node the relay was routed to.
-    - `method` — RPC method name.
+    - `method` — RPC method name. Batch requests carry a
+      [batch signature](#batch-requests) instead, e.g. `batch:eth_call+eth_getBalance`.
     - `function` — the RPC method / REST path the relay invoked, as carried by the
       latency histograms and relay counters (same values as `method`; `sum by (...)`
       over it gives the aggregate). Requests to methods outside the spec appear as
@@ -227,6 +239,41 @@ with read/write.
 | `smartrouter_requests_debug_trace_total` | Counter | `spec`, `apiInterface`, `provider_address`, `method` | Debug/trace addon requests. |
 | `smartrouter_requests_archive_total` | Counter | `spec`, `apiInterface`, `provider_address`, `method` | Archive requests. |
 | `smartrouter_requests_batch_total` | Counter | `spec`, `apiInterface`, `provider_address`, `method` | Batch requests. |
+
+#### Batch requests
+
+A batch has no single method, so its `method` label carries a **batch signature**: the
+sorted set of distinct sub-methods, prefixed `batch:`.
+
+```
+[eth_call ×30, eth_getBalance]   →   method="batch:eth_call+eth_getBalance"
+[eth_call ×3]                    →   method="batch:eth_call"
+[eth_call]                       →   method="eth_call"
+```
+
+The signature identifies the *shape* of a batch, not its contents in order: two batches
+with the same set of methods share a series regardless of how the elements were ordered
+or how many times each repeated. Element count lives in `smartrouter_batch_size`, which
+keeps the label space bounded by the number of method *combinations* your clients send
+rather than the number of batches they send.
+
+Single-method requests are unaffected — `method="eth_call"` means one `eth_call`. So
+`method=~"batch:.*"` and `method!~"batch:.*"` split batch from single traffic cleanly,
+and because the signature rides the normal `method` label, every per-method view
+(success rate, latency, per-provider share) works per batch shape too.
+
+A one-element batch produces the same label as a plain single request and is not counted
+in `smartrouter_batch_size`; `smartrouter_requests_batch_total` still identifies it as a
+batch.
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_batch_size` | Histogram | `spec`, `apiInterface` | Sub-requests per batch (buckets `2, 3, 5, 10, 25, 50, 100, 250, 500`). |
+| `smartrouter_batch_signature_overflow_total` | Counter | `spec`, `reason` | Batches whose signature landed in `batch:other`. `reason="cap"`: the chain reached its limit of 64 distinct signatures. `reason="wide"`: one batch mixed more than 8 distinct methods. |
+
+While `smartrouter_batch_signature_overflow_total` is zero, the batch-shape breakdown is
+complete. Once it climbs, some shapes are being merged into `batch:other` — the other
+series stay accurate, but the breakdown no longer names every shape.
 
 #### Errors
 
