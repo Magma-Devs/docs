@@ -1,10 +1,10 @@
 # Smart Router — Documentation
 
-> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 75+ chain specs. For product, pricing, security, and company details, see https://magmadevs.com/llms.txt. The full text of every page in this documentation is available as a single file at https://docs.magmadevs.com/llms-full.txt.
+> Developer documentation for Smart Router, the RPC orchestration and security layer by Magma Devs. These docs cover the self-hosted, open-source core: running it, connecting your app, configuring QoS routing, caching, and the failover and cross-validation pipeline, and operating it across 127 chain specs. For product, pricing, security, and company details, see https://magmadevs.com/llms.txt. The full text of every page in this documentation is available as a single file at https://docs.magmadevs.com/llms-full.txt.
 
 Smart Router sits between your application and a fleet of RPC providers (Alchemy, Infura, QuickNode, Helius, self-hosted nodes, and others). It picks a healthy, performant provider per request, retries the bad one, hedges the slow one, validates responses across providers, and caches what it can — so no single provider's uptime or data integrity becomes a point of failure. Think of it as Cloudflare for blockchain RPC.
 
-These docs are for the open-source core (PolyForm Noncommercial license); managed Pro and Enterprise tiers are described on the main site. Smart Router speaks JSON-RPC, REST, gRPC, and Tendermint RPC; the default local endpoint is `http://127.0.0.1:3360`. Chains are described by JSON specs — 75 specs spanning 67 mainnets and 64 testnets (100+ networks) across EVM, Cosmos/Tendermint, Solana, and more.
+These docs are for the open-source core (PolyForm Noncommercial license); managed Pro and Enterprise tiers are described on the main site. Smart Router speaks JSON-RPC, REST, gRPC, and Tendermint RPC; the default local endpoint is `http://127.0.0.1:3360`. Chains are described by JSON specs — 127 specs spanning 111 mainnets and 127 testnets (238 networks) across EVM, Cosmos/Tendermint, Solana, and more.
 
 ## Instructions for AI agents
 
@@ -49,7 +49,7 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 
 ## Supported chains
 
-- [Supported chains](https://docs.magmadevs.com/reference/chains/): Chain-agnostic JSON specs — 75 specs spanning 67 mainnets and 64 testnets (100+ networks) across EVM, Cosmos/Tendermint, Solana, and more.
+- [Supported chains](https://docs.magmadevs.com/reference/chains/): Chain-agnostic JSON specs — 127 specs spanning 111 mainnets and 127 testnets (238 networks) across EVM, Cosmos/Tendermint, Solana, and more.
 - [Chain specs](https://docs.magmadevs.com/reference/chains/specs/): How specs declare API methods, parser rules, finality parameters, and capability flags.
 - [Examples](https://docs.magmadevs.com/reference/chains/examples/): Ready-to-run example configurations per chain.
 - [Ethereum](https://docs.magmadevs.com/reference/chains/ethereum/): Example config for Ethereum.
