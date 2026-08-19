@@ -70,7 +70,6 @@ See [Failover & retry](../configuration/failover/index.md).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--chain-tracker-polling-multiplier` | `16` | "Polling relief" — smaller = slower polling = fewer upstream calls. Allowed `[4,16]`. |
 | `--consistency-block-gap-factor` | `2` | Widen the consistency lag gate (`blockLagForQosSync × factor`). Allowed `[2,8]`. |
 
 ## Cache & shared state
