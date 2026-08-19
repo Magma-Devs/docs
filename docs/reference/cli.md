@@ -65,6 +65,19 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 
 See [Failover & retry](../configuration/failover/index.md).
 
+## Polling relief
+
+Each configured upstream gets its own chain tracker, which polls it for the latest
+block independently of the relays you send. These two flags lower that load; both
+are process-wide. Watch the effect on
+[`rpc_endpoint_tracker_requests_total`](metrics.md#endpoint-scoped-rpc_endpoint_),
+and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default — the larger of the two savings. |
+| `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate. Allowed `[1,8]`; out-of-range reverts to the default. |
+
 ## Consistency tuning
 
 | Flag | Default | Description |
