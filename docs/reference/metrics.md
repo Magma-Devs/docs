@@ -262,6 +262,12 @@ Single-method requests are unaffected — `method="eth_call"` means one `eth_cal
 and because the signature rides the normal `method` label, every per-method view
 (success rate, latency, per-provider share) works per batch shape too.
 
+Cache hits included: a batch served from the router's cache keeps its signature and,
+like every cached relay, lands under `provider_address="Cached"` (see
+[counting semantics](#counting-semantics-relays-vs-client-requests)) — so a per-provider
+slice of a batch shape lists that pseudo-provider alongside the real nodes, and its
+sizes are observed in `smartrouter_batch_size` like any other batch.
+
 A one-element batch produces the same label as a plain single request and is not counted
 in `smartrouter_batch_size`; `smartrouter_requests_batch_total` still identifies it as a
 batch.
