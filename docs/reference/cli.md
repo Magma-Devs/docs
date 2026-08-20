@@ -46,8 +46,7 @@ smartrouter <config.yml> --use-static-spec specs/ [flags...]
 | `--qos-min-selection-chance` | `0.01` | Floor probability any node is picked, regardless of score. |
 | `--optimizer-qos-sampling-interval` | `1s` | How often selection scores (and OTel QoS events) are sampled. |
 | `--probe-update-weight` | `0.25` | Weight multiplier for probe-driven liveness/latency updates. |
-| `--enable-periodic-probe-providers` | `false` | Periodically probe nodes for liveness/latency. |
-| `--periodic-probe-providers-interval` | `5s` | Interval for periodic probing. |
+| `--probe-loop-interval` | `5s` | How often nodes are probed for liveness/latency. Probing is always on; must be greater than 0. |
 
 See [RPC Node selection](../configuration/projects/selection-policies.md).
 
