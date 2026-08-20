@@ -195,6 +195,19 @@ They split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 | `rpc_endpoint_fetch_block_success` | Counter | `spec`, `apiInterface`, `endpoint_id` | Successful specific-block fetches. |
 | `rpc_endpoint_tracker_requests_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `kind` | Requests the chain tracker actually sent upstream, by `kind` — `latest_block`, or `block_hash` (zero unless [`--enable-fork-detection`](cli.md#polling-relief)). The only metric that measures tracker **request volume**. |
 
+Two caveats when reading the chain-tracker counters:
+
+- **`fetch_latest_success` can read *higher* with fork detection off.** With the
+  flag on, a failed block-hash fetch aborts the poll cycle before the new-block
+  callback fires, so endpoints with flaky hash fetches under-count detections;
+  with it off, every detected block is recorded. A rise after disabling the flag
+  is recovered counting, not extra load.
+- **`endpoint_id` holds a provider name, and several providers can share one
+  physical URL.** The tracker polls per provider, so a bare `sum()` over
+  `rpc_endpoint_tracker_requests_total` counts one physical request once per
+  provider sharing that URL. When estimating the load on a metered node, keep
+  the `endpoint_id` breakdown (or dedupe by URL) instead of summing blindly.
+
 ### Optimizer
 
 | Metric | Type | Labels | Description |
