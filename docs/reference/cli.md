@@ -68,15 +68,59 @@ See [Failover & retry](../configuration/failover/index.md).
 ## Polling relief
 
 Each configured upstream gets its own chain tracker, which polls it for the latest
-block independently of the relays you send. These two flags lower that load; both
-are process-wide. Watch the effect on
+block independently of the relays you send. These flags lower that load; all are
+process-wide. Watch the effect on
 [`rpc_endpoint_tracker_requests_total`](metrics.md#endpoint-scoped-rpc_endpoint_),
 and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default — the larger of the two savings. |
-| `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate. Allowed `[1,8]`; out-of-range reverts to the default. |
+| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default — the larger of the per-pod savings. |
+| `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate; `0.25` — one poll per **four** block times — cuts it eightfold. Allowed `[0.25,8]`; out-of-range reverts to the default. See [Polling slower than the chain](#polling-slower-than-the-chain). |
+| `--shared-state` (with `--cache-be`) | `false` | Share poll observations across router replicas through the cache, so an upstream is polled about once per interval **fleet-wide** rather than once per pod. See [Cache & shared state](#cache-shared-state). |
+
+The tracker also skips a poll whenever something else has already kept the upstream's
+tip fresh — the relays it served in the last block time, or (with `--shared-state`) a
+poll another replica made. Skipped ticks show up on
+[`rpc_endpoint_tracker_gate_skips_total`](metrics.md#endpoint-scoped-rpc_endpoint_) by
+`source`, so `requests_total` falling while `gate_skips_total` rises is the relief
+working, not the tracker stalling.
+
+### Polling slower than the chain
+
+A divisor below `1` polls less often than the chain produces blocks, which is where
+the relief is on a fast chain. Measured requests/min per endpoint:
+
+| Chain | `2` (default) | `1` | `0.5` | `0.25` |
+| --- | --- | --- | --- | --- |
+| Aptos | 600 | 300 | 150 | 75 |
+| Solana | 300 | 150 | 75 | 37.5 |
+| Base | 60 | 30 | 15 | 7.5 |
+| Ethereum | 9.2 | 4.6 | 2.3 | 1.2 |
+
+What bounds the low end is the staleness window — `max(10 × avgBlockTime, 2s)`, past
+which an observation stops counting for consensus, the tip reads unknown, and the probe
+scores a healthy upstream not-alive. The window does **not** move with this flag; the
+flag moves how long a tip can go unrefreshed, the other side of that comparison. Both
+common cases stay well inside it:
+
+- **Idle upstream** — nothing but its own poll refreshes the tip, so the gap *is* the
+  interval: 4 × `avgBlockTime` at `0.25`, against a 10× window.
+- **Served upstream** — relays refresh the same tip, so traffic bounds the gap.
+
+The seam is between them: an upstream that trips the traffic gate and *then* goes quiet
+is refreshed by neither, and the worst-case gap becomes `(maxRelaySkips + 1) × interval`
+— 20 × `avgBlockTime` at `0.25`. That is a property of the **product** of this flag and
+the gate's skip budget, not of either alone, so the router warns once per chain at
+startup rather than refusing to start:
+
+```
+WRN poll cadence can outrun the staleness window when the traffic gate skips
+    pollInterval=60s  worstCaseGapBetweenPolls=5m0s  stalenessWindow=2m30s  maxRelaySkips=4
+```
+
+It is a line to read, not a failure — the configuration is safe for both common cases.
+If you see it on a chain with bursty traffic, step back toward `0.5` or `1`.
 
 ## Consistency tuning
 
@@ -89,7 +133,17 @@ and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--cache-be` | — | Address of the cache server (e.g. `127.0.0.1:20100`). In Compose the cache address usually comes from `cache-be:` in the config instead. |
-| `--shared-state` | `false` | Share consistency state across router instances via the cache (use with `--cache-be`). |
+| `--shared-state` | `false` | Share state across router replicas through the cache (use with `--cache-be`): the consumer-consistency "seen block", **and** per-endpoint chain-tracker poll observations, so the fleet polls each upstream about once per interval instead of once per replica. |
+
+With `--shared-state`, every replica publishes each successful poll of an upstream to
+the cache and, before polling, checks whether **another** replica polled that upstream
+within the last block time. If one did, the tick is skipped and the peer's block is
+adopted (it appears as `Source: peer` in `GET /debug/endpoint-state`). Three floors
+keep it safe: a replica never borrows its own observation, so a single replica polls
+exactly as without the flag; every replica still polls each upstream itself every few
+ticks, so a broken path from one pod stays detectable; and an upstream that was
+disabled is only re-enabled by that pod's own successful poll. Latency is never
+shared — a peer's round-trip says nothing about this pod's path.
 
 ## WebSocket
 
