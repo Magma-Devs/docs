@@ -54,6 +54,32 @@ Some classes of failure look retryable on the wire but won't recover by switchin
 
 The classifier handles these cases without burning the budget.
 
+## Rate-limited upstreams
+
+A `429` is retryable — the relay rotates to another node like any other retryable
+error — but the node that said it is treated differently from one that failed. A
+rate-limited node is healthy and busy, so the attempt is scored as neither a failure nor
+a success (no availability or latency sample), and the node is **held off**: selection
+skips it for the rest of this relay and for later relays until the hold-off expires.
+
+- **How long.** If the upstream sent `Retry-After`, the hold-off is at least that long
+  (capped at 1h). Otherwise it starts at 30s and doubles on each consecutive `429` from
+  the same URL, capped at 30m. Up to 20% jitter is added so a fleet held off by the same
+  vendor does not come back in one burst.
+- **Account-wide caps.** When two different URLs of the same provider are held off at
+  once, the whole provider is held off on every chain — a vendor cap is usually
+  per-account, and per-URL hold-offs alone would keep hammering the account through its
+  other chains.
+- **Any answer clears it.** Once the node answers a request — success or a genuine error
+  — its hold-off and strike count are dropped.
+- **You still get an answer.** If every candidate is held off, the one that expires
+  soonest is used anyway; the router never synthesizes a `429` to the client, and
+  `Retry-After` is never forwarded. A `lava-select-provider` pin and existing sticky
+  sessions bypass the hold-off — an explicit ask outranks it.
+
+The same hold-off covers spec re-verification, recovery probes, and WebSocket
+subscriptions, so a node that said stop is not re-probed on a fixed cadence either.
+
 ## Pinning to one node
 
 The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** — pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
@@ -65,6 +91,9 @@ The `lava-select-provider` header pins the request to a specific upstream. If th
 | `smartrouter_retries_total` | retry attempts triggered (beyond the first try) |
 | `smartrouter_retries_success_total` / `smartrouter_retries_failed_total` | retried requests that succeeded / failed |
 | `smartrouter_retry_attempts` | histogram of attempts per retried request (buckets 1…10) |
+| `smartrouter_rate_limit_holdoffs_total` | hold-off events by `provider` and `event` (`recorded` / `escalated` / `cleared`) — the signal that an upstream is rate-limiting you |
+| `smartrouter_rate_limit_holdoff_seconds` | histogram of applied hold-off durations, per `provider` |
 | Tracing | each retry attempt is a span; correlate via the trace ID in response headers |
 
-See the [Metrics reference](../../reference/metrics.md#retries) for labels and types.
+See the [Metrics reference](../../reference/metrics.md#retries) for labels and types, and
+[Rate-limit hold-off](../../reference/metrics.md#rate-limit-hold-off) for the hold-off pair.
