@@ -99,8 +99,18 @@ flags as the router.
 ## Sharing state across routers
 
 When several router instances share one cache, add `--shared-state` to the routers so
-they also share consumer-consistency state through it — keeping their "seen block" views
-aligned. See the [CLI reference](../reference/cli.md#cache-shared-state).
+they also share two things through it:
+
+- **consumer-consistency state** — their "seen block" views stay aligned, so a client
+  that just read block N from one replica is not served N-1 by another;
+- **chain-tracker poll observations** — each replica publishes the upstream polls it
+  makes and borrows fresh ones from the others, so every upstream is polled about
+  once per interval fleet-wide instead of once per replica. This is the lever that
+  stops the router's own polling load from growing with the replica count.
+
+See the [CLI reference](../reference/cli.md#cache-shared-state) for the safety floors and
+[`rpc_endpoint_tracker_gate_skips_total`](../reference/metrics.md#endpoint-scoped-rpc_endpoint_)
+for how to confirm it is working.
 
 ## Observability
 

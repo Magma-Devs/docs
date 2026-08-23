@@ -29,7 +29,7 @@ If you only graph a handful of things, graph these:
 | Are requests failing? | `smartrouter_total_errored`, `smartrouter_errors_total` (by `error_category` / `retryable`) |
 | How fast is it? | `smartrouter_end_to_end_latency_milliseconds` (histogram → p50/p95/p99) |
 | Is a node degrading? | `rpc_endpoint_overall_health`, `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
-| How much load does the router itself put on my node? | `rpc_endpoint_tracker_requests_total` (by `kind`) — the router's own polling, separate from the relays you sent it |
+| How much load does the router itself put on my node? | `rpc_endpoint_tracker_requests_total` (by `kind`) — the router's own polling, separate from the relays you sent it; `rpc_endpoint_tracker_gate_skips_total` (by `source`) — the polls it chose not to send |
 | Is failover working hard? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
 | Is an upstream rate-limiting us? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
 | Is the cache earning its keep? | `smartrouter_cache_success_total` / `smartrouter_cache_requests_total` |
@@ -202,6 +202,13 @@ They split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 | `rpc_endpoint_fetch_latest_success` | Counter | `spec`, `apiInterface`, `endpoint_id` | New-block **detections** by the chain tracker, not successful requests. |
 | `rpc_endpoint_fetch_block_success` | Counter | `spec`, `apiInterface`, `endpoint_id` | Successful specific-block fetches. |
 | `rpc_endpoint_tracker_requests_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `kind` | Requests the chain tracker actually sent upstream, by `kind` — `latest_block`, or `block_hash` (zero unless [`--enable-fork-detection`](cli.md#polling-relief)). The only metric that measures tracker **request volume**. |
+| `rpc_endpoint_tracker_gate_skips_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `source` | Poll ticks the tracker skipped because the upstream's tip was already fresh, by `source` — `relay` (served traffic in the last block time) or `peer` (another replica's poll, shared via [`--shared-state`](cli.md#cache-shared-state)). The complement of `requests_total`: together they account for every tick. |
+
+On a multi-replica deployment with `--shared-state`, the fleet-wide
+`sum(rate(rpc_endpoint_tracker_requests_total{kind="latest_block"}[5m]))` for an upstream
+should settle near a single replica's worth, and `source="peer"` skips should be non-zero on
+every replica. `peer` stuck at zero with the flag on means the replicas are not reaching the
+same cache.
 
 Two caveats when reading the chain-tracker counters:
 
