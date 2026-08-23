@@ -6,7 +6,10 @@ description: "Prometheus metrics exposed by Smart Router for routing, cache, and
 # Metrics
 
 Every metric the Smart Router exposes over Prometheus, with its type, labels, and
-meaning. All metrics are defined under [`protocol/metrics/`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics).
+meaning. Metrics are defined under [`protocol/metrics/`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics),
+except the [rate-limit hold-off](#rate-limit-hold-off) pair, which the registry that owns
+the events emits itself from
+[`protocol/holdoff/metrics.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/holdoff/metrics.go).
 
 The classified-error counter [`smartrouter_errors_total`](#classified-errors-smartrouter_errors_) is
 broken down by error name and category; see [Error codes](error-codes.md) for the
@@ -28,6 +31,7 @@ If you only graph a handful of things, graph these:
 | Is a node degrading? | `rpc_endpoint_overall_health`, `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
 | How much load does the router itself put on my node? | `rpc_endpoint_tracker_requests_total` (by `kind`) — the router's own polling, separate from the relays you sent it |
 | Is failover working hard? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
+| Is an upstream rate-limiting us? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
 | Is the cache earning its keep? | `smartrouter_cache_success_total` / `smartrouter_cache_requests_total` |
 | What do batched calls look like? | `smartrouter_requests_total{method=~"batch:.*"}`, `smartrouter_batch_size` |
 
@@ -61,6 +65,9 @@ rpc_endpoint_overall_health == 0
 # Per-node request share (is selection lopsided?)
 sum by (provider_address) (rate(smartrouter_requests_total[5m]))
 
+# Upstreams currently tripping their rate-limit caps
+sum by (provider) (increase(smartrouter_rate_limit_holdoffs_total{event="recorded"}[15m])) > 0
+
 # Busiest batch shapes, and how big those batches run
 topk(10, sum by (method) (rate(smartrouter_requests_total{method=~"batch:.*"}[5m])))
 histogram_quantile(0.95,
@@ -83,6 +90,7 @@ Starting points — tune thresholds to your traffic.
 | Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
 | Cache cold | hit-ratio recipe `< 0.2 for 30m` | Cache misconfigured or bypassed — cost/latency risk. |
 | Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data — high-signal correctness alert. |
+| Vendor-wide rate limit | `increase(smartrouter_rate_limit_holdoffs_total{event="escalated"}[1h]) > 0` | Two of a provider's URLs were held off at once, so the router stopped asking that provider on every chain — you are over an account-wide cap, not a per-endpoint one. |
 | Batch shapes merging | `increase(smartrouter_batch_signature_overflow_total[1h]) > 0` | Clients send more batch shapes than the breakdown can name — shapes are collapsing into `batch:other`. |
 
 ## Exposition
@@ -309,6 +317,33 @@ series stay accurate, but the breakdown no longer names every shape.
 | `smartrouter_retries_success_total` | Counter | `spec`, `apiInterface`, `method` | Retried requests that succeeded. |
 | `smartrouter_retries_failed_total` | Counter | `spec`, `apiInterface`, `method` | Retried requests that failed. |
 | `smartrouter_retry_attempts` | Histogram | `spec`, `apiInterface`, `method` | Attempts per retried request (buckets 1…10). |
+
+#### Rate-limit hold-off
+
+When an upstream answers `429` the router stops asking it for a while instead of
+retrying into the limit — see [Rate-limited upstreams](../configuration/failover/retry.md#rate-limited-upstreams)
+for the behaviour. These two series are emitted by the hold-off registry itself, so
+every path that talks upstream (relays, spec re-verification, recovery probes, WebSocket
+subscriptions) is covered. A rate-limited relay is released with no QoS sample in either
+direction, so a vendor cap does not show up in `rpc_endpoint_selection_score`; this pair
+is the direct signal that an upstream is refusing you for load.
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_rate_limit_holdoffs_total` | Counter | `provider`, `event` | Hold-off registry events. `event` is the closed set `recorded` (a `429` held an endpoint off), `escalated` (the hold-off widened to the whole provider — counted once on the transition, not per refresh), `cleared` (an answer dropped a standing penalty — not counted when there was nothing to clear). |
+| `smartrouter_rate_limit_holdoff_seconds` | Histogram | `provider` | Applied hold-off duration per `recorded` event, in **seconds** (buckets `15, 30, 60, 120, 300, 600, 1800, 3600` — not the shared millisecond latency buckets). Shows how long upstreams' `Retry-After` values are against the exponential default. |
+
+`provider` is the configured provider name on the relay, probe, and re-verification
+paths. The WebSocket-subscription path has no provider name and keys the registry by
+node URL; those keys are reduced to `scheme://host` before they become a label, because
+node URLs can embed API keys in their path or query and a credential must never reach a
+Prometheus series.
+
+```promql
+# how long upstreams are telling us to wait (p90), per provider
+histogram_quantile(0.9,
+  sum by (provider, le) (rate(smartrouter_rate_limit_holdoff_seconds_bucket[1h])))
+```
 
 #### Consistency
 
