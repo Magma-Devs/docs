@@ -68,15 +68,22 @@ See [Failover & retry](../configuration/failover/index.md).
 ## Polling relief
 
 Each configured upstream gets its own chain tracker, which polls it for the latest
-block independently of the relays you send. These two flags lower that load; both
-are process-wide. Watch the effect on
-[`rpc_endpoint_tracker_requests_total`](metrics.md#endpoint-scoped-rpc_endpoint_),
-and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
+block independently of the relays you send. These flags lower that load; all are
+process-wide. Watch the effect on
+[`rpc_endpoint_tracker_requests_total`](metrics.md#endpoint-scoped-rpc_endpoint_).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default — the larger of the two savings. |
+| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default — the larger of the per-pod savings. |
 | `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate. Allowed `[1,8]`; out-of-range reverts to the default. |
+| `--shared-state` (with `--cache-be`) | `false` | Share poll observations across router replicas through the cache, so an upstream is polled about once per interval **fleet-wide** rather than once per pod. See [Cache & shared state](#cache-shared-state). |
+
+The tracker also skips a poll whenever something else has already kept the upstream's
+tip fresh — the relays it served in the last block time, or (with `--shared-state`) a
+poll another replica made. Skipped ticks show up on
+[`rpc_endpoint_tracker_gate_skips_total`](metrics.md#endpoint-scoped-rpc_endpoint_) by
+`source`, so `requests_total` falling while `gate_skips_total` rises is the relief
+working, not the tracker stalling.
 
 ## Consistency tuning
 
@@ -89,7 +96,7 @@ and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--cache-be` | — | Address of the cache server (e.g. `127.0.0.1:20100`). In Compose the cache address usually comes from `cache-be:` in the config instead. |
-| `--shared-state` | `false` | Share consistency state across router instances via the cache backend (`cache-be` or `resp-cache`). The per-endpoint chain-tracker poll sharing additionally requires `--cache-be` — see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
+| `--shared-state` | `false` | Share state across router replicas through the cache backend (`cache-be` or `resp-cache`): the consumer-consistency "seen block", per-endpoint chain-tracker poll observations (so the fleet polls each upstream about once per interval instead of once per replica), and cross-pod sticky sessions. Poll sharing additionally requires `--cache-be` — see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
 | `--resp-cache-addresses` | — | Comma-separated address(es) of a [RESP-compatible backend](../deployment/cache/redis.md) (Redis/Valkey). Enables the RESP backend, which takes precedence over `cache-be`. Standalone: the node address; sentinel: the sentinel addresses; cluster: the configuration endpoint. |
 | `--resp-cache-topology` | `standalone` | `standalone`, `sentinel`, or `cluster`. |
 | `--secondary-cache-be` | — | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), queried when the primary produces no hit. |
@@ -100,6 +107,23 @@ and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
     TLS, credentials, credential rotation, the read/write split, and key prefixing live in
     the `resp-cache:` YAML block — only addresses and topology have flags. See
     [Redis / Valkey backend](../deployment/cache/redis.md#configuration-reference).
+
+With `--shared-state`, every replica publishes each successful poll of an upstream to
+the cache and, before polling, checks whether **another** replica polled that upstream
+within the last block time. If one did, the tick is skipped and the peer's block is
+adopted as this replica's view of the upstream's tip. Four floors keep it safe:
+
+- a replica never borrows its own observation, so a single replica polls exactly as
+  without the flag;
+- a replica whose own last poll of an upstream failed does not borrow at all — it
+  returns to full-cadence local polling until it succeeds itself;
+- every replica still polls each upstream itself every few ticks (peer skips count
+  against the same skip budget as relay skips), so a broken path from one pod stays
+  detectable;
+- an upstream that was disabled is only re-enabled by that pod's own successful poll —
+  a peer observation never touches poll health.
+
+Latency is never shared — a peer's round-trip says nothing about this pod's path.
 
 ## WebSocket
 
