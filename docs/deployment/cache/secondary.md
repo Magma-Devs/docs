@@ -134,11 +134,11 @@ One setting enables it; the rest have defaults.
 | `secondary-cache-timeout` | `50ms` | Per-lookup budget. An exceeded lookup counts as a miss and the request falls through. Raise it for cross-zone network hops. |
 | `secondary-cache-mode` | `read-only` | Access mode. `read-only` is the only supported value. |
 
-The router fails fast on misconfiguration: a timeout or mode set *without* an address, a
-zero or negative timeout, or `read-write` mode each abort startup with a specific error. It
-warns but starts when the secondary equals the primary address, or when a secondary is
-configured with no primary. When enabled, the startup log prints the full secondary
-configuration on one line.
+The router fails fast on misconfiguration: a zero or negative timeout, or `read-write`
+mode, each abort startup with a specific error. It warns but starts when the secondary
+equals the primary address, when a secondary is configured with no primary, or when tuning
+options are set with no address (below). When enabled, the startup log prints the full
+secondary configuration on one line.
 
 !!! note "Tuning options with no address are a warning, not a failure"
     Setting `secondary-cache-timeout` while `secondary-cache-be` is empty starts the router
