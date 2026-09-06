@@ -27,7 +27,7 @@ Reads can be sent to several upstreams in parallel and returned successfully onl
 
 A block-aware cache serves repeat reads without hitting an upstream, while avoiding serving stale data. It can be shared across router replicas, significantly reducing upstream calls and latency.
 
-[Cache →](deployment/cache.md)
+[Cache →](deployment/cache/index.md)
 
 ## Transaction broadcasting
 

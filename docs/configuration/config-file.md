@@ -51,7 +51,9 @@ serve; a node with no matching listener is never used.
 | `endpoints` | yes | The listeners the router opens — one per chain × API interface. |
 | `direct-rpc` | yes | The upstream node pool. |
 | `backup-direct-rpc` | no | Emergency-fallback nodes, only used once the primary pool is exhausted. Same shape as `direct-rpc`. |
-| `cache-be` | no | Address of the [cache](../deployment/docker-compose.md#add-the-cache) sidecar, e.g. `cache:20100`. Omit to disable caching. |
+| `cache-be` | no | Address of the [cache](../deployment/cache/index.md) sidecar, e.g. `cache:20100`. Omit to disable caching. |
+| `resp-cache` | no | Block configuring a [Redis / Valkey cache backend](../deployment/cache/redis.md) in place of the sidecar. Takes precedence over `cache-be` when both are set. |
+| `secondary-cache-be` | no | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), consulted on a primary miss. `secondary-cache-timeout` and `secondary-cache-mode` tune it. |
 | `metrics-listen-address` | no | Prometheus `/metrics` address, e.g. `0.0.0.0:7779`. `disabled` turns metrics off. Overridden by `--metrics-listen-address`. |
 | `cross-validation` | no | Per-method operator policies for [cross-validation](#cross-validation) (mandate, cap, or forbid). |
 

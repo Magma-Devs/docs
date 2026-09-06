@@ -27,7 +27,9 @@ Two surfaces: the **YAML file** defines *what* the router serves (listeners + up
 | Upstream auth & secrets | YAML (`auth-config`, `${VAR}`) | [Authentication](authentication.md) |
 | RPC node selection strategy | `--strategy` + `--qos-*` flags | [RPC Node selection](projects/selection-policies.md) |
 | Failover (retry / hedge / timeout / consensus) | CLI flags + chain-spec values | [Failover & retry](failover/index.md) |
-| Cache | `cache-be:` in YAML (or `--cache-be`) | [Add the cache](../deployment/docker-compose.md#add-the-cache) |
+| Cache | `cache-be:` in YAML (or `--cache-be`) | [Cache](../deployment/cache/index.md) |
+| Cache on Redis / Valkey | `resp-cache:` in YAML | [Redis / Valkey backend](../deployment/cache/redis.md) |
+| Read-only second cache tier | `secondary-cache-be:` in YAML (or `--secondary-cache-be`) | [Secondary cache](../deployment/cache/secondary.md) |
 | Metrics & tracing | `--metrics-listen-address`, OTel env | [Metrics](../reference/metrics.md) |
 | Every flag | — | [CLI reference](../reference/cli.md) |
 

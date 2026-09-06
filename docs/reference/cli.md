@@ -89,7 +89,17 @@ and confirm what is live via `HashPolling` in `GET /debug/endpoint-state`.
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--cache-be` | — | Address of the cache server (e.g. `127.0.0.1:20100`). In Compose the cache address usually comes from `cache-be:` in the config instead. |
-| `--shared-state` | `false` | Share consistency state across router instances via the cache (use with `--cache-be`). |
+| `--shared-state` | `false` | Share consistency state across router instances via the cache backend (`cache-be` or `resp-cache`). The per-endpoint chain-tracker poll sharing additionally requires `--cache-be` — see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
+| `--resp-cache-addresses` | — | Comma-separated address(es) of a [RESP-compatible backend](../deployment/cache/redis.md) (Redis/Valkey). Enables the RESP backend, which takes precedence over `cache-be`. Standalone: the node address; sentinel: the sentinel addresses; cluster: the configuration endpoint. |
+| `--resp-cache-topology` | `standalone` | `standalone`, `sentinel`, or `cluster`. |
+| `--secondary-cache-be` | — | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), queried when the primary produces no hit. |
+| `--secondary-cache-timeout` | `50ms` | Per-lookup budget for the secondary cache; an exceeded lookup is treated as a miss. |
+| `--secondary-cache-mode` | `read-only` | Secondary cache access mode. Only `read-only` is supported. |
+
+!!! note "The RESP backend's full surface is config-file only"
+    TLS, credentials, credential rotation, the read/write split, and key prefixing live in
+    the `resp-cache:` YAML block — only addresses and topology have flags. See
+    [Redis / Valkey backend](../deployment/cache/redis.md#configuration-reference).
 
 ## WebSocket
 

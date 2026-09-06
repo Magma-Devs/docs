@@ -48,9 +48,12 @@ sum(rate(smartrouter_total_errored[5m]))
 histogram_quantile(0.99,
   sum by (spec, le) (rate(smartrouter_end_to_end_latency_milliseconds_bucket[5m])))
 
-# Cache hit ratio
+# Cache hit ratio (both tiers; add cache_tier="primary" to scope it)
 sum(rate(smartrouter_cache_success_total[5m]))
   / sum(rate(smartrouter_cache_requests_total[5m]))
+
+# Is the secondary cache broken, or just cold?
+sum by (outcome) (rate(smartrouter_cache_failed_total{cache_tier="secondary"}[5m]))
 
 # Retry rate per relay (how often the first attempt isn't enough)
 sum(rate(smartrouter_retries_total[5m]))
@@ -89,6 +92,7 @@ Starting points — tune thresholds to your traffic.
 | Latency regression | p99 recipe `> 2000 for 10m` | Tail latency degraded. |
 | Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
 | Cache cold | hit-ratio recipe `< 0.2 for 30m` | Cache misconfigured or bypassed — cost/latency risk. |
+| RESP cache backend unreachable | `smartrouter_resp_cache_connected == 0 for 5m` | Redis/Valkey is down or rejecting auth. Relays keep succeeding via upstreams, so nothing else alerts — but you are paying for every read. |
 | Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data — high-signal correctness alert. |
 | Vendor-wide rate limit | `increase(smartrouter_rate_limit_holdoffs_total{event="escalated"}[1h]) > 0` | Two of a provider's URLs were held off at once, so the router stopped asking that provider on every chain — you are over an account-wide cap, not a per-endpoint one. |
 | Batch shapes merging | `increase(smartrouter_batch_signature_overflow_total[1h]) > 0` | Clients send more batch shapes than the breakdown can name — shapes are collapsing into `batch:other`. |
@@ -378,10 +382,45 @@ histogram_quantile(0.9,
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_cache_requests_total` | Counter | `spec`, `apiInterface`, `method` | Cache lookup attempts. |
-| `smartrouter_cache_success_total` | Counter | `spec`, `apiInterface`, `method` | Cache hits. |
-| `smartrouter_cache_failed_total` | Counter | `spec`, `apiInterface`, `method` | Cache misses. |
-| `smartrouter_cache_latency_milliseconds` | Histogram | `spec`, `apiInterface`, `method` | Cache lookup latency. |
+| `smartrouter_cache_requests_total` | Counter | `spec`, `apiInterface`, `method`, `cache_tier` | Cache lookup attempts per tier (`primary` \| `secondary`). A tier that is unconfigured, disconnected, or bypassed emits nothing for that request. |
+| `smartrouter_cache_success_total` | Counter | `spec`, `apiInterface`, `method`, `cache_tier` | Cache hits per tier. |
+| `smartrouter_cache_failed_total` | Counter | `spec`, `apiInterface`, `method`, `cache_tier`, `outcome` | Non-hit lookups, split by the closed enum `outcome` = `miss` (clean not-found) \| `error` (transport/server error) \| `timeout` (per-lookup budget exceeded). |
+| `smartrouter_cache_latency_milliseconds` | Histogram | `spec`, `apiInterface`, `method`, `cache_tier` | Cache lookup latency, observed on **every attempted lookup** — hits and non-hits. |
+
+Per tier, `cache_requests_total` = `cache_success_total` +
+`sum without (outcome) (cache_failed_total)`. Note the `sum without` — recovering that
+identity takes an explicit aggregation across `outcome`.
+
+The `cache_tier="secondary"` series exist only when a
+[secondary cache](../deployment/cache/secondary.md) is configured.
+
+!!! warning "Dashboard migration"
+    These series previously had no `cache_tier` label, `_failed_total` had no `outcome`,
+    and the latency histogram was observed on hits only. Aggregating queries
+    (`sum by (spec, method)`) keep working; **exact label matchers must add
+    `cache_tier="primary"`**. Latency-based alerts should expect non-hit observations,
+    which typically *lower* percentiles — misses return faster than hits — while timeouts
+    now appear as a bounded tail instead of being invisible.
+
+#### RESP cache backend
+
+Present only when the router runs against a [RESP-compatible (Redis/Valkey) cache
+backend](../deployment/cache/redis.md). The shared `smartrouter_cache_*` series above keep
+firing unchanged regardless of backend; they can't distinguish a backend error or timeout
+from a clean miss — these can, and they are the alerting surface for cache degradation.
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_resp_cache_failed_total` | Counter | `op`, `kind` | Backend-level operation failures (never clean misses). `op` = `get` \| `set`; `kind` = `error` (unreachable / protocol error) \| `timeout` (budget exceeded — saturation reads differently from an outage). |
+| `smartrouter_resp_cache_connection_errors_total` | Counter | — | Failed background health probes (PING, every 10s). |
+| `smartrouter_resp_cache_connected` | Gauge | — | `1` while the last health probe succeeded, `0` after a failure. Reachability *transitions* are also logged; steady state stays quiet. |
+| `smartrouter_resp_cache_pool_total_conns` | Gauge | — | Connections held by the client pool(s) — write and read summed when the read/write split is configured. |
+| `smartrouter_resp_cache_pool_idle_conns` | Gauge | — | Idle pool connections. |
+| `smartrouter_resp_cache_pool_stale_conns` | Gauge | — | Stale connections removed from the pool. |
+
+A failing backend never fails relays: lookups degrade to misses within the caller's budget
+and requests proceed to the upstreams. Alert on `smartrouter_resp_cache_connected == 0` or
+a `smartrouter_resp_cache_failed_total` rate, not on request errors.
 
 #### CSM state-store sizes (diagnostics)
 
