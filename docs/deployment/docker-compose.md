@@ -76,7 +76,24 @@ SR_CONFIG=config/smartrouter_examples/smartrouter_eth_cached.yml \
 ```
 
 Without the overlay the cache service never starts. Full detail — what's cached, TTLs,
-shared state — is on the [Cache](cache.md) page.
+shared state — is on the [Cache](cache/index.md) page.
+
+Two more overlays sit on top of this one:
+
+```bash
+# Redis / Valkey instead of the sidecar — pair with a config declaring `resp-cache:`
+SR_CONFIG=config/smartrouter_examples/smartrouter_eth_resp_cache.yml \
+  docker compose -f docker/docker-compose.yml \
+                 -f docker/docker-compose.resp-cache.yml up --build
+
+# A read-only secondary tier — layered on top of the cache overlay
+SR_CONFIG=config/smartrouter_examples/smartrouter_eth_two_tier.yml \
+  docker compose -f docker/docker-compose.yml \
+                 -f docker/docker-compose.cache.yml \
+                 -f docker/docker-compose.secondary-cache.yml up --build
+```
+
+See [Redis / Valkey backend](cache/redis.md) and [Secondary cache](cache/secondary.md).
 
 ## Add the dashboard
 

@@ -13,6 +13,20 @@ upstream calls) and **tail latency** (a hit returns immediately).
 It's the **same `smartrouter` binary**, run as a separate process via the `cache`
 subcommand. One cache can be shared by many router instances.
 
+## Pick a backend
+
+The sidecar on this page is the default and needs no extra infrastructure. Two options
+change *where* entries live, or *how many* places the router looks:
+
+| Option | What it gives you |
+| --- | --- |
+| **Cache sidecar** (this page) | In-memory, per process. Shared by many routers over gRPC. No external dependency. |
+| **[Redis / Valkey backend](redis.md)** | The router runs the same cache engine in-process against a RESP-compatible store — so the cache survives restarts, is shared by every replica, and can fail over or replicate across regions. Replaces the sidecar. |
+| **[Secondary cache](secondary.md)** | A second cache the router only ever **reads**, consulted on a primary miss before falling through to your upstreams. Typically another zone's cache. Adds to the primary, whichever backend that is. |
+
+The last two are independent of each other: a router can read a secondary tier whether its
+primary is the sidecar or a RESP backend.
+
 ## How the router finds it
 
 The router connects to the cache through `cache-be:` **in the config file**, not a flag:
@@ -40,7 +54,7 @@ cache-be: "cache:20100"
                      -f docker/docker-compose.cache.yml up --build
     ```
 
-    See [Docker Compose → Add the cache](docker-compose.md#add-the-cache).
+    See [Docker Compose → Add the cache](../docker-compose.md#add-the-cache).
 
 === "Local binary"
 
@@ -73,8 +87,8 @@ with different ids shares one entry. What gets stored:
 
 What is **not** cached: writes (`eth_sendRawTransaction` and the like), pending/`latest`
 mutable state beyond its short TTL, and anything a client marks
-[`lava-force-cache-refresh`](../api/directives.md#force-a-cache-refresh). Which methods
-are cacheable at all comes from each chain's [spec](../reference/chains/specs.md)
+[`lava-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh). Which methods
+are cacheable at all comes from each chain's [spec](../../reference/chains/specs.md)
 categories, not a setting on the cache.
 
 ## Tuning flags
@@ -93,14 +107,19 @@ Flags for `smartrouter cache <host:port>`:
 | `--expiration-finalized-node-errors` | `250ms` | TTL for cached finalised node errors. |
 | `--log_level` | `info` | Cache log level. |
 
-The cache also accepts the same `--pyroscope-*` [profiling](../reference/profiling.md)
+The cache also accepts the same `--pyroscope-*` [profiling](../../reference/profiling.md)
 flags as the router.
 
 ## Sharing state across routers
 
 When several router instances share one cache, add `--shared-state` to the routers so
 they also share consumer-consistency state through it — keeping their "seen block" views
-aligned. See the [CLI reference](../reference/cli.md#cache-shared-state).
+aligned. See the [CLI reference](../../reference/cli.md#cache-shared-state).
+
+The seen-block state travels through either backend. The separate per-endpoint
+chain-tracker gate — which lets replicas borrow each other's successful upstream polls
+instead of each polling independently — is a sidecar RPC, so it requires `cache-be:`; a
+router on the [RESP backend](redis.md#caveats) polls locally and logs a warning.
 
 ## Observability
 
@@ -109,3 +128,8 @@ The cache exposes Prometheus metrics on its `--metrics_address` (e.g. `:5555`):
 ```bash
 curl -s http://localhost:5555/metrics | grep cache_total_hits
 ```
+
+The router reports its own view on `:7779` — `smartrouter_cache_requests_total`,
+`_success_total`, `_failed_total`, and `_latency_milliseconds`, each labelled with the
+`cache_tier` that answered (`primary` or [`secondary`](secondary.md)). See the
+[Metrics reference](../../reference/metrics.md#cache).

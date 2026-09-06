@@ -25,6 +25,8 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 - [Docker Compose](https://docs.magmadevs.com/deployment/docker-compose/): Run Smart Router and its dependencies with the bundled Docker Compose stack.
 - [Config wizard](https://docs.magmadevs.com/deployment/wizard/): An interactive TUI (`make wizard`) that picks chains, collects upstreams, health-checks them, writes the config, and brings up the stack.
 - [Cache](https://docs.magmadevs.com/deployment/cache/): Deploy the standalone, block-aware, reorg-safe cache that absorbs repeat reads and can be shared across router replicas.
+- [Redis / Valkey backend](https://docs.magmadevs.com/deployment/cache/redis/): Run the cache against a RESP-compatible backend (Redis, Valkey, ElastiCache, MemoryDB) instead of the sidecar — persistent, shared across replicas, with Sentinel/Cluster failover and multi-region read/write split.
+- [Secondary cache](https://docs.magmadevs.com/deployment/cache/secondary/): An optional read-only second cache tier, consulted on a primary miss before falling through to upstream nodes — typically another zone's cache.
 - [Dashboard](https://docs.magmadevs.com/deployment/dashboard/): Run the monitoring dashboard for routing, cache, and provider health.
 
 ## Configure
