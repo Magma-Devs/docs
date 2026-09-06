@@ -144,8 +144,9 @@ See [Metrics](metrics.md).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--relays-health-enable` | `true` | Enable relay health checks. |
-| `--relays-health-interval` | `5m` | Interval between health checks. |
+| `--relays-health-enable` | `true` | Enable relay health checks. When `false`, `/readyz` and `/metrics/overall-health` report `503` unconditionally — keep it on under a Kubernetes readiness probe. |
+| `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. Real relays defer the probe, so this is the idle re-check cadence. |
+| `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`. A not-ready router receives no real relays, so this bounds how fast `/readyz` recovers once an upstream answers again. |
 | `--epoch-duration` | disabled | Duration of each epoch (e.g. `30m`); unset disables epochs. |
 | `--shutdown-grace-period` | `25s` | Graceful-shutdown deadline for in-flight requests + WS clients. |
 
