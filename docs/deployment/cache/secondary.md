@@ -65,7 +65,7 @@ nothing unsanitised can reach your primary either.
 | `Sig`, `SigBlocks` | Dropped entirely. |
 | `Metadata` (upstream response headers) | Reduced to an **allowlist** — `Content-Type` and `Content-Encoding`. Everything else goes, including header names this router has never heard of. An allowlist rather than a denylist, because upstream response headers are an open set no denylist can be proven to cover. |
 | `LatestBlock` | Dropped, and the router re-stamps its *own* tracked tip in its place. |
-| Block-hash→height mappings | Never requested from the secondary at all. |
+| Block-hash→height mappings | Not requested from the secondary, so nothing to strip — the lookup asks for none. |
 
 The caller therefore sees the response body, its content type, and the router's own locally
 minted headers (`Lava-Provider-Address: Cached`, the GUID, `Provider-Latest-Block`) — the
@@ -78,9 +78,9 @@ it expires. Foreign hash→height mappings would do the same by a different rout
 heights raise the effective requested block (gating endpoint sync and optimiser selection)
 and decide archive routing, and the two tiers' values are folded max-for-latest /
 min-for-earliest, so the more extreme value always wins and a foreign tier would beat your
-own primary by construction. Hash-keyed archive detection therefore uses your primary's
-mappings alone — or none in a secondary-only topology, exactly as on a router with no cache
-configured.
+own primary by construction. So the secondary lookup never asks for them, and hash-keyed
+archive detection uses your primary's mappings alone — or none in a secondary-only
+topology, exactly as on a router with no cache configured.
 
 ## What happens in each situation
 
