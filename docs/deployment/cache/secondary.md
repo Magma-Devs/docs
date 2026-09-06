@@ -40,8 +40,7 @@ request ──► primary cache ──hit──► served ("Cached")
   under the same eligibility rules applied to upstream responses — cached node errors and
   error statuses are served but never re-written as successes. The next identical request
   hits the primary directly, so for an explicit-block query the secondary is consulted once
-  per entry, not per request. (`latest`-tagged queries are the exception; see
-  [Limits](#limits).)
+  per entry, not per request.
 - **Node errors are labelled the same from either tier.** A cached node error is served
   with the `lava-identified-node-error` response header, exactly as a live one is — a
   replayed error is never mistaken for a success, and which cache answered makes no
@@ -195,21 +194,6 @@ Deliberately out of scope, and rejected at startup rather than silently ignored:
   `read-write` aborts startup with an explicit "reserved for a future iteration" error. The
   setting exists so that read-only is an explicit, auditable choice in your config rather
   than an implicit default.
-- **More than two tiers.** The design is one primary and one optional secondary. An ordered
-  chain of N tiers is not supported.
-
-Out of scope and *not* rejected, because the configuration is perfectly valid and only its
-benefit is limited:
-
-- **Cross-zone hits for `latest`-tagged queries.** A cache key is `request hash ‖ block`,
-  and for a `latest`-tagged request the router resolves the block against **its own**
-  tracked tip *before* the lookup, so the cache server's own tag resolution never runs. Two
-  zones tracking the chain independently are routinely a block or two apart, and when they
-  are, every `latest`-tagged lookup builds a key the other zone never wrote and misses —
-  paying the cross-zone timeout each time rather than once per entry. Explicit block
-  numbers, block hashes, and any other pinned query are unaffected, and are what this tier
-  is for. If your workload is mostly `latest`-tagged, keep `secondary-cache-timeout` tight:
-  the tier will cost you that budget per request and return nothing.
 
 ## See also
 
