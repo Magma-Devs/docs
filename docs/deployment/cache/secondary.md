@@ -130,7 +130,7 @@ One setting enables it; the rest have defaults.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `secondary-cache-be` | *(unset — disabled)* | Secondary cache address; same formats as `cache-be` (`host:port` or `unix:` socket). |
+| `secondary-cache-be` | *(unset — disabled)* | Secondary cache address, in the same `host:port` form as `cache-be`. |
 | `secondary-cache-timeout` | `50ms` | Per-lookup budget. An exceeded lookup counts as a miss and the request falls through. Raise it for cross-zone network hops. |
 | `secondary-cache-mode` | `read-only` | Access mode. `read-only` is the only supported value. |
 
