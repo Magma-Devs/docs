@@ -105,8 +105,10 @@ metrics manager.
 | Path | Format | Description |
 | --- | --- | --- |
 | `/metrics` | Prometheus | All registered metrics ([`promhttp.Handler()`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go#L647)) |
-| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy` |
+| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy`. Fail-closed at boot: turns `200` once endpoint setup has verified a provider, and health transitions publish immediately. While a chain is unhealthy the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
 | `/metrics/health-overall` | text | Alias of the above (backward-compat path) |
+| `/readyz` | text | Alias of `/metrics/overall-health` for a Kubernetes readiness probe — pulls the pod from the Service without restarting it. |
+| `/livez` | text | Always `200` while the process serves HTTP — liveness only; provider health is deliberately not consulted. |
 
 ### Configuration
 
