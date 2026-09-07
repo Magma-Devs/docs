@@ -1,6 +1,6 @@
 ---
 title: "Supported chains"
-description: "Chain-agnostic JSON specs — 129 specs covering 245 networks across EVM, Cosmos/Tendermint, Solana, and more."
+description: "Chain-agnostic JSON specs — 139 specs covering 261 networks across EVM, Cosmos/Tendermint, Solana, and more."
 ---
 
 # Supported chains
@@ -17,7 +17,7 @@ walkthroughs — [Ethereum](ethereum.md), [Solana](solana.md), [Bitcoin](bitcoin
 
 ## Browse chains
 
-The catalog holds **129 spec files** spanning **114 mainnets and 131 testnets**. Search or
+The catalog holds **139 spec files** spanning **125 mainnets and 136 testnets**. Search or
 filter by ecosystem below; each card shows the chain's networks (Mainnet / Testnet) and
 the API protocols it exposes. The **↗** opens the chain's spec on GitHub.
 
