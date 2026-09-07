@@ -19,6 +19,14 @@ mkdocs serve            # http://127.0.0.1:8000
 mkdocs build --strict   # output in site/ (gitignored); --strict fails on broken links
 ```
 
+## Asset URLs are fingerprinted
+
+`hooks/asset_fingerprint.py` rewrites every local `extra_css` / `extra_javascript` entry at
+build time to `<path>?v=<sha256 prefix>` of the file's content. The site sits behind
+Cloudflare, whose edge caches static assets for hours without knowing when a deploy
+happened; a content hash makes a changed file a new URL, so a deploy is visible on the first
+request. Nothing to maintain — add the bare path to `mkdocs.yml` and the hook stamps it.
+
 ## Deployment
 
 Pushing to `main` triggers [`.github/workflows/docs.yml`](.github/workflows/docs.yml), which builds the
