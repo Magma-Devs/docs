@@ -91,6 +91,19 @@ mutable state beyond its short TTL, and anything a client marks
 are cacheable at all comes from each chain's [spec](../../reference/chains/specs.md)
 categories, not a setting on the cache.
 
+The lookup is skipped for exactly three reasons: a stateful (write) method, a request
+carrying `lava-force-cache-refresh`, and a request running
+[cross-validation](../../configuration/failover/cross-validation.md), which needs fresh
+answers from several nodes to compare.
+
+!!! warning "Pinning a node does not bypass the cache"
+    [`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
+    *selection* preference, and the cache is consulted before selection runs. A pinned
+    request that hits a warm entry returns `Lava-Provider-Address: Cached` without
+    contacting the named node — so it cannot tell you whether that node is reachable.
+    Monitoring checks and any test that asserts on a specific node must also send
+    `lava-force-cache-refresh`, or use a request the cache cannot answer.
+
 ## Tuning flags
 
 Flags for `smartrouter cache <host:port>`:
