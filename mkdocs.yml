@@ -59,8 +59,12 @@ plugins:
 # (the LLM-ingestion corpus) in nav order at post-build, and emits a per-page
 # Markdown twin next to each page (URL minus trailing slash + .md) — always in
 # sync with content, no manual upkeep. The curated index is docs/llms.txt.
+# asset_fingerprint.py appends `?v=<content hash>` to every local entry of
+# extra_css / extra_javascript below, so a changed file is a new URL and the
+# Cloudflare edge cache in front of the site can never serve a stale copy of it.
 hooks:
   - hooks/llms_full.py
+  - hooks/asset_fingerprint.py
 
 # Community / support links — rendered as icons in the footer on every page.
 extra:
