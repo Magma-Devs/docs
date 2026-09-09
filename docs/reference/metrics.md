@@ -433,7 +433,8 @@ assert `/debug/reset-all` emptied each store. All drop to `0` after a reset.
 | --- | --- | --- | --- |
 | `smartrouter_csm_blocked_providers` | Gauge | `spec`, `apiInterface` | Size of the previous-epoch blocked-providers store. |
 | `smartrouter_csm_blocked_backup_providers` | Gauge | `spec`, `apiInterface` | Size of the blocked-backup-providers store. |
-| `smartrouter_csm_sticky_sessions` | Gauge | `spec`, `apiInterface` | Live sticky-session affinities. |
+| `smartrouter_csm_sticky_sessions` | Gauge | `spec`, `apiInterface` | Live sticky-session affinities held by this replica. |
+| `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | [Sticky-session](../configuration/sticky-sessions.md) routing decisions. `outcome`: `local_hit` (answered from this replica, no round trip), `adopted` (used a choice another replica made), `claimed` (this replica made the choice), `lost_race` (chose at the same moment as a peer and adopted its winner), `error` (the shared store could not be reached, so the request failed), `no_candidate` (no upstream available to choose from), `invalidated` (a stored choice was dropped because its upstream could not serve). On a multi-replica deployment `adopted` staying at zero means replicas are not sharing — check the cache backend and `--shared-state`. |
 | `smartrouter_csm_reported_providers` | Gauge | `spec`, `apiInterface` | Size of the reported-providers register. |
 
 ---
