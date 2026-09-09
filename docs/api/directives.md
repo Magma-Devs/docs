@@ -12,6 +12,7 @@ Override Smart Router's default behaviour for a single request by setting HTTP h
 | Header | Effect |
 |---|---|
 | `lava-select-provider` | [Pin](#pin-to-a-specific-node) the request to one named upstream. |
+| `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
 | `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated, **max 2**). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
@@ -43,6 +44,31 @@ curl -X POST http://127.0.0.1:3360 \
   -H 'lava-select-provider: my-eth-upstream-1' \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
+
+## Keep a session on one node
+
+```
+lava-stickiness: <your-session-id>
+```
+
+Routes every request carrying the same id to the same upstream, on every router replica. The value is any string you choose — a worker id, a batch id, a user id.
+
+Unlike `lava-select-provider`, you do not name the node: the router picks one on the first request and keeps the rest of the session on it.
+
+**When to use:** a sequence of calls that has to agree with each other — reading the chain head and then fetching that block, for example, where a node a few blocks behind would return an empty result for a block that exists.
+
+!!! warning "Send the id on **every** call in the sequence"
+    Sending it only on the later call leaves the first one unpinned, so the two can still be
+    answered by different nodes — the problem the header exists to prevent.
+
+```bash
+curl -X POST http://127.0.0.1:3360 \
+  -H 'Content-Type: application/json' \
+  -H 'lava-stickiness: ingest-batch-42' \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+Working across replicas requires a cache backend and `--shared-state`; without them the header only applies within a single replica. If the chosen node cannot serve a request, the request fails rather than being served elsewhere. See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
 
 ## Force a cache refresh
 
