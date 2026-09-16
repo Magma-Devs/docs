@@ -11,7 +11,7 @@ Override Smart Router's default behaviour for a single request by setting HTTP h
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | [Pin](#pin-to-a-specific-node) the request to one named upstream. |
+| `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream — the cache is still consulted first. |
 | `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated, **max 2**). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
@@ -27,7 +27,18 @@ Each is detailed below. The router's [response headers](#response-headers) carry
 lava-select-provider: <upstream-name>
 ```
 
-Routes this request to one named upstream, bypassing the QoS optimizer. The named upstream serves it directly. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+Expresses a **preference** for one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+
+!!! warning "The cache answers first — a pinned request may never reach the named node"
+    The response cache is consulted **before** node selection runs, and pinning does *not*
+    bypass it. A cacheable method with a warm entry returns `Lava-Provider-Address: Cached`
+    and the named node is never contacted — including when that node is unreachable.
+
+    So a pinned request is **not a node health check**. For any cacheable method — which is
+    most reads — an unreachable node is indistinguishable from a healthy one: you get
+    HTTP 200 and a real answer either way. Pair the pin with
+    [`lava-force-cache-refresh`](#force-a-cache-refresh) whenever the point of the request
+    is the *node* rather than the data.
 
 !!! warning "`Lava-Provider-Address` is a response header, not a request directive"
     To pin a request, send **`lava-select-provider`**. `Lava-Provider-Address` is only
@@ -44,6 +55,19 @@ curl -X POST http://127.0.0.1:3360 \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
+To reach the node itself — for a health check, or to compare two nodes on the same query —
+add `lava-force-cache-refresh` so the cache cannot answer on its behalf:
+
+```bash
+curl -X POST http://127.0.0.1:3360 \
+  -H 'Content-Type: application/json' \
+  -H 'lava-select-provider: my-eth-upstream-1' \
+  -H 'lava-force-cache-refresh: true' \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+An unreachable node then fails loudly rather than returning a cached answer.
+
 ## Force a cache refresh
 
 ```
@@ -54,7 +78,7 @@ Bypasses the cache for this request. The relay goes upstream, the response is re
 
 The refresh triggers on the header's **presence**, not its value — `lava-force-cache-refresh: false` (or any value) still forces it. Send the header only when you mean it.
 
-**When to use:** known-stale entry, suspected reorg, post-deploy verification.
+**When to use:** known-stale entry, suspected reorg, post-deploy verification, and any request whose purpose is to reach a *specific node* rather than to get data — see [the pin caveat](#pin-to-a-specific-node).
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
@@ -94,7 +118,7 @@ lava-providers-block: my-eth-upstream-3,my-eth-upstream-4
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | Route this request to one named node (the [pin](#pin-to-a-specific-node) header). |
+| `lava-select-provider` | Prefer one named node for this request (the [pin](#pin-to-a-specific-node) header) — a cache hit still answers before selection runs. |
 | `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. |
 
 !!! warning "`lava-providers-block` accepts at most 2 nodes"
@@ -143,7 +167,7 @@ Smart Router annotates every response with metadata about how the relay was serv
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that ultimately served the response. |
+| `Lava-Provider-Address` | The node that ultimately served the response. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and *no* node was contacted — including when the request named one with `lava-select-provider`. |
 | `Lava-Retries` | Number of retry attempts made for this relay. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `Lava-Guid` | Unique request id — correlate with logs and traces. |
