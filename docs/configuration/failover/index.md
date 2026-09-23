@@ -34,7 +34,7 @@ Smart Router's failover policies fall into three groups:
 | Group | Examples | Where tuned |
 |---|---|---|
 | CLI flags | `--set-relay-retry-limit`, `--default-processing-timeout`, `--min-relay-timeout` | startup args |
-| Per-request headers | `lava-relay-timeout`, `lava-select-provider` | HTTP headers — see [Request headers](../../api/directives.md) |
+| Per-request headers | `lava-relay-timeout`, `lava-select-provider` | HTTP headers, or gRPC call metadata — see [Request headers](../../api/directives.md) |
 | Chain-derived defaults | integrity lag threshold, hedge tick | computed from the chain spec; not currently exposed as YAML |
 
 Where a knob isn't tunable, that's called out on the policy's page.
