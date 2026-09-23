@@ -5,7 +5,7 @@ description: "Per-request header directives to bypass the cache, pin a specific 
 
 # Directives
 
-Override Smart Router's default behaviour for a single request by setting HTTP headers. Use them when the default routing, caching, or timeout policy isn't what you want for this specific call.
+Override Smart Router's default behaviour for a single request by setting request headers: HTTP headers, or call metadata on a gRPC listener ([Over gRPC](#over-grpc)). Use them when the default routing, caching, or timeout policy isn't what you want for this specific call.
 
 ## Request headers at a glance
 
@@ -43,6 +43,8 @@ curl -X POST http://127.0.0.1:3360 \
   -H 'lava-select-provider: my-eth-upstream-1' \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
+
+A gRPC call pins the same way, with the header sent as call metadata. See [Over gRPC](#over-grpc).
 
 ## Force a cache refresh
 
@@ -136,6 +138,34 @@ curl -X POST http://127.0.0.1:3360 \
   -H 'lava-debug-relay: true' \
   -d '{"jsonrpc":"2.0","method":"debug_traceTransaction","params":["0x..."],"id":1}'
 ```
+
+## Over gRPC
+
+A gRPC listener reads the same directives from **call metadata**. gRPC sends metadata as HTTP/2 headers, and the router passes it through the same directive parsing as an HTTP request. Use the names above unchanged:
+
+```bash
+grpcurl -plaintext \
+  -H 'lava-select-provider: my-cosmos-upstream-1' \
+  127.0.0.1:3361 \
+  cosmos.bank.v1beta1.Query/TotalSupply
+```
+
+In code, attach the metadata to the call:
+
+=== "Go"
+
+    ```go
+    ctx := metadata.AppendToOutgoingContext(ctx, "lava-select-provider", "my-cosmos-upstream-1")
+    resp, err := client.TotalSupply(ctx, &banktypes.QueryTotalSupplyRequest{})
+    ```
+
+=== "Python"
+
+    ```python
+    response = stub.TotalSupply(request, metadata=[("lava-select-provider", "my-cosmos-upstream-1")])
+    ```
+
+The [response headers](#response-headers) come back as response metadata with lowercase names. `lava-provider-address` names the upstream that served the call, and `grpcurl -v` prints it.
 
 ## Response headers
 
