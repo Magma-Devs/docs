@@ -119,6 +119,7 @@ direct-rpc:
 | `skip-verifications` | Skip chain-tracker startup checks for this URL, e.g. `["pruning", "tx-indexing"]`. |
 | `auth-config` | Per-URL authentication — see [Authentication](authentication.md). |
 | `grpc-config` | gRPC descriptor settings (below). |
+| `accept-encoding` | `identity` (default) or `gzip`. `gzip` asks this upstream to compress its replies — see [Compressed upstream replies](#accept-encoding-compressed-upstream-replies). |
 
 ```yaml
     node-urls:
@@ -130,6 +131,35 @@ direct-rpc:
             x-api-key: "${RPC_KEY_ETH}"
       - url: "wss://your-eth-provider.example.com/websocket"
 ```
+
+### `accept-encoding` — compressed upstream replies
+
+By default the router asks every upstream for uncompressed replies
+(`Accept-Encoding: identity`). Set `accept-encoding: gzip` on a URL to ask that
+upstream for gzip instead. The router decompresses each reply before it validates,
+caches or returns it, so clients get the same response either way. What clients
+receive is set separately, by [`--response-compression`](../reference/cli.md#cors-http).
+
+Gzip trades router CPU for fewer bytes read. Decompressing costs CPU on every reply,
+which is why it is off by default. It pays where replies are large and reading them
+is the bottleneck: a Solana `getBlock` reply is several megabytes of JSON that gzip
+shrinks four to six times, so the router reads that much less through TLS and HTTP/2.
+Measure it against your upstream before relying on it: the saving depends on how
+compressible its replies are, and an upstream may not compress at all.
+
+```yaml
+    node-urls:
+      - url: "https://solana-mainnet.gateway.tatum.io"
+        accept-encoding: gzip
+        auth-config:
+          auth-headers:
+            x-api-key: "${RPC_KEY_SOLANA}"
+```
+
+- Values are `identity` and `gzip`, in any case. Any other value stops the router at
+  startup.
+- Only `http(s)://` URLs use it; `ws(s)://` and `grpc(s)://` URLs ignore it.
+- An upstream that answers uncompressed anyway is read as it is.
 
 ### `grpc-config` — gRPC descriptors
 
