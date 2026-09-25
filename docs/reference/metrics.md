@@ -448,6 +448,31 @@ assert `/debug/reset-all` emptied each store. All drop to `0` after a reset.
 | `smartrouter_csm_sticky_sessions` | Gauge | `spec`, `apiInterface` | Live sticky-session affinities. |
 | `smartrouter_csm_reported_providers` | Gauge | `spec`, `apiInterface` | Size of the reported-providers register. |
 
+#### Cross-pod sticky sessions
+
+With `--shared-state` and a cache backend, a `lava-stickiness` id resolves to one upstream
+across every replica through a shared claim. Each resolution is counted by how it went:
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | Claim resolutions. `outcome`: `local_hit` (answered from this replica's confirmed claim), `adopted` (took a claim another replica had made), `claimed` (this replica made the claim), `lost_race` (a peer's claim naming a different upstream won), `error` (the claim could not be read or written, so the request failed), `no_candidate` (this replica had no upstream to offer), `invalidated` (a claim was dropped because its upstream could not serve here). |
+
+`adopted` is the outcome that proves a session crossed replicas. The `Lava-Provider-Address`
+reply header reads the same whether a replica used its own claim or a peer's.
+
+The same counts are readable without the metrics port at `GET /debug/sticky-claims` on the
+debug server (`--debug-address`), one row per endpoint:
+
+```json
+[{"ChainID": "ETH1", "ApiInterface": "jsonrpc", "SharedSticky": true,
+  "Outcomes": {"local_hit": 1, "adopted": 1, "claimed": 0, "lost_race": 0,
+               "error": 0, "no_candidate": 0, "invalidated": 0}}]
+```
+
+`SharedSticky` is `false` on a router without `--shared-state` and a cache backend, where every
+count stays `0`, so it tells "off" from "never fired". The counts are cumulative since the
+replica started; read them before and after the requests you send.
+
 ---
 
 ## Shared metrics

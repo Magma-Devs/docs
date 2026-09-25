@@ -230,7 +230,7 @@ See [Metrics](metrics.md).
 | `--debug-relays` | `false` | Add debug info to relay response metadata (pairs with the `lava-debug-relay` header). |
 | `--debug-probes` | `false` | Add debug info to probe responses. |
 | `--enable-selection-stats` | `false` | Emit the `lava-selection-stats` response header. |
-| `--debug-address` | — | Debug HTTP server (integration tests) — exposes `/debug/*`. |
+| `--debug-address` | — | Debug HTTP server (integration tests) — exposes `/debug/*`, among them [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions). |
 | `--test-mode` | `false` | Send dummy data and print all listener metadata. |
 | `--allow-insecure-provider-dialing` | `false` | Allow non-TLS upstream connections. Dev/test only. |
 | `--pprof-address` | — | pprof server address (e.g. `localhost:6060`). |
