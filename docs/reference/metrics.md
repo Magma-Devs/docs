@@ -448,6 +448,43 @@ assert `/debug/reset-all` emptied each store. All drop to `0` after a reset.
 | `smartrouter_csm_sticky_sessions` | Gauge | `spec`, `apiInterface` | Live sticky-session affinities. |
 | `smartrouter_csm_reported_providers` | Gauge | `spec`, `apiInterface` | Size of the reported-providers register. |
 
+#### Cross-pod sticky sessions
+
+With `--shared-state` and a cache backend, a `lava-stickiness` id resolves to one upstream
+across every replica through a shared claim. Each resolution is counted by how it went:
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | Claim resolutions. `outcome`: `local_hit` (answered from this replica's confirmed claim), `adopted` (routed by a live claim read from the shared registry rather than one held in memory — usually a peer's, see below), `claimed` (this replica made the claim), `lost_race` (a peer's claim naming a different upstream won), `error` (the claim could not be read or written, so the request failed), `no_candidate` (this replica had no upstream to offer), `invalidated` (a claim was dropped because its upstream could not serve here). |
+
+`adopted` is how a session that crossed replicas shows up. The `Lava-Provider-Address` reply
+header reads the same whether a replica used its own claim or a peer's. `adopted` is not proof on
+its own, though. A replica that drops its local copy of a claim (`invalidated`) leaves the shared
+claim in place, so its next request reads its own claim back and counts `adopted` too. So does a
+replica after `/debug/reset-all` clears its local table, if the shared claim outlived the reset. A
+rise in `adopted` on a replica whose `invalidated` count did not move, with no reset in between, is
+a peer's claim.
+
+The same counts are readable without the metrics port at `GET /debug/sticky-claims` on the
+debug server (`--debug-address`), one row per endpoint:
+
+```json
+[{"ChainID": "ETH1", "ApiInterface": "jsonrpc", "PodID": "eth-router-7d9f8b6c5-x2kqp/3fa9c1d2",
+  "SharedSticky": true,
+  "Outcomes": {"local_hit": 1, "adopted": 1, "claimed": 0, "lost_race": 0,
+               "error": 0, "no_candidate": 0, "invalidated": 0}}]
+```
+
+`SharedSticky` is `false` on a router without `--shared-state` and a cache backend, where every
+count stays `0`, so it tells "off" from "never fired". The counts are cumulative since the
+router process started; read them before and after the requests you send.
+
+`PodID` names the process that answered: the pod name, a slash, and a suffix that changes when the
+process restarts. The debug port is reached through a Service that balances across the router's
+replicas, so two readings in a row can come from different replicas. Compare two readings only when
+their `PodID` matches. A new suffix on the same pod name means the process restarted and its
+counts began again from `0`.
+
 ---
 
 ## Shared metrics
