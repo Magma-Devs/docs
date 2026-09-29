@@ -71,7 +71,7 @@ curl -X POST http://127.0.0.1:3360 \
 lava-relay-timeout: 12s
 ```
 
-Sets the timeout for each upstream attempt of this request. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The value is used **verbatim** — unlike the server-side default it is *not* clamped to the `--min-relay-timeout` floor, so a client can ask for less.
+Sets the timeout for each upstream attempt of this request. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The value is used **verbatim** — unlike the server-side default it is *not* clamped to the `--min-relay-timeout` floor, so a client can ask for less. A zero or negative value, like one that does not parse, is ignored: the request keeps the router's own timeout.
 
 **When to use:** known-slow methods (`debug_traceTransaction` on a deep block), or known-fast methods you don't want to wait for.
 
