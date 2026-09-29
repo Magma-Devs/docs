@@ -113,6 +113,8 @@ lava-extension: archive
 
 Forces a request onto an extension (e.g. `archive`) instead of letting the router infer it from the requested block. The value is case-insensitive. Only nodes whose config declares the matching add-on are eligible — see the per-chain [Upstream capabilities](../reference/chains/ethereum.md#upstream-capabilities).
 
+If **no** node on the router declares the add-on, the request is not refused: it is served without the extension, by an ordinary node, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension — for `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension so the operator can add a capable node.
+
 **When to use:** a historical query the router would otherwise route to a non-archive node.
 
 ## Request cross-validation
@@ -181,6 +183,7 @@ Smart Router annotates every response with metadata about how the relay was serv
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
+| `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |
 | `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
 
 When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
