@@ -12,7 +12,7 @@ Override Smart Router's default behaviour for a single request by setting reques
 | Header | Effect |
 |---|---|
 | `lava-select-provider` | [Pin](#pin-to-a-specific-node) the request to one named upstream. |
-| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated, **max 2**). |
+| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
 | `lava-relay-timeout` | [Override the per-attempt timeout](#override-the-per-attempt-timeout) (Go duration). |
@@ -99,9 +99,7 @@ lava-providers-block: my-eth-upstream-3,my-eth-upstream-4
 | `lava-select-provider` | Route this request to one named node (the [pin](#pin-to-a-specific-node) header). |
 | `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. |
 
-!!! warning "`lava-providers-block` accepts at most 2 nodes"
-    A list of **3 or more** addresses is silently ignored — *no* nodes are excluded and
-    no error is returned. Keep the exclude list to two entries.
+There is no limit on how many nodes you exclude, and spaces around the commas are ignored. The exclusion also applies to backup nodes. If the list covers every node that could serve the request, the request fails — the router never falls back to a node you excluded.
 
 **When to use:** pin away from a node you've seen misbehave, or force a comparison against a specific one. Failover still applies across whatever nodes remain eligible.
 
