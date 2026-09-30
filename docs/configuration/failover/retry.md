@@ -29,7 +29,7 @@ Same-response retries are deduplicated: if two nodes return the identical respon
 | Error-retry limit | `--set-relay-retry-limit` (default `2`) | Errors tolerated before the relay gives up. `0` disables retries entirely. This is the knob you tune. |
 | Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries` — an upper bound on *total* attempts including ticker-driven [hedges](hedge.md), separate from the error-retry limit and not exposed as a flag. |
 | Overall budget | `--default-processing-timeout` (default `30s`) | Ends retries even if attempts remain. |
-| Per-attempt budget | `--min-relay-timeout` floor, or `lava-relay-timeout` header | Retries get the same per-attempt timeout. |
+| Per-attempt window | `--min-relay-timeout` floor, or `lava-relay-timeout` header | When the window passes, the next node is tried in parallel; the attempt in flight keeps running. See [Timeout](timeout.md). |
 
 The cap you actually control is `--set-relay-retry-limit`: the error-retry path stops
 after that many errors (default 2). The hardcoded `10` is only the ceiling the
@@ -43,6 +43,24 @@ Retries are on by default, tolerating `--set-relay-retry-limit` errors (default 
 - `--set-relay-retry-limit 5` — tolerate more errors before giving up.
 
 This is a global startup flag, not a per-relay control — there's no per-request header to disable retry for a single call.
+
+## Batch requests
+
+**By default, a JSON-RPC batch request gets no automatic retry and no failover.** If the node that received the batch returns an error, that result goes back to the client. The router does not resend the batch to another node, either as a retry or as a [hedge](hedge.md).
+
+This is deliberate. A batch can include a write, such as `eth_sendRawTransaction`, next to reads. Resending the batch would resend the write. To retry a failed batch, have the client resend only the sub-requests that are safe to repeat.
+
+There is one exception. If every attempt so far failed only because the node was rate-limited (`429`), nothing ran, so the batch moves to another node like any other rate-limited request.
+
+Three startup flags control batch handling:
+
+| Flag | Default | Effect |
+|---|---|---|
+| `--disable-batch-request-retry` | `true` | Batches get no retry or failover. Set it to `false` to retry batches like single requests; only do this if your clients never put writes in a batch. |
+| `--batch-node-error-on-any` | `false` | Decides when a batch response counts as a node error. By default, a batch is an error only if **no** sub-request succeeded; one success hides failed sub-requests. Set it to `true` to count a batch as an error if **any** sub-request failed. |
+| `--max-batch-request-size` | `0` (unlimited) | Largest batch accepted. A larger batch is rejected before it reaches a node, with [`PROTOCOL_BATCH_SIZE_EXCEEDED`](../../reference/error-codes.md) (`1022`). |
+
+With the default `--disable-batch-request-retry true`, `--batch-node-error-on-any` doesn't change whether a batch is retried. It still decides whether the batch response counts as a node error.
 
 ## When retries don't help
 

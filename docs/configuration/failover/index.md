@@ -13,7 +13,7 @@ The umbrella for everything Smart Router does when a relay misbehaves: an RPC no
 |---|---|---|
 | [**Retry**](retry.md) | upstream returns a retryable error | rotates to a different node; tolerates `--set-relay-retry-limit` errors (default 2) |
 | [**Hedge**](hedge.md) | request hasn't returned within a tick | fires a parallel attempt to another node; first response wins |
-| [**Timeout**](timeout.md) | per-attempt or overall budget exceeded | aborts; lets retry rotate |
+| [**Timeout**](timeout.md) | per-attempt window passes, or overall budget runs out | window: sends a hedge while the first attempt keeps running; budget: ends the relay |
 | [**Integrity**](integrity.md) | out-of-sync node | pre-request lag check skips lagging nodes before they're picked |
 | [**Circuit breaker**](circuit-breaker.md) | the node pool is exhausted | trips the relay early instead of retrying forever |
 
@@ -23,7 +23,9 @@ For catching *wrong* data by comparing answers across nodes, see [Cross-validati
 
 ![Failover pipeline — request flows through integrity, selection, attempt, and branches to success, retry, hedge, or circuit-breaker trip](../../assets/diagrams/failsafe-flow.svg)
 
-The overall timeout (`--default-processing-timeout`) wraps the whole pipeline; if it fires, whatever's most useful is returned. Per-attempt timeouts (`--min-relay-timeout` floor or `lava-relay-timeout` header) bound each individual try.
+The overall timeout (`--default-processing-timeout`) wraps the whole pipeline; if it fires, whatever's most useful is returned. The per-attempt window (`--min-relay-timeout` floor or `lava-relay-timeout` header) sets when the next node is tried; it does not cancel the attempt already in flight.
+
+**JSON-RPC batch requests are not retried or failed over by default** — see [Batch requests](retry.md#batch-requests).
 
 The orchestrator is the relay state machine in [`protocol/relaycore/unified_relay_state_machine.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/relaycore/unified_relay_state_machine.go). The retryable-vs-terminal classifier is in [`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go) — see [Error codes](../../reference/error-codes.md).
 

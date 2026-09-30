@@ -56,10 +56,10 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 | --- | --- | --- |
 | `--set-relay-retry-limit` | `2` | Max total retry attempts across all error types (node + protocol). `0` disables retries. |
 | `--default-processing-timeout` | `30s` | Overall budget for a whole relay (all retries + hedges). |
-| `--min-relay-timeout` | `1s` | Per-attempt timeout floor. The `lava-relay-timeout` header can raise it. |
+| `--min-relay-timeout` | `1s` | Per-attempt window floor: when to try the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. |
 | `--max-sessions-per-provider` | `1000` | Max concurrent sessions per node. |
 | `--maximum-streams-per-connection` | `100` | Max parallel streams over a single gRPC connection. |
-| `--disable-batch-request-retry` | `true` | Don't retry JSON-RPC batch requests. |
+| `--disable-batch-request-retry` | `true` | Don't retry, fail over, or hedge JSON-RPC batch requests. A batch can carry a write. See [Batch requests](../configuration/failover/retry.md#batch-requests). |
 | `--batch-node-error-on-any` | `false` | Treat a batch as a node error if **any** sub-request fails (vs. only if **all** do). |
 | `--max-batch-request-size` | `0` | Max requests per JSON-RPC batch (`0` = unlimited). |
 

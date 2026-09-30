@@ -5,19 +5,29 @@ description: "Configure per-request and per-provider timeouts."
 
 # Timeout
 
-Two timeouts apply to every relay: an **overall budget** for the whole request, and a **per-attempt budget** for each upstream try. Hedging and retries operate inside these budgets.
+Two timeouts apply to every relay: an **overall budget** for the whole request, and a **per-attempt window** that sets when the next node is tried. Hedging and retries operate inside the budget.
 
 ## The two timeouts
 
 | Timeout | Default | Set by |
 |---|---|---|
 | Overall (whole relay) | `30s` | `--default-processing-timeout` CLI flag |
-| Per-attempt (each upstream try) | `1s` floor | `--min-relay-timeout` CLI flag, or `lava-relay-timeout` header |
+| Per-attempt window | `1s` floor | `--min-relay-timeout` CLI flag, or `lava-relay-timeout` header |
 
 If both are set:
 
-- The **overall** timeout caps the entire relay including all retries and hedges. When it fires, the client gets whatever's most useful (the best partial response, or a timeout error).
-- The **per-attempt** timeout aborts a single upstream try and lets [retry](retry.md) move on. It's the more important knob for tuning tail latency.
+- The **overall** timeout caps the entire relay including all retries and hedges. When it fires, the client gets whatever's most useful (the best partial response, or a timeout error). It is never shorter than the per-attempt window.
+- The **per-attempt window** is how long a node is expected to take. When it passes with no answer, Smart Router sends the same request to another node — a [hedge](hedge.md). The first attempt is **not** cancelled: it keeps running, and whichever attempt answers first wins. It's the more important knob for tuning tail latency.
+
+## What happens when the window passes
+
+The window starts the next attempt; it does not end the current one. An attempt ends only when the request ends: a node answers, the [retry policy](retry.md) stops, or the overall budget runs out.
+
+So a method that is slower than its window still succeeds, as long as it answers within the overall budget. Until September 2026 the window also cancelled the attempt, which meant a method slower than the window could fail on every node even with most of the budget unused. That no longer happens.
+
+A node that is still silent when the overall budget runs out counts as unresponsive and loses score. A node that was cancelled because another node answered first is not penalized.
+
+If a write (for example `eth_sendRawTransaction`) ends with no node having answered, the client gets an HTTP 500 that says the transaction status is unclear, not that it failed. The write may already have been broadcast, so check on-chain before you resubmit it.
 
 ## The header override
 
@@ -35,15 +45,15 @@ See [Directives](../../api/directives.md).
 
 | Symptom | Adjust |
 |---|---|
-| p99 latency dominated by one slow attempt | lower `--min-relay-timeout` (faster failover) |
-| Heavy methods (`debug_*`) always timing out | raise `lava-relay-timeout` per-request, not the global floor |
+| p99 latency dominated by one slow attempt | lower `--min-relay-timeout` (hedge sooner) |
+| Heavy methods (`debug_*`) hedged on every call | raise `lava-relay-timeout` per-request, not the global floor |
 | Whole-relay timeouts in logs | raise `--default-processing-timeout` or investigate why retries aren't succeeding |
 | Lots of clients hitting timeouts on first attempt | raise `--min-relay-timeout` |
 
 ## Common pitfalls
 
-- **Setting per-attempt > overall.** Doesn't crash, but means the first attempt's timeout is effectively the overall budget and retry never gets to run.
-- **Setting per-attempt below upstream RTT.** Every attempt times out before a healthy node can respond. Watch the metrics; if your timeout-rate is near 100% even on healthy upstreams, raise the floor.
+- **Setting the window ≥ overall.** Doesn't crash. The overall budget is raised to match the window, so the window never passes before the request ends and no hedge is ever sent.
+- **Setting the window below upstream RTT.** Healthy nodes still answer, but every request gets hedged, so you pay for extra upstream calls on every request. If `smartrouter_hedge_total` tracks your request rate on healthy upstreams, raise the floor.
 - **Header override below the floor.** The header is *not* clamped to the floor. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `100ms` even when `--min-relay-timeout` is `1s` — the floor only governs the server-derived default, not an explicit override.
 
 ## Observability
@@ -54,7 +64,8 @@ There's no dedicated timeout counter — timeouts surface through the latency, r
 |---|---|
 | `smartrouter_end_to_end_latency_milliseconds` | router-level end-to-end relay latency (histogram; ms buckets to 30 000) |
 | `rpc_endpoint_end_to_end_latency_milliseconds` | per-endpoint latency — spot the slow upstream |
-| `smartrouter_retries_total` | retries triggered when an attempt aborts (a per-attempt timeout drives failover) |
+| `smartrouter_hedge_total` | hedges sent because an attempt outlived its window |
+| `smartrouter_retries_total` | retries triggered when an attempt returns an error |
 | `smartrouter_total_errored` | relays that ultimately failed, including overall-budget exhaustion |
 | Tracing | each attempt span has a duration and an outcome status |
 
