@@ -186,7 +186,7 @@ retryability differs from the generic pattern.
 | Code | Name | Description | Retryable | Chains |
 | --- | --- | --- | --- | --- |
 | 3001 | `CHAIN_NONCE_TOO_LOW` | Nonce/sequence too low | No | EVM, Cosmos, Starknet, XRP, NEAR |
-| 3002 | `CHAIN_NONCE_TOO_HIGH` | Nonce too high | No | EVM |
+| 3002 | `CHAIN_NONCE_TOO_HIGH` | Nonce too high | No | EVM, XRP |
 | 3003 | `CHAIN_INSUFFICIENT_FUNDS` | Insufficient funds for transfer/gas | No | Universal |
 | 3004 | `CHAIN_GAS_TOO_LOW` | Intrinsic gas too low | No | EVM |
 | 3005 | `CHAIN_GAS_LIMIT_EXCEEDED` | Exceeds block gas limit | No | EVM |
@@ -248,12 +248,46 @@ All non-retryable; all charge **normal CU** (responses aren't cached).
 | Code | Name | Description | Retryable | Standard code |
 | --- | --- | --- | --- | --- |
 | 4001 | `USER_PARSE_ERROR` | Invalid JSON in request | No | JSON-RPC -32700 |
-| 4002 | `USER_INVALID_REQUEST` | Not a valid JSON-RPC/REST/gRPC object | No | JSON-RPC -32600 |
+| 4002 | `USER_INVALID_REQUEST` | Not a valid JSON-RPC/REST/gRPC object. Also returned by the router, before any node is called, for a JSON-RPC batch carrying an XRP Ledger `submit` or `submit_multisigned` (see [XRP Ledger submit verdicts](#xrp-ledger-submit-verdicts)) | No | JSON-RPC -32600 |
 | 4003 | `USER_INVALID_PARAMS` | Invalid method parameters | No | JSON-RPC -32602 |
 | 4004 | `USER_INVALID_BLOCK_FORMAT` | Invalid block number format (e.g. non-hex) | No | message match |
 | 4005 | `USER_INVALID_ADDRESS` | Invalid address format | No | message match |
 | 4006 | `USER_REQUEST_TOO_LARGE` | Request body exceeds size limit | No | HTTP 413 |
 | 4007 | `USER_INVALID_HEX` | Invalid hex encoding | No | message match |
+
+---
+
+## XRP Ledger submit verdicts
+
+An XRP Ledger node reports the fate of a transaction inside an ordinary HTTP 200
+result rather than in a JSON-RPC `error` object. On a `submit` or
+`submit_multisigned` reply the router therefore reads `result.engine_result`, and
+`result.error` when the call itself failed, and classifies both:
+
+| Reply | Treated as | Example codes |
+| --- | --- | --- |
+| `tesSUCCESS`, `terQUEUED` | Success | — |
+| `tec*` (applied, fee claimed) | Success — the transaction's final outcome, not a refusal | — |
+| `tef*`, `tem*`, `tel*`, other `ter*` | Node error | `CHAIN_NONCE_TOO_LOW` (`tefPAST_SEQ`), `CHAIN_TX_ALREADY_KNOWN` (`tefALREADY`), `CHAIN_NONCE_TOO_HIGH` (`terPRE_SEQ`), `CHAIN_TX_REJECTED` (the rest) |
+| A catalogued API error beside `"status":"error"` | Node error | `NODE_SYNCING` (`noNetwork`, `notSynced`), `NODE_SERVICE_UNAVAILABLE` (`amendmentBlocked`), `NODE_RATE_LIMITED` (`tooBusy`, `slowDown`), `NODE_INTERNAL_ERROR` (`internal*`), `USER_INVALID_PARAMS` (`invalidTransaction`, `notSupported`, …) |
+
+Why it matters for a write: a transaction submission is broadcast to every
+upstream and the caller gets the first success. Reading a rejection as a success
+would end that broadcast early, so a node that already held the transaction by
+peer gossip could answer `tefPAST_SEQ` before the node that applied it answered
+`tesSUCCESS`, and the caller would be told a validated payment had failed.
+
+These replies carry `lava-identified-node-error: true` (see
+[Response headers](../api/directives.md#response-headers)). A ledger verdict is
+non-retryable and is **not** charged against the answering node's availability —
+the node reported the truth. An API error that names the node's own state, such
+as `noNetwork`, is charged against it.
+
+Every other XRPL method keeps the envelope rule: an engine result elsewhere, as
+`simulate` returns, is the answer the caller asked for. A batch carrying a submit
+is refused with `USER_INVALID_REQUEST` before any node is called, because a batch
+is classified by its envelopes alone and a rejection inside one would read as a
+success again.
 
 ---
 

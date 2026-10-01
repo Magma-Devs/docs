@@ -179,6 +179,7 @@ Smart Router annotates every response with metadata about how the relay was serv
 | `Lava-Guid` | Unique request id — correlate with logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |
+| `lava-identified-node-error` | The body is a node error the router recognised, not a router failure. Present whether the error came from a live node or a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ` — the node answered correctly and is not penalised. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
 | `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
