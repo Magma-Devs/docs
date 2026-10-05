@@ -57,6 +57,7 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 | `--set-relay-retry-limit` | `2` | Max total retry attempts across all error types (node + protocol). `0` disables retries. |
 | `--default-processing-timeout` | `30s` | Overall budget for a whole relay (all retries + hedges). |
 | `--min-relay-timeout` | `1s` | Per-attempt window floor: when to try the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. |
+| `--max-caller-relay-timeout` | `0` | Longest a caller's `lava-relay-timeout` header may make the router hold one request. It only lets the header extend a request past the budget it gets with no header, and never shortens one; `0` allows no extension. An extended request does not hedge. |
 | `--max-sessions-per-provider` | `1000` | Max concurrent sessions per node. |
 | `--maximum-streams-per-connection` | `100` | Max parallel streams over a single gRPC connection. |
 | `--disable-batch-request-retry` | `true` | Don't retry, fail over, or hedge JSON-RPC batch requests. A batch can carry a write. See [Batch requests](../configuration/failover/retry.md#batch-requests). |

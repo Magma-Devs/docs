@@ -71,9 +71,17 @@ curl -X POST http://127.0.0.1:3360 \
 lava-relay-timeout: 12s
 ```
 
-Sets the timeout for each upstream attempt of this request. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The value is used **verbatim** — unlike the server-side default it is *not* clamped to the `--min-relay-timeout` floor, so a client can ask for less. A zero or negative value, like one that does not parse, is ignored: the request keeps the router's own timeout.
+Sets the timeout for each upstream attempt of this request: how long the router waits on one node before it also tries the next. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The router bounds the value:
 
-**When to use:** known-slow methods (`debug_traceTransaction` on a deep block), or known-fast methods you don't want to wait for.
+- A zero or negative value, like one that does not parse, is ignored: the request keeps the router's own timeout.
+- A value under `300ms` is raised to `300ms`. It is *not* clamped to the `--min-relay-timeout` floor, so a client can still ask for less than that floor.
+- A value above the request's own budget is held to that budget. The own budget is what the request gets with no header: `--default-processing-timeout`, doubled for methods of 50 CU or more, and six times it for hanging, stateful or 100+ CU methods; a method whose own timeout is longer still keeps it (Bitcoin's `sendrawtransaction` gets about 20 minutes). An operator can let clients go further, up to `--max-caller-relay-timeout` (default `0`: no extension).
+
+A value at or above the request's own budget turns hedging off for that request: the attempt timeout is also the hedge interval, so the two become equal. Retrying after a failed attempt still works, but a node that goes quiet holds the request for the whole budget.
+
+The response carries [`Lava-Relay-Timeout-Applied`](#response-headers) with the timeout the router actually used.
+
+**When to use:** known-fast methods you don't want to wait for (hedge sooner), or known-slow methods (`debug_traceTransaction` on a deep block) within their own budget.
 
 ## Enable debug logging for one request
 
@@ -183,6 +191,7 @@ Smart Router annotates every response with metadata about how the relay was serv
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
 | `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |
+| `Lava-Relay-Timeout-Applied` | The per-attempt timeout the router used, as a Go duration, after [bounding `lava-relay-timeout`](#override-the-per-attempt-timeout). Only on a request that sent that header; it carries the router's own timeout when the value was ignored. Absent when the request failed without any reply. |
 | `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
 
 When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).

@@ -37,7 +37,20 @@ Clients can override the per-attempt timeout for a specific request:
 lava-relay-timeout: 12s
 ```
 
-Format: any Go duration (`500ms`, `5s`, `1m30s`). The override is used **verbatim** — unlike the server-derived default it is *not* clamped to the `--min-relay-timeout` floor, so a client can request less than the floor. Use this for known-slow methods (`debug_traceTransaction` on a deep block) without raising the global default.
+Format: any Go duration (`500ms`, `5s`, `1m30s`). The router bounds the override:
+
+| Header value | Per-attempt timeout used |
+|---|---|
+| zero, negative, or not a duration | ignored; the server-derived default applies |
+| under `300ms` | `300ms` (*not* the `--min-relay-timeout` floor, so a client can still go below that floor) |
+| `300ms` up to the request's own budget | the value as sent |
+| above the request's own budget | the own budget, or up to `--max-caller-relay-timeout` if the operator set it higher |
+
+The request's own budget is the overall timeout it gets with no header: `--default-processing-timeout`, doubled for methods of 50 CU or more, six times it for hanging, stateful or 100+ CU methods, and longer for a method whose own timeout is longer. `--max-caller-relay-timeout` defaults to `0`, so by default the header cannot make the router hold a request any longer than it would without it.
+
+A value at or above the own budget turns [hedging](hedge.md) off for that request, since the per-attempt timeout is also the hedge interval. [Retry](retry.md) after a failed attempt is unaffected, but a node that goes quiet holds the request for the whole budget.
+
+The response carries `Lava-Relay-Timeout-Applied` with the per-attempt timeout actually used.
 
 See [Directives](../../api/directives.md).
 
@@ -46,7 +59,7 @@ See [Directives](../../api/directives.md).
 | Symptom | Adjust |
 |---|---|
 | p99 latency dominated by one slow attempt | lower `--min-relay-timeout` (hedge sooner) |
-| Heavy methods (`debug_*`) hedged on every call | raise `lava-relay-timeout` per-request, not the global floor |
+| Heavy methods (`debug_*`) hedged on every call | raise `lava-relay-timeout` per-request (up to the method's own budget), not the global floor; beyond that budget, set `--max-caller-relay-timeout` |
 | Whole-relay timeouts in logs | raise `--default-processing-timeout` or investigate why retries aren't succeeding |
 | Lots of clients hitting timeouts on first attempt | raise `--min-relay-timeout` |
 
@@ -54,7 +67,8 @@ See [Directives](../../api/directives.md).
 
 - **Setting the window ≥ overall.** Doesn't crash. The overall budget is raised to match the window, so the window never passes before the request ends and no hedge is ever sent.
 - **Setting the window below upstream RTT.** Healthy nodes still answer, but every request gets hedged, so you pay for extra upstream calls on every request. If `smartrouter_hedge_total` tracks your request rate on healthy upstreams, raise the floor.
-- **Header override below the floor.** The header is *not* clamped to the floor. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `100ms` even when `--min-relay-timeout` is `1s` — the floor only governs the server-derived default, not an explicit override.
+- **Header override below the floor.** The header is *not* clamped to `--min-relay-timeout`, only to `300ms`. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `300ms` even when `--min-relay-timeout` is `1s` — the flag only governs the server-derived default, not an explicit override.
+- **Header override above the budget.** A client asking for more than the request's own budget gets that budget, unless the operator set `--max-caller-relay-timeout`. Check `Lava-Relay-Timeout-Applied` on the response to see what was used.
 
 ## Observability
 
