@@ -62,6 +62,11 @@ rate-limited node is healthy and busy, so the attempt is scored as neither a fai
 a success (no availability or latency sample), and the node is **held off**: selection
 skips it for the rest of this relay and for later relays until the hold-off expires.
 
+- **What counts as a `429`.** An HTTP 429 on any transport; a WebSocket upgrade the
+  upstream rejected with 429; a gRPC status whose text names a rate limit, or
+  `RESOURCE_EXHAUSTED` with a retry delay; and a JSON-RPC error body with code 429 or a
+  "too many requests" / "rate limit" message — the shape a gateway answers with on an
+  open WebSocket connection or inside a 200, where no status reaches the transport.
 - **How long.** If the upstream sent `Retry-After`, the hold-off is at least that long
   (capped at 1h). Otherwise it starts at 30s and doubles on each consecutive `429` from
   the same URL, capped at 30m. Up to 20% jitter is added so a fleet held off by the same
@@ -71,14 +76,19 @@ skips it for the rest of this relay and for later relays until the hold-off expi
   per-account, and per-URL hold-offs alone would keep hammering the account through its
   other chains.
 - **Any answer clears it.** Once the node answers a request — success or a genuine error
-  — its hold-off and strike count are dropped.
+  — its hold-off and strike count are dropped. The chain tracker is the one exception:
+  its poll clears only a hold-off its own `429` set, because a poll that fits under a
+  vendor's cap does not prove relay traffic will.
 - **You still get an answer.** If every candidate is held off, the one that expires
   soonest is used anyway; the router never synthesizes a `429` to the client, and
   `Retry-After` is never forwarded. A `lava-select-provider` pin and existing sticky
   sessions bypass the hold-off — an explicit ask outranks it.
 
-The same hold-off covers spec re-verification, recovery probes, and WebSocket
-subscriptions, so a node that said stop is not re-probed on a fixed cadence either.
+The same hold-off covers spec re-verification, recovery probes, WebSocket subscriptions
+and the chain tracker, so a node that said stop is not re-probed on a fixed cadence
+either. The tracker's first fetch waits an existing hold-off out instead of retrying into
+the limit, a rate-limited attempt ends its start-up burst, and its polls are floored with
+the hold-off — its own, or one a relay or a probe recorded for the same node.
 
 ## Pinning to one node
 
