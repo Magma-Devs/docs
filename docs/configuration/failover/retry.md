@@ -20,7 +20,9 @@ The error classifier ([`protocol/common/error_registry.go`](https://github.com/M
 
 The full code tables and per-code retryability are in [Error codes](../../reference/error-codes.md).
 
-Same-response retries are deduplicated: if two nodes return the identical response, Smart Router won't burn a third attempt looking for a different answer. The dedup is a hash cache in [`protocol/lavaprotocol/relay_retries_manager.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/lavaprotocol/relay_retries_manager.go).
+A retry re-sends the **same request** to a different node. It does not change what the request asks for: no extension such as `archive` is added on retry, so the retry pool is the same pool the first attempt drew from, minus the nodes that already failed. Each request starts with its own retry budget; nothing is remembered between requests.
+
+Archive routing is decided once, before the first attempt, from the block the request names. Requests whose block the router cannot read are not routed to archive automatically: methods that name a block or transaction by hash (such as `eth_getTransactionReceipt` or `debug_traceTransaction`), and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects such as `{"blockHash": …}` or `{"blockNumber": …}`. To send one of those to an archive node, set the [`lava-extension: archive`](../../api/directives.md#override-the-extension) directive.
 
 ## Limits
 
