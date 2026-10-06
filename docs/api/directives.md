@@ -173,8 +173,9 @@ Smart Router annotates every response with metadata about how the relay was serv
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that ultimately served the response. |
-| `Lava-Retries` | Number of retry attempts made for this relay. |
+| `Lava-Provider-Address` | The node that served the response. When the request took more than one attempt, every node the router tried, comma-separated in the order it asked them, with the node that served the response last (`Cached` when the answer came from the cache). |
+| `Lava-Retries` | Attempts beyond the first that the router sent for this request, including a [hedged](../configuration/failover/hedge.md) attempt it cancelled because another node answered first. Absent when the request took one attempt. A write's fan-out to every node is one attempt and never reports retries. |
+| `lava-hedge-triggered` | `true` when the router sent a parallel [hedged](../configuration/failover/hedge.md) attempt for this request. Absent otherwise; never `false`. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `Lava-Guid` | Unique request id — correlate with logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
