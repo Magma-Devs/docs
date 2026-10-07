@@ -115,9 +115,9 @@ or chains.
 | 1009 | `PROTOCOL_NETWORK_UNREACHABLE` | Network or host unreachable (no route) | Yes |
 | 1010 | `PROTOCOL_NO_PROVIDERS` | No nodes/pairings available | No |
 | 1011 | `PROTOCOL_ALL_ENDPOINTS_DISABLED` | All node endpoints disabled | No |
-| 1012 | `PROTOCOL_PROVIDER_UNAVAILABLE` | Node service unavailable (gRPC UNAVAILABLE) | Yes |
-| 1013 | `PROTOCOL_PROVIDER_ABORTED` | Node aborted (gRPC ABORTED) | Yes |
-| 1014 | `PROTOCOL_PROVIDER_DATA_LOSS` | Node data loss (gRPC DATA_LOSS) | Yes |
+| 1012 | `PROTOCOL_PROVIDER_UNAVAILABLE` | Reserved; not produced by Smart Router. A node's gRPC UNAVAILABLE is `NODE_SERVICE_UNAVAILABLE` (2006) | Yes |
+| 1013 | `PROTOCOL_PROVIDER_ABORTED` | Reserved; not produced by Smart Router. A node's gRPC ABORTED is `NODE_ABORTED` (2019) | Yes |
+| 1014 | `PROTOCOL_PROVIDER_DATA_LOSS` | Reserved; not produced by Smart Router. A node's gRPC DATA_LOSS classifies as `UNKNOWN_ERROR` | Yes |
 | 1015 | `PROTOCOL_INSUFFICIENT_PROVIDERS` | Insufficient providers available for addon or cross-validation | No |
 | 1020 | `PROTOCOL_RATE_LIMITED` | Lava-side rate limit exceeded | No |
 | 1021 | `PROTOCOL_MAX_CU_EXCEEDED` | Maximum compute units exceeded for session | No |
@@ -168,6 +168,7 @@ errors). "Standard code" is the protocol-level code the matcher keys off.
 | 2014 | `NODE_GATEWAY_TIMEOUT` | Gateway timeout from node | Yes | HTTP 504 |
 | 2015 | `NODE_BAD_GATEWAY` | Bad gateway from node | Yes | HTTP 502 |
 | 2016 | `NODE_UNAUTHORIZED` | Upstream rejected router credentials (HTTP 401) | No | HTTP 401 |
+| 2019 | `NODE_ABORTED` | The node aborted the operation. Sui sends it when the validators did not finalize a submitted transaction: rejected by consensus, status expired, an input object that does not exist yet, already finalized under different signatures, or another transient failure during processing. Sui's own message calls it retriable with another submission, and that decision is the client's. Smart Router returns the answer as-is, does not resend the transaction, and does not count the answer against the node. The transaction may already be on chain | No | gRPC 10 |
 | 2101 | `NODE_BITCOIN_WARMUP` | Node still warming up (Bitcoin -28) | Yes | — |
 | 2102 | `NODE_BITCOIN_INITIAL_DOWNLOAD` | Node in initial block download (Bitcoin -10) | Yes | — |
 | 2103 | `NODE_BITCOIN_NOT_CONNECTED` | Node has no peers (Bitcoin -9) | Yes | — |
