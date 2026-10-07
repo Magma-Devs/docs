@@ -244,7 +244,9 @@ Smart Router annotates every response with metadata about how the relay was serv
 | `Lava-Relay-Timeout-Applied` | The per-attempt timeout the router used, as a Go duration, after [bounding `lava-relay-timeout`](#override-the-per-attempt-timeout). Only on a request that sent that header; it carries the router's own timeout when the value was ignored. Absent when the request failed without any reply. |
 | `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
 
-When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
+When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, `lava-cross-validation-pending-providers` (queried providers whose answer had not arrived when the reply was built), and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
+
+A failed quorum also returns `lava-cross-validation-plurality-size` and `lava-cross-validation-plurality-providers`: how many providers returned the most common response, and which ones (sorted, comma-separated). The providers list is empty on a tie, and the size is `0` when no non-empty response arrived. This names who came closest, not who was right, so `lava-cross-validation-disagreeing-providers` still lists every provider that answered. A structural `insufficient-capacity` / `insufficient-groups` failure queries no provider and returns neither header.
 
 ## Operator restrictions
 
