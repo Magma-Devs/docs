@@ -55,4 +55,6 @@ The hedge tick interval is currently chain-derived (from `average_block_time` an
 | `smartrouter_hedge_attempts` | histogram of hedge relays per request (buckets 1…10) |
 | Tracing | each hedged attempt is a parallel span under the same parent |
 
+On the response, a hedge sets `lava-hedge-triggered: true`, and the attempt that lost the race still counts in `Lava-Retries` and is named in `Lava-Provider-Address`, even though the router cancelled it once the winner answered. See [Response headers](../../api/directives.md#response-headers).
+
 See the [Metrics reference](../../reference/metrics.md#hedging) for labels and types.
