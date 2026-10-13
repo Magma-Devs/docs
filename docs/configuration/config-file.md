@@ -69,7 +69,7 @@ Each entry opens one listening socket for one chain + interface.
 | --- | --- | --- |
 | `network-address` | yes | `host:port` to listen on, e.g. `0.0.0.0:3360`. |
 | `chain-id` | yes | Spec chain id (`ETH1`, `SOLANA`, `COSMOSHUB`, …). Must resolve from `--use-static-spec`. |
-| `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, or `tendermintrpc` — must be supported by the chain spec. |
+| `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, `tendermintrpc`, or `graphql` — must be supported by the chain spec. A `graphql` listener accepts HTTP `POST` only (any path; other methods get `405`) and serves no subscriptions. |
 | `tls-enabled` | no | Serve this listener over TLS using a self-signed certificate. Default `false`. |
 | `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/lava/health`. |
 
@@ -110,7 +110,7 @@ direct-rpc:
 
 | Field | Description |
 | --- | --- |
-| `url` | Connection URL. Schemes: `http(s)://`, `ws(s)://`, `grpc(s)://`. A `jsonrpc` backend on an ETH1-derived spec needs a paired `wss://` url. |
+| `url` | Connection URL. Schemes: `http(s)://`, `ws(s)://`, `grpc(s)://`. A `jsonrpc` backend on an ETH1-derived spec needs a paired `wss://` url. A `graphql` backend's url is the full GraphQL endpoint, path included (e.g. `https://graphql.mainnet.sui.io/graphql`): the router POSTs to it as-is. |
 | `timeout` | Per-URL request timeout, e.g. `10s`. Defaults to the spec value. |
 | `addons` | Add-ons this URL serves, e.g. `["archive", "debug"]`. The router only routes matching methods here. |
 | `methods` | Restrict this URL to a specific method list. When set, only those methods route here. |
