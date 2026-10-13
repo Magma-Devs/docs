@@ -140,7 +140,7 @@ The flag name and the `disabled` sentinel live in
 - **Attempt histograms** (`retry_attempts`, `hedge_attempts`) use integer buckets `1…10`.
 - **Common labels**:
     - `spec` — chain spec id (e.g. `ETH1`, `LAV1`).
-    - `apiInterface` — `jsonrpc`, `tendermintrpc`, `rest`, `grpc`.
+    - `apiInterface` — `jsonrpc`, `tendermintrpc`, `rest`, `grpc`, `graphql`.
     - `endpoint_id` — the configured upstream RPC endpoint.
     - `provider_address` — node the relay was routed to.
     - `method` — RPC method name. Batch requests carry a
