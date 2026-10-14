@@ -16,7 +16,7 @@ When cross-validation is active for a relay:
 3. As soon as `AgreementThreshold` nodes return matching responses, that response is returned.
 4. If nodes disagree past the timeout, the relay fails or returns the most-agreed answer (depending on configuration).
 
-![Cross-validation consensus — Smart Router fans out to three nodes, two return matching response A, one returns disagreeing response B, threshold of two met](../../assets/diagrams/consensus.svg)
+![Cross-validation with a threshold of 2 of 3: Smart Router sends the same request to three providers, two return answer A and one returns answer B, so answer A goes back to your app](../../assets/diagrams/consensus.svg)
 
 | Parameter | Meaning |
 |---|---|
