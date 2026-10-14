@@ -1,51 +1,51 @@
 ---
 title: "Hedge"
-description: "Hedge slow requests in parallel against a second provider and take the first good response."
+description: "Send a slow request to a second provider in parallel and use the first good response."
 ---
 
 # Hedge
 
-If a relay hasn't returned by a fixed deadline, Smart Router fires the **same request** to a second node in parallel. The first response back wins; the slower attempt is discarded.
+If a relay has not returned by a fixed deadline, Smart Router sends the **same request** to a second node in parallel. The first response wins, and the slower attempt is discarded.
 
 ## What it solves
 
-Tail latency. With hedging off, a node that's slower than its 99th-percentile but not yet timed out drags every request behind it. With hedging on, the slow node's tail gets cut off by the fastest of N parallel attempts.
+Hedging reduces tail latency. With hedging off, a node that is slower than its 99th-percentile, but has not timed out yet, slows down every request that waits on it. With hedging on, the fastest of N parallel attempts cuts off the slow node's tail.
 
 ## How it triggers
 
-A ticker runs in the relay state machine. On each tick, if no response has been received and an attempt slot is free, a new attempt is fired. Subsequent ticks continue firing parallel attempts up to the retry cap.
+A ticker in the relay state machine triggers hedges. On each tick, if no response has arrived and an attempt slot is free, the router sends a new attempt. Later ticks keep sending parallel attempts, up to the retry cap.
 
 ![Hedge timeline: attempt 1 to Provider 1 is slow, so after the tick a hedge sends the same request to Provider 2, which answers first and wins, and Provider 1's late answer is thrown away](../../assets/diagrams/hedge.svg)
 
-The mechanism is the same as retry - the only difference is *why* the next attempt is fired:
+Hedging uses the same mechanism as retry. The only difference is *why* the next attempt is sent:
 
 | Trigger | What it's called |
 |---|---|
 | Previous attempt errored | retry |
 | Previous attempt is taking too long | hedge |
 
-Both increment the same retry counter. Both cap at 10 attempts per relay.
+Both add to the same retry counter, and both are capped at 10 attempts per relay.
 
 ## When hedges win
 
 | Scenario | Hedge helps? |
 |---|---|
-| One slow node, others fast | yes - hedge skips the slow one |
-| All nodes slow | no - fastest is still slow |
-| One unresponsive node | yes - but [retry](retry.md) does this too once it errors |
-| Tail latency on indexer-style heavy reads | yes - significant p99 improvement |
-| Write traffic (`sendRawTransaction`) | covered by **stateful fan-out** instead - write paths are sent to all eligible nodes unconditionally, independent of hedging |
-| JSON-RPC batch requests | no - batches aren't hedged by default, because a batch can carry a write. See [Batch requests](retry.md#batch-requests) |
+| One slow node, others fast | yes; the hedge skips the slow one |
+| All nodes slow | no; the fastest is still slow |
+| One unresponsive node | yes, but [retry](retry.md) also does this once the node errors |
+| Tail latency on indexer-style heavy reads | yes; p99 improves significantly |
+| Write traffic (`sendRawTransaction`) | covered by **stateful fan-out** instead. Write paths are always sent to all eligible nodes, independent of hedging |
+| JSON-RPC batch requests | no; batches are not hedged by default, because a batch can carry a write. See [Batch requests](retry.md#batch-requests) |
 
 ## When to be cautious
 
-- **Cost** - every hedge fires a real upstream request. Cost-sensitive deployments with high traffic should weigh hedge gains against per-call upstream pricing.
-- **Idempotency** - hedging non-idempotent calls (writes that mutate state on the upstream) can produce duplicate side effects. Smart Router doesn't currently distinguish; if your upstream protocol is non-idempotent, disable hedging or accept the risk.
-- **Node rate limits** - hedging multiplies your request rate against each node. Make sure your selection policy spreads attempts across the pool.
+- **Cost**: every hedge sends a real upstream request. If you run high traffic and cost matters, compare the gain from hedging with your per-call upstream price.
+- **Idempotency**: hedging non-idempotent calls (writes that change state on the upstream) can cause duplicate side effects. Smart Router does not currently tell these calls apart. If your upstream protocol is non-idempotent, disable hedging or accept the risk.
+- **Node rate limits**: hedging multiplies your request rate against each node. Make sure your selection policy spreads attempts across the pool.
 
 ## Configuration
 
-The hedge tick interval is currently chain-derived (from `average_block_time` and per-method category) rather than a YAML knob. The maximum hedge attempts share the 10-attempt cap with retries - see [Retry](retry.md).
+The hedge tick interval is currently derived from the chain (from `average_block_time` and the per-method category). It is not a YAML setting. Hedge attempts share the 10-attempt cap with retries. See [Retry](retry.md).
 
 ## Observability
 

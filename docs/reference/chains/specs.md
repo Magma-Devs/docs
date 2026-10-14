@@ -5,28 +5,30 @@ description: "How chain specs declare API methods, parser rules, finality parame
 
 # Chain specs
 
-Smart Router is **chain-agnostic**. It has no chain logic baked in - every chain it
-serves is described by a **JSON spec**. The spec is what teaches the router how to talk
-to a chain: which RPC methods exist, how to parse each one, where finality sits, and
-which capabilities (archive, debug, …) a node must have to serve a given method.
+Smart Router is **chain-agnostic**: every chain it serves is described by a **JSON
+spec**. Read this page to learn what a spec contains and how the router loads specs.
 
-This is why adding a chain never means a code change or a new build - it's just another
-spec file the router loads at startup.
+The router has no chain logic built in. The spec tells it how to talk to a chain: which
+RPC methods exist, how to parse each one, where finality sits, and which capabilities
+(archive, debug, …) a node must have to serve a given method.
+
+So adding a chain never needs a code change or a new build. It is one more spec file
+that the router loads at startup.
 
 ## What a spec defines
 
 | Part | What it's for |
 | --- | --- |
 | **API methods** | Every RPC method the chain exposes, per interface (`jsonrpc` / `rest` / `grpc` / `tendermintrpc` / `graphql`). |
-| **Parser rules** | How to read a method's request/response - e.g. which param holds the block number - so the router can cache, route, and apply [consistency](../../configuration/failover/integrity.md) correctly. |
-| **Categories** | Per-method flags: read vs. write (stateful), whether it's cacheable, which addon/extension it needs (archive, debug). These drive [node selection](../../configuration/projects/selection-policies.md) and caching. |
-| **Finality parameters** | Block times and finalization distance - feed the integrity lag gate and finalized-vs-not cache TTLs. |
-| **Imports** | A spec can import another (e.g. Arbitrum imports `ETH1`), inheriting its methods and addons. The router resolves imports transitively. |
+| **Parser rules** | How to read a method's request and response, for example which param holds the block number. The router uses this to cache, route, and apply [consistency](../../configuration/failover/integrity.md) correctly. |
+| **Categories** | Flags for each method: read or write (stateful), whether it is cacheable, and which addon/extension it needs (archive, debug). The router uses them for [node selection](../../configuration/projects/selection-policies.md) and caching. |
+| **Finality parameters** | Block times and finalization distance. The router uses them for the integrity lag gate and for the cache TTLs of finalized and non-finalized data. |
+| **Imports** | A spec can import another spec and inherit its methods and addons (for example, Arbitrum imports `ETH1`). The router resolves imports transitively. |
 
 ## How specs are loaded
 
-Pass a spec source at startup with `--use-static-spec` (repeatable; later sources
-override earlier ones for the same chain id):
+Pass a spec source at startup with `--use-static-spec`. You can repeat the flag. If two
+sources define the same chain id, the later source overrides the earlier one:
 
 ```bash
 # a local directory
@@ -37,27 +39,27 @@ smartrouter config.yml \
   --use-static-spec https://github.com/Magma-Devs/lava-specs/tree/main
 ```
 
-The same value backs the Docker `SR_SPEC` env var. The built-in
+In Docker, the `SR_SPEC` env var sets the same value. The built-in
 [spec fetcher](https://github.com/Magma-Devs/smart-router/tree/main/utils/specfetcher)
-pulls specs from a remote URL at boot and caches them, so a chain that isn't in the
-bundled `specs/` still resolves when you point at the catalog.
+pulls specs from a remote URL at boot and caches them. So when you point at the catalog,
+a chain that is not in the bundled `specs/` still resolves.
 
 ## Where specs come from
 
 | Source | What's in it | Use when |
 |---|---|---|
-| **Bundled** - [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs) in the repo | A handful of production chains + reusable Cosmos building blocks (what the example configs use) | quickest start; what the `init_smartrouter_*` scripts use |
-| **Catalog** - [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) | The full set spanning every major ecosystem, kept up to date | production deployments serving any chain beyond the bundled ones |
+| **Bundled** - [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs) in the repo | A few production chains and reusable Cosmos building blocks (the example configs use these) | the quickest start; the `init_smartrouter_*` scripts use these |
+| **Catalog** - [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) | The full set, covering every major ecosystem, kept up to date | production deployments that serve any chain beyond the bundled ones |
 
 ## Building blocks
 
-Some specs describe no chain of their own - they exist purely to be **imported** by chain
-specs that share an API surface. The router never serves these directly.
+Some specs describe no chain of their own. They exist only to be **imported** by chain
+specs that share an API surface. The router never serves these specs directly.
 
 | Spec | Role |
 |---|---|
 | [`cosmossdk.json`](https://github.com/Magma-Devs/lava-specs/blob/main/cosmossdk.json) | base Cosmos SDK surface |
-| [`cosmossdk_full.json`](https://github.com/Magma-Devs/lava-specs/blob/main/cosmossdk_full.json) | Cosmos chains needing extended methods |
+| [`cosmossdk_full.json`](https://github.com/Magma-Devs/lava-specs/blob/main/cosmossdk_full.json) | Cosmos chains that need extended methods |
 | [`cosmossdkv45.json`](https://github.com/Magma-Devs/lava-specs/blob/main/cosmossdkv45.json) | older Cosmos SDK v0.45 chains |
 | [`cosmossdkv50.json`](https://github.com/Magma-Devs/lava-specs/blob/main/cosmossdkv50.json) | newer Cosmos SDK v0.50 chains |
 | [`cosmoswasm.json`](https://github.com/Magma-Devs/lava-specs/blob/main/cosmoswasm.json) | CosmWasm-enabled chains |
@@ -67,7 +69,7 @@ specs that share an API surface. The router never serves these directly.
 
 ## Need a chain that isn't listed?
 
-The catalog is maintained by Magma. If the chain you need isn't there,
-[open an issue](https://github.com/Magma-Devs/smart-router/issues) with the chain, the
-API interface (JSON-RPC / REST / gRPC / Tendermint RPC), and one or two reference
-upstream nodes, and we'll add it.
+If the chain you need is not in the catalog,
+[open an issue](https://github.com/Magma-Devs/smart-router/issues) and Magma will add it.
+Magma maintains the catalog. In the issue, include the chain, the API interface
+(JSON-RPC / REST / gRPC / Tendermint RPC), and one or two reference upstream nodes.

@@ -5,23 +5,25 @@ description: "Prometheus metrics exposed by Smart Router for routing, cache, and
 
 # Metrics
 
-Every metric the Smart Router exposes over Prometheus, with its type, labels, and
-meaning. Metrics are defined under [`protocol/metrics/`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics),
-except the [rate-limit hold-off](#rate-limit-hold-off) pair, which the registry that owns
-the events emits itself from
+This page lists every metric Smart Router exposes over Prometheus, with its type, labels,
+and meaning, so you can look up any series you see on a dashboard or in an alert.
+
+Metrics are defined under [`protocol/metrics/`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics).
+The exception is the [rate-limit hold-off](#rate-limit-hold-off) pair: the registry that
+owns those events emits them itself from
 [`protocol/holdoff/metrics.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/holdoff/metrics.go).
 
 The classified-error counter [`smartrouter_errors_total`](#classified-errors-smartrouter_errors_) is
-broken down by error name and category; see [Error codes](error-codes.md) for the
-full taxonomy of names it can carry.
+split by error name and category. See [Error codes](error-codes.md) for the full list of
+names it can carry.
 
-Already running the [dashboard overlay](../deployment/docker-compose.md#add-the-dashboard)? It
-ships pre-built panels over these series - this page is the underlying reference and the
-recipes for rolling your own.
+If you run the [dashboard overlay](../deployment/docker-compose.md#add-the-dashboard), it
+already has pre-built panels for these series. This page is the reference behind them,
+with recipes for building your own.
 
 ## What to watch
 
-If you only graph a handful of things, graph these:
+If you only graph a few things, graph these:
 
 | Question | Metric(s) |
 | --- | --- |
@@ -29,15 +31,15 @@ If you only graph a handful of things, graph these:
 | Are requests failing? | `smartrouter_total_errored`, `smartrouter_errors_total` (by `error_category` / `retryable`) |
 | How fast is it? | `smartrouter_end_to_end_latency_milliseconds` (histogram → p50/p95/p99) |
 | Is a node degrading? | `rpc_endpoint_overall_health`, `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
-| How much load does the router itself put on my node? | `rpc_endpoint_tracker_requests_total` (by `kind`) - the router's own polling, separate from the relays you sent it; `rpc_endpoint_tracker_gate_skips_total` (by `source`) - the polls it chose not to send |
-| Is failover working hard? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
-| Is an upstream rate-limiting us? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
-| Is the cache earning its keep? | `smartrouter_cache_success_total` / `smartrouter_cache_requests_total` |
+| How much load does the router itself put on your node? | `rpc_endpoint_tracker_requests_total` (by `kind`) - the router's own polling, separate from the relays you sent it; `rpc_endpoint_tracker_gate_skips_total` (by `source`) - the polls it chose not to send |
+| How often does the router retry or hedge? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
+| Is an upstream rate-limiting you? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
+| Is the cache helping? | `smartrouter_cache_success_total` / `smartrouter_cache_requests_total` |
 | What do batched calls look like? | `smartrouter_requests_total{method=~"batch:.*"}`, `smartrouter_batch_size` |
 
 ## Querying - PromQL recipes
 
-Copy-paste starting points (adjust labels / windows to taste).
+Starting points you can copy. Adjust the labels and windows to fit your setup.
 
 ```promql
 # Request error ratio (last 5m)
@@ -83,7 +85,7 @@ sum by (method) (rate(smartrouter_requests_failed_total{method=~"batch:.*"}[5m])
 
 ## Suggested alerts
 
-Starting points - tune thresholds to your traffic.
+Starting points. Tune the thresholds to your traffic.
 
 | Alert | Expression sketch | Why |
 | --- | --- | --- |
@@ -91,31 +93,30 @@ Starting points - tune thresholds to your traffic.
 | High error ratio | error-ratio recipe `> 0.05 for 5m` | Something broke upstream or in config. |
 | Latency regression | p99 recipe `> 2000 for 10m` | Tail latency degraded. |
 | Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
-| Cache cold | hit-ratio recipe `< 0.2 for 30m` | Cache misconfigured or bypassed - cost/latency risk. |
-| RESP cache backend unreachable | `smartrouter_resp_cache_connected == 0 for 5m` | Redis/Valkey is down or rejecting auth. Relays keep succeeding via upstreams, so nothing else alerts - but you are paying for every read. |
-| Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data - high-signal correctness alert. |
-| Vendor-wide rate limit | `increase(smartrouter_rate_limit_holdoffs_total{event="escalated"}[1h]) > 0` | Two of a provider's URLs were held off at once, so the router stopped asking that provider on every chain - you are over an account-wide cap, not a per-endpoint one. |
-| Batch shapes merging | `increase(smartrouter_batch_signature_overflow_total[1h]) > 0` | Clients send more batch shapes than the breakdown can name - shapes are collapsing into `batch:other`. |
+| Cache cold | hit-ratio recipe `< 0.2 for 30m` | The cache is misconfigured or bypassed. This is a cost and latency risk. |
+| RESP cache backend unreachable | `smartrouter_resp_cache_connected == 0 for 5m` | Redis/Valkey is down or rejecting auth. Relays still succeed through the upstreams, so nothing else alerts, but you pay for every read. |
+| Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data. This is a high-signal correctness alert. |
+| Vendor-wide rate limit | `increase(smartrouter_rate_limit_holdoffs_total{event="escalated"}[1h]) > 0` | Two of a provider's URLs were held off at once, so the router stopped calling that provider on every chain. You are over an account-wide cap, not a per-endpoint one. |
+| Batch shapes merging | `increase(smartrouter_batch_signature_overflow_total[1h]) > 0` | Clients send more batch shapes than the breakdown can name, so shapes are merging into `batch:other`. |
 
 ## Exposition
 
-Metrics are served in Prometheus text format from an HTTP server started by the
-metrics manager.
+The metrics manager starts an HTTP server that serves metrics in Prometheus text format.
 
 | Path | Format | Description |
 | --- | --- | --- |
 | `/metrics` | Prometheus | All registered metrics ([`promhttp.Handler()`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go#L647)) |
-| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy`. Fail-closed at boot: turns `200` once endpoint setup has verified a provider, and health transitions publish immediately. While a chain is unhealthy the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
-| `/metrics/health-overall` | text | Alias of the above (backward-compat path) |
-| `/readyz` | text | Alias of `/metrics/overall-health` for a Kubernetes readiness probe - pulls the pod from the Service without restarting it. |
-| `/livez` | text | Always `200` while the process serves HTTP - liveness only; provider health is deliberately not consulted. |
+| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy`. Fail-closed at boot: it switches to `200` once endpoint setup has verified a provider. Health changes are published immediately. While a chain is unhealthy, the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
+| `/metrics/health-overall` | text | Alias of the above, kept for backward compatibility |
+| `/readyz` | text | Alias of `/metrics/overall-health` for a Kubernetes readiness probe. It removes the pod from the Service without restarting it. |
+| `/livez` | text | Always `200` while the process serves HTTP. Liveness only: it does not check provider health, by design. |
 
 ### Configuration
 
 | Flag / env | Default | Effect |
 | --- | --- | --- |
-| `--metrics-listen-address` | `disabled` | Address to expose Prometheus metrics on, e.g. `:7779` or `localhost:7779`. The literal `disabled` turns the metrics server off entirely. |
-| `--optimizer-qos-sampling-interval` | `1s` | How often the optimizer-QoS sampler refreshes the `rpc_optimizer_selection_score` gauge and - when `--usage-otel-enabled` is set - emits `optimizer_qos` events to the OTel usage pipeline. |
+| `--metrics-listen-address` | `disabled` | Address to expose Prometheus metrics on, e.g. `:7779` or `localhost:7779`. The value `disabled` turns the metrics server off completely. |
+| `--optimizer-qos-sampling-interval` | `1s` | How often the optimizer-QoS sampler refreshes the `rpc_optimizer_selection_score` gauge. When `--usage-otel-enabled` is set, it also emits `optimizer_qos` events to the OTel usage pipeline. |
 
 ```bash
 # enable, then scrape
@@ -123,14 +124,14 @@ smartrouter ... --metrics-listen-address ":7779"
 curl http://localhost:7779/metrics
 ```
 
-The flag name and the `disabled` sentinel live in
+The flag name and the `disabled` sentinel value are defined in
 [`flags.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/flags.go#L8-L25).
 
 !!! note "Optimizer scores are always on"
-    The optimizer-QoS client is created unconditionally, so
-    `rpc_optimizer_selection_score` is populated on `/metrics` regardless of
-    telemetry config. Remote shipping of these reports flows through the OTel
-    usage pipeline (`--usage-otel-enabled`), not a dedicated push address.
+    The optimizer-QoS client is always created, so `rpc_optimizer_selection_score`
+    is populated on `/metrics` whatever your telemetry config is. To send these
+    reports to a remote system, the router uses the OTel usage pipeline
+    (`--usage-otel-enabled`), not a dedicated push address.
 
 ### Conventions
 
@@ -145,50 +146,49 @@ The flag name and the `disabled` sentinel live in
     - `provider_address` - node the relay was routed to.
     - `method` - RPC method name. Batch requests carry a
       [batch signature](#batch-requests) instead, e.g. `batch:eth_call+eth_getBalance`.
-    - `function` - the RPC method / REST path the relay invoked, as carried by the
-      latency histograms and relay counters (same values as `method`; `sum by (...)`
-      over it gives the aggregate). Requests to methods outside the spec appear as
-      `Default-<method>`.
+    - `function` - the RPC method or REST path the relay called. The latency
+      histograms and relay counters carry it. It has the same values as `method`;
+      `sum by (...)` over it gives the aggregate. Requests to methods outside the
+      spec appear as `Default-<method>`.
 - **Boolean gauges** encode `1 = true / healthy / present`, `0 = false / unhealthy / absent`.
 - **Protocol version** gauges encode `major*1e6 + minor*1e3 + patch`.
 - Metrics are registered with `registerOrReuse`, which returns the already-registered
-  collector instead of panicking on a duplicate - so re-registration (e.g. across test
-  runs sharing the default registry) is safe.
+  collector instead of panicking on a duplicate. So re-registration (e.g. across test
+  runs that share the default registry) is safe.
 
 ### Counting semantics - relays vs client requests
 
-Verified against a live router with a controlled load; these distinctions matter for
-any dashboard or alert built on the request counters:
+Any dashboard or alert built on the request counters depends on these distinctions.
+They were verified against a live router under a controlled load:
 
 - **`smartrouter_requests_total` counts *relays*, not client requests.** A
-  cross-validated request increments it once per participant, cache-served requests
-  appear under `provider_address="Cached"`, and the router's own chain-tracker /
-  verification traffic lands in it even with zero client load. Use it for
+  cross-validated request increments it once per participant. Cache-served requests
+  appear under `provider_address="Cached"`. The router's own chain-tracker and
+  verification traffic also lands in it, even with zero client load. Use it for
   per-provider and relay-level views.
 - **`smartrouter_end_to_end_latency_milliseconds_count` increments exactly once per
-  client request** (cache hits included, internal probes excluded) - it is the honest
-  source for "requests served" and RPS, and its `function` label doubles as the
+  client request** (cache hits included, internal probes excluded). It is the
+  accurate source for "requests served" and RPS. Its `function` label also gives the
   per-method breakdown.
 - **`requests_success_total` is transport-level success.** An upstream that answers
   with a JSON-RPC *error object* (invalid params, method not found, execution
-  reverted) still counts as a successful relay - the error is recorded separately in
-  `node_errors_total` and the classified `smartrouter_errors_total`. `total −
-  success` therefore measures transport/routing failures, not "callers who got an
-  error".
+  reverted) still counts as a successful relay. The error is recorded separately in
+  `node_errors_total` and the classified `smartrouter_errors_total`. So `total −
+  success` measures transport and routing failures, not "callers who got an error".
 - **Consistency counters:** `consistency_total` = reads that enforced a minimum seen
   block, `consistency_success_total` = checks that **passed**, and
-  `consistency_failed_total` = stale responses actually caught. Lazily-registered
+  `consistency_failed_total` = stale responses actually caught. Lazily registered
   families (retries, hedge, cache, cross-validation, ws, classified errors) are
-  absent from `/metrics` until the feature first fires - an absent family means zero
+  absent from `/metrics` until the feature first fires. An absent family means zero
   events, not missing instrumentation.
 
 ---
 
 ## Smart Router metrics
 
-These are the metrics specific to running as a Smart Router, defined in
-[`smartrouter_metrics_manager.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go).
-They split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
+These metrics are specific to running as a Smart Router. They are defined in
+[`smartrouter_metrics_manager.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go)
+and split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 (`smartrouter_*`) families.
 
 ### Endpoint-scoped - `rpc_endpoint_*`
@@ -207,32 +207,32 @@ They split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 | `rpc_endpoint_fetch_block_fails` | Counter | `spec`, `apiInterface`, `endpoint_id` | Failed specific-block fetches. |
 | `rpc_endpoint_fetch_latest_success` | Counter | `spec`, `apiInterface`, `endpoint_id` | New-block **detections** by the chain tracker, not successful requests. |
 | `rpc_endpoint_fetch_block_success` | Counter | `spec`, `apiInterface`, `endpoint_id` | Successful specific-block fetches. |
-| `rpc_endpoint_tracker_requests_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `kind` | Requests the chain tracker actually sent upstream, by `kind` - `latest_block`, or `block_hash` (zero unless [`--enable-fork-detection`](cli.md#polling-relief)). The only metric that measures tracker **request volume**. |
-| `rpc_endpoint_tracker_gate_skips_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `source` | Poll ticks the tracker skipped because the upstream's tip was already fresh, by `source` - `relay` (served traffic in the last block time) or `peer` (another replica's poll, shared via [`--shared-state`](cli.md#cache-shared-state)). The complement of `requests_total`: together they account for every tick. |
-| `rpc_endpoint_tracker_gate_errors_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `op` | Failed calls the fleet gate made to the cache's observation store, by `op` - `fetch` or `publish`. A failed fetch falls back to a local poll; a failed publish costs a peer one real poll. Rises when the sidecar predates the observation RPC. |
+| `rpc_endpoint_tracker_requests_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `kind` | Requests the chain tracker actually sent upstream, by `kind`: `latest_block`, or `block_hash` (zero unless [`--enable-fork-detection`](cli.md#polling-relief)). This is the only metric that measures tracker **request volume**. |
+| `rpc_endpoint_tracker_gate_skips_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `source` | Poll ticks the tracker skipped because the upstream's tip was already fresh, by `source`: `relay` (served traffic in the last block time) or `peer` (another replica's poll, shared via [`--shared-state`](cli.md#cache-shared-state)). It is the complement of `requests_total`: together they account for every tick. |
+| `rpc_endpoint_tracker_gate_errors_total` | Counter | `spec`, `apiInterface`, `endpoint_id`, `op` | Failed calls the fleet gate made to the cache's observation store, by `op`: `fetch` or `publish`. A failed fetch falls back to a local poll. A failed publish costs a peer one real poll. It rises when the sidecar is older than the observation RPC. |
 
 On a multi-replica deployment with `--shared-state`, the fleet-wide
 `sum(rate(rpc_endpoint_tracker_requests_total{kind="latest_block"}[5m]))` for an upstream
 should settle near a single replica's worth, and `source="peer"` skips should be non-zero on
-every replica. `peer` stuck at zero with the flag on means one of three things: the router is
-on the [RESP backend](../deployment/cache/redis.md#caveats), which has no peer gate at all; the
-replicas are not reaching the same cache; or the cache is reached but the calls fail, for
-example a sidecar older than the router. `rpc_endpoint_tracker_gate_errors_total` tells the
-last apart from the other two - a failing store raises it, a fleet with nothing to share
-leaves it flat.
+every replica. If `peer` stays at zero with the flag on, there are three possible causes: the
+router is on the [RESP backend](../deployment/cache/redis.md#caveats), which has no peer gate
+at all; the replicas are not reaching the same cache; or the cache is reached but the calls
+fail, for example because the sidecar is older than the router.
+`rpc_endpoint_tracker_gate_errors_total` separates the last cause from the other two. A
+failing store raises it; a fleet with nothing to share leaves it flat.
 
-Two caveats when reading the chain-tracker counters:
+Keep two things in mind when you read the chain-tracker counters:
 
 - **`fetch_latest_success` can read *higher* with fork detection off.** With the
-  flag on, a failed block-hash fetch aborts the poll cycle before the new-block
-  callback fires, so endpoints with flaky hash fetches under-count detections;
-  with it off, every detected block is recorded. A rise after disabling the flag
-  is recovered counting, not extra load.
+  flag on, a failed block-hash fetch stops the poll cycle before the new-block
+  callback fires. So endpoints with unreliable hash fetches under-count detections.
+  With the flag off, every detected block is recorded. A rise after you disable the
+  flag means the counter now records detections it used to miss, not extra load.
 - **`endpoint_id` holds a provider name, and several providers can share one
   physical URL.** The tracker polls per provider, so a bare `sum()` over
   `rpc_endpoint_tracker_requests_total` counts one physical request once per
-  provider sharing that URL. When estimating the load on a metered node, keep
-  the `endpoint_id` breakdown (or dedupe by URL) instead of summing blindly.
+  provider sharing that URL. When you estimate the load on a metered node, keep
+  the `endpoint_id` breakdown (or dedupe by URL) instead of summing everything.
 
 ### Optimizer
 
@@ -264,9 +264,9 @@ Two caveats when reading the chain-tracker counters:
 
 #### Request breakdown
 
-`requests_total` = `success` + `failed`. `read`/`write` partition by statefulness;
-`debug_trace` and `archive` are orthogonal addon flags; `batch` is mutually exclusive
-with read/write.
+`requests_total` = `success` + `failed`. `read`/`write` split requests into stateless
+and stateful. `debug_trace` and `archive` are independent addon flags. A request counted
+as `batch` is not counted as read or write.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
@@ -290,25 +290,25 @@ sorted set of distinct sub-methods, prefixed `batch:`.
 [eth_call]                       →   method="eth_call"
 ```
 
-The signature identifies the *shape* of a batch, not its contents in order: two batches
-with the same set of methods share a series regardless of how the elements were ordered
-or how many times each repeated. Element count lives in `smartrouter_batch_size`, which
-keeps the label space bounded by the number of method *combinations* your clients send
-rather than the number of batches they send.
+The signature identifies the *shape* of a batch, not its contents in order. Two batches
+with the same set of methods share a series, whatever the order of the elements and
+however many times each one repeats. The element count is in `smartrouter_batch_size`.
+This keeps the label space limited by the number of method *combinations* your clients
+send, not by the number of batches they send.
 
-Single-method requests are unaffected - `method="eth_call"` means one `eth_call`. So
-`method=~"batch:.*"` and `method!~"batch:.*"` split batch from single traffic cleanly,
-and because the signature rides the normal `method` label, every per-method view
-(success rate, latency, per-provider share) works per batch shape too.
+Single-method requests are unaffected: `method="eth_call"` means one `eth_call`. So
+`method=~"batch:.*"` and `method!~"batch:.*"` cleanly split batch traffic from single
+traffic. Because the signature uses the normal `method` label, every per-method view
+(success rate, latency, per-provider share) also works per batch shape.
 
-Cache hits included: a batch served from the router's cache keeps its signature and,
-like every cached relay, lands under `provider_address="Cached"` (see
-[counting semantics](#counting-semantics-relays-vs-client-requests)) - so a per-provider
-slice of a batch shape lists that pseudo-provider alongside the real nodes, and its
-sizes are observed in `smartrouter_batch_size` like any other batch.
+Cache hits work the same way. A batch served from the router's cache keeps its signature
+and, like every cached relay, lands under `provider_address="Cached"` (see
+[counting semantics](#counting-semantics-relays-vs-client-requests)). So a per-provider
+view of a batch shape lists that pseudo-provider next to the real nodes. Its sizes are
+recorded in `smartrouter_batch_size` like any other batch.
 
 A one-element batch produces the same label as a plain single request and is not counted
-in `smartrouter_batch_size`; `smartrouter_requests_batch_total` still identifies it as a
+in `smartrouter_batch_size`. `smartrouter_requests_batch_total` still identifies it as a
 batch.
 
 | Metric | Type | Labels | Description |
@@ -317,8 +317,8 @@ batch.
 | `smartrouter_batch_signature_overflow_total` | Counter | `spec`, `reason` | Batches whose signature landed in `batch:other`. `reason="cap"`: the chain reached its limit of 64 distinct signatures. `reason="wide"`: one batch mixed more than 8 distinct methods. |
 
 While `smartrouter_batch_signature_overflow_total` is zero, the batch-shape breakdown is
-complete. Once it climbs, some shapes are being merged into `batch:other` - the other
-series stay accurate, but the breakdown no longer names every shape.
+complete. Once it rises, some shapes are merged into `batch:other`. The other series
+stay accurate, but the breakdown no longer names every shape.
 
 #### Errors
 
@@ -338,23 +338,23 @@ series stay accurate, but the breakdown no longer names every shape.
 
 #### Rate-limit hold-off
 
-When an upstream answers `429` the router stops asking it for a while instead of
-retrying into the limit - see [Rate-limited upstreams](../configuration/failover/retry.md#rate-limited-upstreams)
-for the behaviour. These two series are emitted by the hold-off registry itself, so
-every path that talks upstream (relays, spec re-verification, recovery probes, WebSocket
-subscriptions) is covered. A rate-limited relay is released with no QoS sample in either
-direction, so a vendor cap does not show up in `rpc_endpoint_selection_score`; this pair
-is the direct signal that an upstream is refusing you for load.
+When an upstream answers `429`, the router stops sending it requests for a while instead
+of retrying into the limit. See [Rate-limited upstreams](../configuration/failover/retry.md#rate-limited-upstreams)
+for the behaviour. The hold-off registry emits these two series itself, so they cover
+every path that talks to an upstream (relays, spec re-verification, recovery probes,
+WebSocket subscriptions). A rate-limited relay is released with no QoS sample in either
+direction, so a vendor cap does not show up in `rpc_endpoint_selection_score`. This pair
+is the direct signal that an upstream is refusing you because of load.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_rate_limit_holdoffs_total` | Counter | `provider`, `event` | Hold-off registry events. `event` is the closed set `recorded` (a `429` held an endpoint off), `escalated` (the hold-off widened to the whole provider - counted once on the transition, not per refresh), `cleared` (an answer dropped a standing penalty - not counted when there was nothing to clear). |
-| `smartrouter_rate_limit_holdoff_seconds` | Histogram | `provider` | Applied hold-off duration per `recorded` event, in **seconds** (buckets `15, 30, 60, 120, 300, 600, 1800, 3600` - not the shared millisecond latency buckets). Shows how long upstreams' `Retry-After` values are against the exponential default. |
+| `smartrouter_rate_limit_holdoffs_total` | Counter | `provider`, `event` | Hold-off registry events. `event` is the closed set `recorded` (a `429` held an endpoint off), `escalated` (the hold-off widened to the whole provider; counted once on the transition, not per refresh), `cleared` (an answer removed a standing penalty; not counted when there was nothing to clear). |
+| `smartrouter_rate_limit_holdoff_seconds` | Histogram | `provider` | Applied hold-off duration per `recorded` event, in **seconds** (buckets `15, 30, 60, 120, 300, 600, 1800, 3600`, not the shared millisecond latency buckets). Shows how long upstreams' `Retry-After` values are compared with the exponential default. |
 
 `provider` is the configured provider name on the relay, probe, and re-verification
 paths. The WebSocket-subscription path has no provider name and keys the registry by
-node URL; those keys are reduced to `scheme://host` before they become a label, because
-node URLs can embed API keys in their path or query and a credential must never reach a
+node URL. Those keys are reduced to `scheme://host` before they become a label. Node URLs
+can contain API keys in their path or query, and a credential must never reach a
 Prometheus series.
 
 ```promql
@@ -389,8 +389,8 @@ histogram_quantile(0.9,
 | `smartrouter_cross_validation_failed_total` | Counter | `spec`, `apiInterface`, `method` | Requests that failed to reach consensus. |
 | `smartrouter_cross_validation_provider_agreements_total` | Counter | `spec`, `apiInterface`, `method`, `provider_address` | Times a node agreed with consensus. |
 | `smartrouter_cross_validation_provider_disagreements_total` | Counter | `spec`, `apiInterface`, `method`, `provider_address` | Times a node disagreed with consensus. |
-| `smartrouter_cross_validation_mismatch_total` | Counter | `spec`, `apiInterface`, `method`, `group`, `finality` | **Content outliers** by group: one increment per distinct outlier group per successful deterministic cross-validation request (a response whose `SHA256(reply.data)` diverged from the reached consensus). Only emitted when a quorum was reached. `finality` is `finalized` / `not_finalized` / `unknown`; post-finality divergence is the high-signal alert. Bounded cardinality (keyed by operator-defined `group`, not node address). |
-| `smartrouter_cross_validation_failures_total` | Counter | `spec`, `apiInterface`, `method`, `reason` | **Failures by reason** - the by-reason breakdown of `cross_validation_failed_total` (which stays unlabeled, so existing dashboards are unaffected). `reason` is a closed enum: quorum-time `no-agreement` / `insufficient-responses` / `diversity-unmet` / `group-quorum-unmet`, or request-time structural `insufficient-capacity` / `insufficient-groups`. Separates a structural failure (client should fall back) from a quorum disagreement (a retry may help). |
+| `smartrouter_cross_validation_mismatch_total` | Counter | `spec`, `apiInterface`, `method`, `group`, `finality` | **Content outliers** by group: one increment per distinct outlier group per successful deterministic cross-validation request (a response whose `SHA256(reply.data)` diverged from the reached consensus). Emitted only when a quorum was reached. `finality` is `finalized` / `not_finalized` / `unknown`; post-finality divergence is the high-signal alert. Cardinality is bounded (keyed by operator-defined `group`, not node address). |
+| `smartrouter_cross_validation_failures_total` | Counter | `spec`, `apiInterface`, `method`, `reason` | **Failures by reason**: the by-reason breakdown of `cross_validation_failed_total` (which stays unlabeled, so existing dashboards are unaffected). `reason` is a closed enum: quorum-time `no-agreement` / `insufficient-responses` / `diversity-unmet` / `group-quorum-unmet`, or request-time structural `insufficient-capacity` / `insufficient-groups`. It separates a structural failure (client should fall back) from a quorum disagreement (a retry may help). |
 
 #### Cache
 
@@ -402,8 +402,8 @@ histogram_quantile(0.9,
 | `smartrouter_cache_latency_milliseconds` | Histogram | `spec`, `apiInterface`, `method`, `cache_tier` | Cache lookup latency, observed on **every attempted lookup** - hits and non-hits. |
 
 Per tier, `cache_requests_total` = `cache_success_total` +
-`sum without (outcome) (cache_failed_total)`. Note the `sum without` - recovering that
-identity takes an explicit aggregation across `outcome`.
+`sum without (outcome) (cache_failed_total)`. Note the `sum without`: the identity only
+holds after an explicit aggregation across `outcome`.
 
 The `cache_tier="secondary"` series exist only when a
 [secondary cache](../deployment/cache/secondary.md) is configured.
@@ -411,35 +411,36 @@ The `cache_tier="secondary"` series exist only when a
 !!! warning "Dashboard migration"
     These series previously had no `cache_tier` label, `_failed_total` had no `outcome`,
     and the latency histogram was observed on hits only. Aggregating queries
-    (`sum by (spec, method)`) keep working; **exact label matchers must add
-    `cache_tier="primary"`**. Latency-based alerts should expect non-hit observations,
-    which typically *lower* percentiles - misses return faster than hits - while timeouts
+    (`sum by (spec, method)`) keep working. **Exact label matchers must add
+    `cache_tier="primary"`**. Latency-based alerts should expect non-hit observations.
+    These usually *lower* percentiles, because misses return faster than hits. Timeouts
     now appear as a bounded tail instead of being invisible.
 
 #### RESP cache backend
 
-Present only when the router runs against a [RESP-compatible (Redis/Valkey) cache
-backend](../deployment/cache/redis.md). The shared `smartrouter_cache_*` series above keep
-firing unchanged regardless of backend; they can't distinguish a backend error or timeout
-from a clean miss - these can, and they are the alerting surface for cache degradation.
+These series exist only when the router runs against a [RESP-compatible (Redis/Valkey) cache
+backend](../deployment/cache/redis.md). Use them to alert on cache degradation. The shared
+`smartrouter_cache_*` series above keep firing unchanged on any backend, but they cannot
+tell a backend error or timeout from a clean miss. These series can.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_resp_cache_failed_total` | Counter | `op`, `kind` | Backend-level operation failures (never clean misses). `op` = `get` \| `set`; `kind` = `error` (unreachable / protocol error) \| `timeout` (budget exceeded - saturation reads differently from an outage). |
+| `smartrouter_resp_cache_failed_total` | Counter | `op`, `kind` | Backend-level operation failures (never clean misses). `op` = `get` \| `set`; `kind` = `error` (unreachable / protocol error) \| `timeout` (budget exceeded, so saturation looks different from an outage). |
 | `smartrouter_resp_cache_connection_errors_total` | Counter | - | Failed background health probes (PING, every 10s). |
-| `smartrouter_resp_cache_connected` | Gauge | - | `1` while the last health probe succeeded, `0` after a failure. Reachability *transitions* are also logged; steady state stays quiet. |
-| `smartrouter_resp_cache_pool_total_conns` | Gauge | - | Connections held by the client pool(s) - write and read summed when the read/write split is configured. |
+| `smartrouter_resp_cache_connected` | Gauge | - | `1` while the last health probe succeeded, `0` after a failure. Reachability *transitions* are also logged; nothing is logged in steady state. |
+| `smartrouter_resp_cache_pool_total_conns` | Gauge | - | Connections held by the client pool(s). With the read/write split configured, this is write and read summed. |
 | `smartrouter_resp_cache_pool_idle_conns` | Gauge | - | Idle pool connections. |
 | `smartrouter_resp_cache_pool_stale_conns` | Gauge | - | Stale connections removed from the pool. |
 
-A failing backend never fails relays: lookups degrade to misses within the caller's budget
-and requests proceed to the upstreams. Alert on `smartrouter_resp_cache_connected == 0` or
+A failing backend never fails relays. Lookups fall back to misses within the caller's
+budget, and requests go on to the upstreams. Alert on `smartrouter_resp_cache_connected == 0` or
 a `smartrouter_resp_cache_failed_total` rate, not on request errors.
 
 #### CSM state-store sizes (diagnostics)
 
-Expose otherwise black-box Consumer-Session-Manager state so integration tests can
-assert `/debug/reset-all` emptied each store. All drop to `0` after a reset.
+These gauges show Consumer-Session-Manager state that is otherwise hidden, so
+integration tests can check that `/debug/reset-all` emptied each store. All of them drop
+to `0` after a reset.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
@@ -450,23 +451,24 @@ assert `/debug/reset-all` emptied each store. All drop to `0` after a reset.
 
 #### Cross-pod sticky sessions
 
-With `--shared-state` and a cache backend, a `lava-stickiness` id resolves to one upstream
-across every replica through a shared claim. Each resolution is counted by how it went:
+With `--shared-state` and a cache backend, a `lava-stickiness` id resolves to the same
+upstream on every replica, through a shared claim. Each resolution is counted by its
+outcome:
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | Claim resolutions. `outcome`: `local_hit` (answered from this replica's confirmed claim), `adopted` (routed by a live claim read from the shared registry rather than one held in memory - usually a peer's, see below), `claimed` (this replica made the claim), `lost_race` (a peer's claim naming a different upstream won), `error` (the claim could not be read or written, so the request failed), `no_candidate` (this replica had no upstream to offer), `invalidated` (a claim was dropped because its upstream could not serve here). |
+| `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | Claim resolutions. `outcome`: `local_hit` (answered from this replica's confirmed claim), `adopted` (routed by a live claim read from the shared registry rather than one held in memory; usually a peer's, see below), `claimed` (this replica made the claim), `lost_race` (a peer's claim naming a different upstream won), `error` (the claim could not be read or written, so the request failed), `no_candidate` (this replica had no upstream to offer), `invalidated` (a claim was dropped because its upstream could not serve here). |
 
-`adopted` is how a session that crossed replicas shows up. The `Lava-Provider-Address` reply
-header reads the same whether a replica used its own claim or a peer's. `adopted` is not proof on
-its own, though. A replica that drops its local copy of a claim (`invalidated`) leaves the shared
-claim in place, so its next request reads its own claim back and counts `adopted` too. So does a
-replica after `/debug/reset-all` clears its local table, if the shared claim outlived the reset. A
-rise in `adopted` on a replica whose `invalidated` count did not move, with no reset in between, is
-a peer's claim.
+A session that crossed replicas shows up as `adopted`. The `Lava-Provider-Address` reply
+header looks the same whether a replica used its own claim or a peer's. But `adopted` alone
+does not prove a crossing. A replica that drops its local copy of a claim (`invalidated`)
+leaves the shared claim in place, so its next request reads its own claim back and also
+counts `adopted`. The same happens after `/debug/reset-all` clears a replica's local table, if
+the shared claim outlived the reset. A rise in `adopted` on a replica whose `invalidated`
+count did not change, with no reset in between, is a peer's claim.
 
-The same counts are readable without the metrics port at `GET /debug/sticky-claims` on the
-debug server (`--debug-address`), one row per endpoint:
+You can also read the same counts without the metrics port, at `GET /debug/sticky-claims` on
+the debug server (`--debug-address`). It returns one row per endpoint:
 
 ```json
 [{"ChainID": "ETH1", "ApiInterface": "jsonrpc", "PodID": "eth-router-7d9f8b6c5-x2kqp/3fa9c1d2",
@@ -476,8 +478,8 @@ debug server (`--debug-address`), one row per endpoint:
 ```
 
 `SharedSticky` is `false` on a router without `--shared-state` and a cache backend, where every
-count stays `0`, so it tells "off" from "never fired". The counts are cumulative since the
-router process started; read them before and after the requests you send.
+count stays `0`. This lets you tell "off" from "never fired". The counts are cumulative
+since the router process started, so read them before and after the requests you send.
 
 `PodID` names the process that answered: the pod name, a slash, and a suffix that changes when the
 process restarts. The debug port is reached through a Service that balances across the router's
@@ -491,8 +493,8 @@ counts began again from `0`.
 
 ### Classified errors - `smartrouter_errors_*`
 
-Defined in [`error_metrics.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/error_metrics.go).
-The `error_name` and `error_category` labels come from the classifier registry - see
+These metrics are defined in [`error_metrics.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/error_metrics.go).
+The `error_name` and `error_category` labels come from the classifier registry. See
 [Error codes](error-codes.md) for the full set of names and their retryability.
 
 | Metric | Type | Labels | Description |
