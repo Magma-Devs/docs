@@ -66,7 +66,11 @@ plugins:
 # asset_fingerprint.py appends `?v=<content hash>` to every local entry of
 # extra_css / extra_javascript below, so a changed file is a new URL and the
 # Cloudflare edge cache in front of the site can never serve a stale copy of it.
+# chain_counts.py fills {{ chains.total }} / .mainnet / .testnet from
+# docs/javascripts/chains-data.js, so pages never disagree with the chains
+# explorer. It runs first so the LLM corpus gets numbers, not placeholders.
 hooks:
+  - hooks/chain_counts.py
   - hooks/llms_full.py
   - hooks/asset_fingerprint.py
 
@@ -93,7 +97,7 @@ extra:
           name: This page could be improved
           data: 0
           note: >-
-            Thanks — <a href="https://github.com/Magma-Devs/docs/issues/new" target="_blank" rel="noopener">tell us what was missing</a>.
+            Thanks - <a href="https://github.com/Magma-Devs/docs/issues/new" target="_blank" rel="noopener">tell us what was missing</a>.
   # LinkedIn Insight Tag partner id — consumed by
   # overrides/partials/integrations/linkedin.html and fired under the same
   # consent gate as GA (see the analytics dispatcher override). Unset → no tag.
@@ -125,9 +129,7 @@ extra_css:
   - stylesheets/widgets.css
 
 extra_javascript:
-  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
   - javascripts/consent-mode.js
-  - javascripts/tablesort.js
   - javascripts/toc-title.js
   - javascripts/copy-page.js
   - javascripts/search-hint.js

@@ -1,35 +1,37 @@
 ---
 title: "Cache"
-description: "Deploy the standalone, block-aware cache that absorbs repeat reads and can be shared across multiple router replicas."
+description: "Deploy the standalone, block-aware cache that answers repeat reads and can be shared by several router replicas."
 ---
 
 # Cache
 
-The cache is an optional in-memory (RAM) server that stores RPC responses so repeat
-reads — finalised-block calls, archive lookups, contract-state reads — don't hit an
-upstream node twice. It's the single biggest lever on both **cost** (fewer billed
-upstream calls) and **tail latency** (a hit returns immediately).
+The cache is an optional in-memory (RAM) server that stores RPC responses, so a repeat
+read does not hit an upstream node twice. Use it to cut **cost** (fewer billed upstream
+calls) and **tail latency** (a hit returns immediately).
 
-It's the **same `smartrouter` binary**, run as a separate process via the `cache`
+Repeat reads include finalised-block calls, archive lookups and contract-state reads. The
+cache does more than any other single change to lower both cost and tail latency.
+
+It is the **same `smartrouter` binary**, run as a separate process with the `cache`
 subcommand. One cache can be shared by many router instances.
 
 ## Pick a backend
 
-The sidecar on this page is the default and needs no extra infrastructure. Two options
-change *where* entries live, or *how many* places the router looks:
+The sidecar on this page is the default. It needs no extra infrastructure. Two other
+options change *where* entries live, or *how many* places the router looks:
 
 | Option | What it gives you |
 | --- | --- |
 | **Cache sidecar** (this page) | In-memory, per process. Shared by many routers over gRPC. No external dependency. |
-| **[Redis / Valkey backend](redis.md)** | The router runs the same cache engine in-process against a RESP-compatible store — so the cache survives restarts, is shared by every replica, and can fail over or replicate across regions. Replaces the sidecar. |
-| **[Secondary cache](secondary.md)** | A second cache the router only ever **reads**, consulted on a primary miss before falling through to your upstreams. Typically another zone's cache. Adds to the primary, whichever backend that is. |
+| **[Redis / Valkey backend](redis.md)** | The router runs the same cache engine in-process against a RESP-compatible store. The cache survives restarts, is shared by every replica, and can fail over or replicate across regions. Replaces the sidecar. |
+| **[Secondary cache](secondary.md)** | A second cache that the router only ever **reads**. The router checks it when the primary misses, before it goes to your upstreams. Usually another zone's cache. Works in addition to the primary, whichever backend that is. |
 
-The last two are independent of each other: a router can read a secondary tier whether its
-primary is the sidecar or a RESP backend.
+The last two options are independent of each other. A router can read a secondary tier
+whether its primary is the sidecar or a RESP backend.
 
 ## How the router finds it
 
-The router connects to the cache through `cache-be:` **in the config file**, not a flag:
+The router finds the cache through `cache-be:` **in the config file**, not through a flag:
 
 ```yaml
 # in your config.yml
@@ -37,16 +39,16 @@ cache-be: "cache:20100"
 ```
 
 !!! warning "Don't pass `--cache-be` when the address is in the config"
-    An explicitly-passed `--cache-be` flag (even empty) outranks the YAML `cache-be:` in
-    the config loader — so passing it can silently disable caching. Set it in **one**
-    place; the config is the recommended one.
+    If you pass the `--cache-be` flag, even with an empty value, it overrides the YAML
+    `cache-be:` in the config loader. So passing it can silently turn caching off. Set
+    the address in **one** place. The config file is the recommended place.
 
 ## Run it
 
 === "Docker Compose"
 
-    The cache ships as an overlay. Use a `*_cached.yml` config (which declares
-    `cache-be: cache:20100`) and layer the cache compose file:
+    The cache comes as a Compose overlay. Use a `*_cached.yml` config (it declares
+    `cache-be: cache:20100`) and add the cache compose file on top:
 
     ```bash
     SR_CONFIG=config/smartrouter_examples/smartrouter_eth_cached.yml \
@@ -58,7 +60,7 @@ cache-be: "cache:20100"
 
 === "Local binary"
 
-    The cache address is **positional**:
+    The cache address is a **positional** argument:
 
     ```bash
     smartrouter cache 127.0.0.1:20100 --metrics_address 127.0.0.1:5555
@@ -68,41 +70,42 @@ cache-be: "cache:20100"
 
 ## What's actually cached
 
-An entry is keyed by **(chain, API interface, method, params, resolved block)** — the
-JSON-RPC `id` is stripped before keying and restored on the way out, so the same query
-with different ids shares one entry. What gets stored:
+Each entry is keyed by **(chain, API interface, method, params, resolved block)**. The
+JSON-RPC `id` is removed before keying and put back in the response, so the same query
+with different ids shares one entry. The cache stores:
 
-- **Read responses tied to a specific block** — the bulk of cache value. A call against a
-  block at or beyond the chain's finalization distance is **finalised**: immutable, so it
-  can be held for a long time. `eth_getBlockByNumber`, `eth_getTransactionReceipt`,
-  `eth_getLogs` over a finalised range, `eth_call`/`eth_getBalance` at a fixed block, and
-  their REST/Tendermint/Cosmos equivalents are the sweet spot.
-- **"Latest"-style reads** (non-finalised) — cached only briefly, because the answer
-  changes as the chain advances. A longer non-finalised TTL means fewer upstream calls but
-  staler "latest" data — that's the main tuning trade-off.
-- **Block hash → height mappings** — small, long-lived lookups the router reuses to
+- **Read responses tied to a specific block.** Most of the cache's value comes from these.
+  A call against a block at or beyond the chain's finalization distance is **finalised**:
+  the answer never changes, so the cache can keep it for a long time. These calls benefit
+  most: `eth_getBlockByNumber`, `eth_getTransactionReceipt`, `eth_getLogs` over a
+  finalised range, `eth_call`/`eth_getBalance` at a fixed block, and their
+  REST/Tendermint/Cosmos equivalents.
+- **"Latest"-style reads** (non-finalised). These are cached only briefly, because the
+  answer changes as the chain advances. A longer non-finalised TTL means fewer upstream
+  calls but older "latest" data. This is the main trade-off when you tune the cache.
+- **Block hash → height mappings.** Small, long-lived lookups that the router reuses to
   resolve block references.
-- **Finalised node errors** — a deterministic error on a finalised block is itself
-  cacheable (briefly), so a known-bad query isn't re-sent to every node.
+- **Finalised node errors.** A deterministic error on a finalised block can also be cached
+  (briefly), so a known-bad query is not sent again to every node.
 
-What is **not** cached: writes (`eth_sendRawTransaction` and the like), pending/`latest`
-mutable state beyond its short TTL, and anything a client marks
-[`lava-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh). Which methods
-are cacheable at all comes from each chain's [spec](../../reference/chains/specs.md)
-categories, not a setting on the cache.
+What is **not** cached: writes (`eth_sendRawTransaction` and similar), pending/`latest`
+mutable state beyond its short TTL, and anything a client marks with
+[`lava-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh). Each chain's
+[spec](../../reference/chains/specs.md) categories decide which methods can be cached at
+all. It is not a setting on the cache.
 
-The lookup is skipped for exactly three reasons: a stateful (write) method, a request
+The cache lookup is skipped in exactly three cases: a stateful (write) method, a request
 carrying `lava-force-cache-refresh`, and a request running
 [cross-validation](../../configuration/failover/cross-validation.md), which needs fresh
 answers from several nodes to compare.
 
 !!! warning "Pinning a node does not bypass the cache"
     [`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
-    *selection* preference, and the cache is consulted before selection runs. A pinned
+    *selection* preference, and the cache is checked before selection runs. So a pinned
     request that hits a warm entry returns `Lava-Provider-Address: Cached` without
-    contacting the named node — so it cannot tell you whether that node is reachable.
-    Monitoring checks and any test that asserts on a specific node must also send
-    `lava-force-cache-refresh`, or use a request the cache cannot answer.
+    contacting the named node. That response cannot tell you whether the node is
+    reachable. Monitoring checks and any test that asserts on a specific node must also
+    send `lava-force-cache-refresh`, or use a request the cache cannot answer.
 
 ## Tuning flags
 
@@ -111,7 +114,7 @@ Flags for `smartrouter cache <host:port>`:
 | Flag | Default | Purpose |
 | --- | --- | --- |
 | `--metrics_address` | `disabled` | Prometheus metrics address (e.g. `0.0.0.0:5555`). |
-| `--max-items` | `2147483648` | Max number of entries to keep. |
+| `--max-items` | `2147483648` | Maximum number of entries to keep. |
 | `--expiration` | `1h` | TTL for finalised entries. |
 | `--expiration-non-finalized` | `500ms` | TTL for non-finalised ("latest") entries. |
 | `--expiration-multiplier` | `1.0` | Multiplier on the finalised TTL (`1.2` = 20% longer). |
@@ -125,25 +128,25 @@ flags as the router.
 
 ## Sharing state across routers
 
-When several router instances share one cache, add `--shared-state` to the routers so
-they also share three things through it:
+When several router instances share one cache, add `--shared-state` to the routers. They
+then also share three things through the cache:
 
-- **consumer-consistency state** — their "seen block" views stay aligned, so a client
+- **consumer-consistency state**: their "seen block" views stay aligned, so a client
   that just read block N from one replica is not served N-1 by another;
-- **chain-tracker poll observations** — each replica publishes the upstream polls it
-  makes and borrows fresh ones from the others, so every upstream is polled about
-  once per interval fleet-wide instead of once per replica. This is the lever that
-  stops the router's own polling load from growing with the replica count;
-- **sticky sessions** — a `lava-stickiness` id resolves to the same upstream on every
-  replica. Without the flag stickiness stays pod-local.
+- **chain-tracker poll observations**: each replica publishes the upstream polls it
+  makes and reuses fresh ones from the others. Every upstream is then polled about once
+  per interval across the fleet, instead of once per replica. This is what stops the
+  router's own polling load from growing with the replica count;
+- **sticky sessions**: a `lava-stickiness` id resolves to the same upstream on every
+  replica. Without the flag, stickiness stays local to each pod.
 
-The seen-block state and sticky sessions travel through either backend. The chain-tracker
-gate is a sidecar RPC, so it requires `cache-be:`; a router on the
+The seen-block state and sticky sessions work through either backend. The chain-tracker
+gate is a sidecar RPC, so it needs `cache-be:`. A router on the
 [RESP backend](redis.md#caveats) polls locally and logs a warning.
 
-See the [CLI reference](../../reference/cli.md#cache-shared-state) for the safety floors and
-[`rpc_endpoint_tracker_gate_skips_total`](../../reference/metrics.md#endpoint-scoped-rpc_endpoint_)
-for how to confirm it is working.
+See the [CLI reference](../../reference/cli.md#cache-shared-state) for the safety floors.
+To confirm it is working, check
+[`rpc_endpoint_tracker_gate_skips_total`](../../reference/metrics.md#endpoint-scoped-rpc_endpoint_).
 
 ## Observability
 
@@ -153,7 +156,7 @@ The cache exposes Prometheus metrics on its `--metrics_address` (e.g. `:5555`):
 curl -s http://localhost:5555/metrics | grep cache_total_hits
 ```
 
-The router reports its own view on `:7779` — `smartrouter_cache_requests_total`,
-`_success_total`, `_failed_total`, and `_latency_milliseconds`, each labelled with the
-`cache_tier` that answered (`primary` or [`secondary`](secondary.md)). See the
+The router reports its own view on `:7779`: `smartrouter_cache_requests_total`,
+`_success_total`, `_failed_total`, and `_latency_milliseconds`. Each one is labelled with
+the `cache_tier` that answered (`primary` or [`secondary`](secondary.md)). See the
 [Metrics reference](../../reference/metrics.md#cache).

@@ -1,31 +1,34 @@
 ---
 title: "Supported chains"
-description: "Chain-agnostic JSON specs — 155 specs covering 292 networks across EVM, Cosmos/Tendermint, Solana, and more."
+description: "Chain-agnostic JSON specs for {{ chains.total }} chains across EVM, Cosmos/Tendermint, Solana, and more."
 ---
 
 # Supported chains
 
-Smart Router serves any chain described by a JSON [chain spec](specs.md) — no code
-change, no rebuild. It ships knowing a handful of chains out of the box and resolves the
-rest from the [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) catalog
-at startup.
+Smart Router serves any chain that has a JSON [chain spec](specs.md), with no code
+change and no rebuild. Use this page to find a chain and check its networks and API
+protocols.
 
-New here? Read [Chain specs](specs.md) first — what a spec is and how the router loads
-it. Then see [Examples](examples/index.md) for ready-to-run configs and per-chain
-walkthroughs — [Ethereum](ethereum.md), [Solana](solana.md), [Bitcoin](bitcoin.md),
-[Hyperliquid](hyperliquid.md), [Cosmos](cosmos.md), and [Aptos](aptos.md).
+Smart Router comes with a small set of chains built in. It gets the rest from the
+[`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) catalog at startup.
+
+If you are new here, read [Chain specs](specs.md) first. It explains what a spec is and
+how the router loads it. Then see [Examples](examples/index.md) for ready-to-run configs
+and per-chain walkthroughs: [Ethereum](ethereum.md), [Solana](solana.md),
+[Bitcoin](bitcoin.md), [Hyperliquid](hyperliquid.md), [Cosmos](cosmos.md), and
+[Aptos](aptos.md).
 
 ## Browse chains
 
-The catalog holds **155 spec files** spanning **141 mainnets and 151 testnets**. Search or
-filter by ecosystem below; each card shows the chain's networks (Mainnet / Testnet) and
-the API protocols it exposes. The **↗** opens the chain's spec on GitHub.
+The catalog lists **{{ chains.total }} chains**: {{ chains.mainnet }} with a mainnet and {{ chains.testnet }} with a testnet. Search or
+filter by ecosystem below. Each card shows the chain's networks (Mainnet / Testnet) and
+the API protocols it exposes. The **↗** link opens the chain's spec on GitHub.
 
 <div id="chains-explorer" data-icon-base="../../assets/chains/"></div>
 
 ## Need a chain that isn't listed?
 
-The catalog is maintained by Magma. If the chain you need isn't there,
-[open an issue](https://github.com/Magma-Devs/smart-router/issues) describing the chain,
-the API interface (JSON-RPC / REST / gRPC / Tendermint RPC), and one or two reference
-upstream nodes, and we'll add it to the catalog.
+If the chain you need is not in the catalog,
+[open an issue](https://github.com/Magma-Devs/smart-router/issues) and Magma will add it.
+Magma maintains the catalog. In the issue, describe the chain, the API interface
+(JSON-RPC / REST / gRPC / Tendermint RPC), and one or two reference upstream nodes.

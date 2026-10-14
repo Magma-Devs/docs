@@ -5,14 +5,14 @@ description: "Profile Smart Router to find CPU and memory hotspots."
 
 # Profiling
 
-For diagnosing CPU, memory, or contention issues, Smart Router can ship continuous
-profiles to [Pyroscope](https://pyroscope.io/), or expose Go's `pprof` server for one-off
-captures.
+Use profiling to diagnose CPU, memory, or contention issues in Smart Router. The router
+can send continuous profiles to [Pyroscope](https://pyroscope.io/), or expose Go's
+`pprof` server for one-off captures.
 
 ## Continuous profiling (Pyroscope)
 
-Point the router at a Pyroscope server and it streams CPU, heap, goroutine, mutex, and
-block profiles continuously:
+When you give the router a Pyroscope server address, it streams CPU, heap, goroutine,
+mutex, and block profiles to it continuously:
 
 ```bash
 smartrouter config.yml --use-static-spec specs/ \
@@ -23,19 +23,19 @@ smartrouter config.yml --use-static-spec specs/ \
 
 | Flag | Default | Purpose |
 | --- | --- | --- |
-| `--pyroscope-address` | — | Pyroscope server URL. Profiling is off until this is set. |
+| `--pyroscope-address` | - | Pyroscope server URL. Profiling is off until this is set. |
 | `--pyroscope-app-name` | `smartrouter` | Application name shown in Pyroscope. |
-| `--pyroscope-tags` | — | Comma-separated `key=value` tags (instance, region, …) for filtering. |
+| `--pyroscope-tags` | - | Comma-separated `key=value` tags (instance, region, …) for filtering. |
 | `--pyroscope-mutex-profile-fraction` | `5` | Mutex profile sampling rate (1 in N events). |
 | `--pyroscope-block-profile-rate` | `1` | Block profile rate (ns; `1` records all blocking events). |
 
-The tags are how you separate replicas in the Pyroscope UI — set at least `instance`
-when you run more than one router.
+Use the tags to tell replicas apart in the Pyroscope UI. When you run more than one
+router, set at least `instance`.
 
 ## One-off profiling (pprof)
 
-Without a Pyroscope server, expose Go's standard `pprof` HTTP server and capture profiles
-on demand:
+If you do not have a Pyroscope server, expose Go's standard `pprof` HTTP server and
+capture profiles when you need them:
 
 ```bash
 smartrouter config.yml --use-static-spec specs/ --pprof-address localhost:6060
@@ -44,5 +44,5 @@ smartrouter config.yml --use-static-spec specs/ --pprof-address localhost:6060
 go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
 ```
 
-Bind it to localhost (or behind your network controls) — the `pprof` endpoints are
-unauthenticated.
+Bind it to localhost (or put it behind your network controls), because the `pprof`
+endpoints have no authentication.
