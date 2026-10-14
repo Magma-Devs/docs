@@ -16,14 +16,18 @@ theme:
   # extrahead block, emitted per page from front-matter title/description.
   custom_dir: overrides
 
-  # Magma brand — real logos shipped from design
+  # Magma brand logo (master file). overrides/partials/logo.html serves
+  # pre-shrunk 1x/2x/3x copies of it so it stays sharp.
   logo: assets/magma-devs-logo.png
   favicon: assets/magma-mark.svg
-  font:
-    text: Inter
-    code: Geist Mono
+  # System typefaces only (declared in stylesheets/tokens.css): no webfont request.
+  font: false
 
   features:
+    # Menu clicks load the next page in place: header, menu and scroll position
+    # stay put instead of the whole page reloading.
+    - navigation.instant
+    - navigation.instant.progress
     - navigation.sections
     - navigation.indexes
     - navigation.expand
@@ -42,7 +46,7 @@ theme:
     repo: fontawesome/brands/github
 
   palette:
-    # Single light scheme — no toggle button (drpc-style clean header).
+    # Single light scheme, no toggle button.
     scheme: default
     primary: custom
     accent: custom
@@ -68,6 +72,8 @@ hooks:
 
 # Community / support links — rendered as icons in the footer on every page.
 extra:
+  # No "Made with Material for MkDocs" line in the footer.
+  generator: false
   # Google Analytics 4 — Material injects gtag.js on every page automatically.
   analytics:
     provider: google
@@ -111,8 +117,12 @@ extra:
       link: https://t.me/magmadevs
       name: Support & community on Telegram
 
+# tokens.css is the only file that names a raw color, size or typeface.
 extra_css:
-  - stylesheets/extra.css
+  - stylesheets/tokens.css
+  - stylesheets/shell.css
+  - stylesheets/content.css
+  - stylesheets/widgets.css
 
 extra_javascript:
   - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
@@ -121,8 +131,6 @@ extra_javascript:
   - javascripts/toc-title.js
   - javascripts/copy-page.js
   - javascripts/search-hint.js
-  - javascripts/nav-top.js
-  - javascripts/mobile-nav-search.js
   - javascripts/chains-data.js
   - javascripts/chains-explorer.js
   - javascripts/managed-popup.js

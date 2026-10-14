@@ -9,7 +9,7 @@ RPC proxies have been built in-house thousands of times — along with the failo
 
 <p class="intro-lede">Instead of building and maintaining your own RPC proxy, you get multi-chain support across EVM and non-EVM networks, automatic failover, data cross-validation, built-in observability, caching, and more.</p>
 
-![Smart Router topology — your app to upstreams via Smart Router with shared cache](assets/diagrams/topology.svg)
+![How a request flows: your app calls Smart Router, which checks the shared cache, retries on another provider when one fails, and saves the answer so a repeat request is served from the cache](assets/diagrams/topology.svg)
 
 ## Failover
 

@@ -15,7 +15,7 @@ Tail latency. With hedging off, a node that's slower than its 99th-percentile bu
 
 A ticker runs in the relay state machine. On each tick, if no response has been received and an attempt slot is free, a new attempt is fired. Subsequent ticks continue firing parallel attempts up to the retry cap.
 
-![Hedge timeline — slow attempt to node 1, parallel hedge to node 2 wins, late response discarded](../../assets/diagrams/hedge.svg)
+![Hedge timeline: attempt 1 to Provider 1 is slow, so after the tick a hedge sends the same request to Provider 2, which answers first and wins, and Provider 1's late answer is thrown away](../../assets/diagrams/hedge.svg)
 
 The mechanism is the same as retry — the only difference is *why* the next attempt is fired:
 
