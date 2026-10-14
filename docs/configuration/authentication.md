@@ -8,9 +8,9 @@ description: "Secure your Smart Router endpoints with authentication and access 
 There are two distinct authentication concerns with Smart Router, and they're easy to
 confuse:
 
-1. **Upstream auth** — how the router authenticates to your *paid RPC nodes*
+1. **Upstream auth** - how the router authenticates to your *paid RPC nodes*
    (Alchemy, Infura, a private node). Configured per URL with `auth-config`. **This page.**
-2. **Client auth** — how *your clients* authenticate to the router. Smart Router has no
+2. **Client auth** - how *your clients* authenticate to the router. Smart Router has no
    built-in client auth or rate limiting in v1; put a reverse proxy or API gateway in
    front for that. See [the note below](#authenticating-your-clients).
 
@@ -48,13 +48,13 @@ The router appends the query string to every request to that URL.
 ### API key in the URL path
 
 Some nodes put the key directly in the path (`https://eth-mainnet.example.com/v2/<KEY>`).
-That needs no `auth-config` — just put it in `url`. Because the key is now part of the
+That needs no `auth-config` - just put it in `url`. Because the key is now part of the
 URL, treat the whole config (and any rendered endpoint URL the dashboard prints) as a
 bearer credential.
 
 ## Keeping secrets out of YAML
 
-The router reads YAML **literally** — it does not expand `${ENV}` itself. The convention
+The router reads YAML **literally** - it does not expand `${ENV}` itself. The convention
 (and what the [wizard](../deployment/wizard.md) emits) is:
 
 1. Write `${VAR}` placeholders in a `*.template.yml`.
@@ -97,7 +97,7 @@ node-urls:
 ## Authenticating *your* clients
 
 Smart Router does not authenticate inbound client requests, enforce API keys, or
-rate-limit per client in v1 — those are deliberately left to the edge. Put NGINX, a
+rate-limit per client in v1 - those are deliberately left to the edge. Put NGINX, a
 cloud load balancer, or an API gateway in front to handle client auth, CORS, and rate
 limiting. The router does honour `X-Forwarded-For` for IP-based logic behind a proxy.
 

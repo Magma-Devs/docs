@@ -6,7 +6,7 @@ description: "Deploy the standalone, block-aware cache that absorbs repeat reads
 # Cache
 
 The cache is an optional in-memory (RAM) server that stores RPC responses so repeat
-reads — finalised-block calls, archive lookups, contract-state reads — don't hit an
+reads - finalised-block calls, archive lookups, contract-state reads - don't hit an
 upstream node twice. It's the single biggest lever on both **cost** (fewer billed
 upstream calls) and **tail latency** (a hit returns immediately).
 
@@ -21,7 +21,7 @@ change *where* entries live, or *how many* places the router looks:
 | Option | What it gives you |
 | --- | --- |
 | **Cache sidecar** (this page) | In-memory, per process. Shared by many routers over gRPC. No external dependency. |
-| **[Redis / Valkey backend](redis.md)** | The router runs the same cache engine in-process against a RESP-compatible store — so the cache survives restarts, is shared by every replica, and can fail over or replicate across regions. Replaces the sidecar. |
+| **[Redis / Valkey backend](redis.md)** | The router runs the same cache engine in-process against a RESP-compatible store - so the cache survives restarts, is shared by every replica, and can fail over or replicate across regions. Replaces the sidecar. |
 | **[Secondary cache](secondary.md)** | A second cache the router only ever **reads**, consulted on a primary miss before falling through to your upstreams. Typically another zone's cache. Adds to the primary, whichever backend that is. |
 
 The last two are independent of each other: a router can read a secondary tier whether its
@@ -38,7 +38,7 @@ cache-be: "cache:20100"
 
 !!! warning "Don't pass `--cache-be` when the address is in the config"
     An explicitly-passed `--cache-be` flag (even empty) outranks the YAML `cache-be:` in
-    the config loader — so passing it can silently disable caching. Set it in **one**
+    the config loader - so passing it can silently disable caching. Set it in **one**
     place; the config is the recommended one.
 
 ## Run it
@@ -68,21 +68,21 @@ cache-be: "cache:20100"
 
 ## What's actually cached
 
-An entry is keyed by **(chain, API interface, method, params, resolved block)** — the
+An entry is keyed by **(chain, API interface, method, params, resolved block)** - the
 JSON-RPC `id` is stripped before keying and restored on the way out, so the same query
 with different ids shares one entry. What gets stored:
 
-- **Read responses tied to a specific block** — the bulk of cache value. A call against a
+- **Read responses tied to a specific block** - the bulk of cache value. A call against a
   block at or beyond the chain's finalization distance is **finalised**: immutable, so it
   can be held for a long time. `eth_getBlockByNumber`, `eth_getTransactionReceipt`,
   `eth_getLogs` over a finalised range, `eth_call`/`eth_getBalance` at a fixed block, and
   their REST/Tendermint/Cosmos equivalents are the sweet spot.
-- **"Latest"-style reads** (non-finalised) — cached only briefly, because the answer
+- **"Latest"-style reads** (non-finalised) - cached only briefly, because the answer
   changes as the chain advances. A longer non-finalised TTL means fewer upstream calls but
-  staler "latest" data — that's the main tuning trade-off.
-- **Block hash → height mappings** — small, long-lived lookups the router reuses to
+  staler "latest" data - that's the main tuning trade-off.
+- **Block hash → height mappings** - small, long-lived lookups the router reuses to
   resolve block references.
-- **Finalised node errors** — a deterministic error on a finalised block is itself
+- **Finalised node errors** - a deterministic error on a finalised block is itself
   cacheable (briefly), so a known-bad query isn't re-sent to every node.
 
 What is **not** cached: writes (`eth_sendRawTransaction` and the like), pending/`latest`
@@ -100,7 +100,7 @@ answers from several nodes to compare.
     [`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
     *selection* preference, and the cache is consulted before selection runs. A pinned
     request that hits a warm entry returns `Lava-Provider-Address: Cached` without
-    contacting the named node — so it cannot tell you whether that node is reachable.
+    contacting the named node - so it cannot tell you whether that node is reachable.
     Monitoring checks and any test that asserts on a specific node must also send
     `lava-force-cache-refresh`, or use a request the cache cannot answer.
 
@@ -128,13 +128,13 @@ flags as the router.
 When several router instances share one cache, add `--shared-state` to the routers so
 they also share three things through it:
 
-- **consumer-consistency state** — their "seen block" views stay aligned, so a client
+- **consumer-consistency state** - their "seen block" views stay aligned, so a client
   that just read block N from one replica is not served N-1 by another;
-- **chain-tracker poll observations** — each replica publishes the upstream polls it
+- **chain-tracker poll observations** - each replica publishes the upstream polls it
   makes and borrows fresh ones from the others, so every upstream is polled about
   once per interval fleet-wide instead of once per replica. This is the lever that
   stops the router's own polling load from growing with the replica count;
-- **sticky sessions** — a `lava-stickiness` id resolves to the same upstream on every
+- **sticky sessions** - a `lava-stickiness` id resolves to the same upstream on every
   replica. Without the flag stickiness stays pod-local.
 
 The seen-block state and sticky sessions travel through either backend. The chain-tracker
@@ -153,7 +153,7 @@ The cache exposes Prometheus metrics on its `--metrics_address` (e.g. `:5555`):
 curl -s http://localhost:5555/metrics | grep cache_total_hits
 ```
 
-The router reports its own view on `:7779` — `smartrouter_cache_requests_total`,
+The router reports its own view on `:7779` - `smartrouter_cache_requests_total`,
 `_success_total`, `_failed_total`, and `_latency_milliseconds`, each labelled with the
 `cache_tier` that answered (`primary` or [`secondary`](secondary.md)). See the
 [Metrics reference](../../reference/metrics.md#cache).

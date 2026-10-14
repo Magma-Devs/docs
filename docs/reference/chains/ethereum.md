@@ -1,6 +1,6 @@
 ---
 title: "Ethereum"
-description: "Run Smart Router for Ethereum — example config and supported methods."
+description: "Run Smart Router for Ethereum - example config and supported methods."
 ---
 
 # Ethereum
@@ -80,13 +80,13 @@ Some methods only work on upstreams with specific capabilities. Mark these as ad
 
 ## Migrating from Alchemy / Infura / QuickNode
 
-Swap the node URL for your Smart Router URL. The JSON-RPC protocol is identical — your existing client code doesn't change.
+Swap the node URL for your Smart Router URL. The JSON-RPC protocol is identical - your existing client code doesn't change.
 
-If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream nodes expose the equivalent methods. Coverage for a method is determined by the chain spec, which is maintained in the catalog — if something you need isn't covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
+If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream nodes expose the equivalent methods. Coverage for a method is determined by the chain spec, which is maintained in the catalog - if something you need isn't covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — two public upstreams (PublicNode, Tenderly), HTTP + WS, no API key needed:
+The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) - two public upstreams (PublicNode, Tenderly), HTTP + WS, no API key needed:
 
 === "Docker Compose"
 
@@ -101,4 +101,4 @@ The repo ships a ready-to-run config at [`config/smartrouter_examples/smartroute
     smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
     ```
 
-It listens on port `3360` — send it a request with any of the [client snippets above](#connect-a-client).
+It listens on port `3360` - send it a request with any of the [client snippets above](#connect-a-client).

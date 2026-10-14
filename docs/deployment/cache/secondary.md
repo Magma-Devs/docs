@@ -1,6 +1,6 @@
 ---
 title: "Secondary cache"
-description: "Consult a second, read-only cache on a primary miss before falling through to upstream nodes — typically another zone's cache, reused without duplicating node infrastructure."
+description: "Consult a second, read-only cache on a primary miss before falling through to upstream nodes - typically another zone's cache, reused without duplicating node infrastructure."
 ---
 
 # Secondary cache
@@ -10,7 +10,7 @@ when the primary has no answer, *before* falling through to your upstream nodes.
 only ever **reads** it. A hit is served to the caller and copied into the router's own
 primary cache; nothing is ever written to the secondary.
 
-The typical deployment is zone-segregated — an external-zone router reads the internal
+The typical deployment is zone-segregated - an external-zone router reads the internal
 (trusted) zone's cache on a miss, reusing data that zone already fetched from its nodes.
 Fewer redundant upstream calls, no duplicated node infrastructure, and a strictly one-way,
 read-only relationship between zones.
@@ -27,7 +27,7 @@ request ──► primary cache ──hit──► served ("Cached")
             upstream nodes (normal routing)
 ```
 
-- **Read-only.** The router has no write or flush path to the secondary — not for
+- **Read-only.** The router has no write or flush path to the secondary - not for
   responses, not for admin operations. It's held behind a read-only interface exposing only
   "is it up?" and "get an entry", so writes aren't merely unused, they're unreachable.
   Enforcing that the secondary *endpoint* is reachable read-only across zones (network
@@ -37,25 +37,25 @@ request ──► primary cache ──hit──► served ("Cached")
   the request proceeds to your upstreams. The router reconnects in the background, exactly
   like the primary.
 - **Backfill.** After a secondary hit, the entry is written into the router's *own* primary
-  under the same eligibility rules applied to upstream responses — cached node errors and
+  under the same eligibility rules applied to upstream responses - cached node errors and
   error statuses are served but never re-written as successes. The next identical request
   hits the primary directly, so for an explicit-block query the secondary is consulted once
   per entry, not per request.
 - **Node errors are labelled the same from either tier.** A cached node error is served
-  with the `lava-identified-node-error` response header, exactly as a live one is — a
+  with the `lava-identified-node-error` response header, exactly as a live one is - a
   replayed error is never mistaken for a success, and which cache answered makes no
   difference to what the caller sees.
 - **Independent of the primary.** The secondary keeps serving while the primary is down,
   and is valid with no primary configured at all: reads work, nothing backfills, and the
   router logs an advisory warning for that topology.
 
-Any backend that speaks the Smart Router cache protocol works as either tier — the
+Any backend that speaks the Smart Router cache protocol works as either tier - the
 secondary is simply a second cache address. Run the same cache engine on both; pairing
 *different* engines across the two tiers is not a supported configuration.
 
 ## What crosses the zone boundary
 
-Cache entries carry data identifying where they came from — the upstream's response headers
+Cache entries carry data identifying where they came from - the upstream's response headers
 plus the writer's signatures. Every entry crossing in from the secondary is copied and
 stripped before it is served or backfilled, and the stripped copy is the only copy used, so
 nothing unsanitised can reach your primary either.
@@ -63,23 +63,23 @@ nothing unsanitised can reach your primary either.
 | Field | What happens |
 | --- | --- |
 | `Sig`, `SigBlocks` | Dropped entirely. |
-| `Metadata` (upstream response headers) | Reduced to an **allowlist** — `Content-Type` and `Content-Encoding`. Everything else goes, including header names this router has never heard of. An allowlist rather than a denylist, because upstream response headers are an open set no denylist can be proven to cover. |
+| `Metadata` (upstream response headers) | Reduced to an **allowlist** - `Content-Type` and `Content-Encoding`. Everything else goes, including header names this router has never heard of. An allowlist rather than a denylist, because upstream response headers are an open set no denylist can be proven to cover. |
 | `LatestBlock` | Dropped, and the router re-stamps its *own* tracked tip in its place. |
-| Block-hash→height mappings | Not requested from the secondary, so nothing to strip — the lookup asks for none. |
+| Block-hash→height mappings | Not requested from the secondary, so nothing to strip - the lookup asks for none. |
 
 The caller therefore sees the response body, its content type, and the router's own locally
-minted headers (`Lava-Provider-Address: Cached`, the GUID, `Provider-Latest-Block`) — the
+minted headers (`Lava-Provider-Address: Cached`, the GUID, `Provider-Latest-Block`) - the
 same header set a primary-cache hit produces.
 
 The last two rows are about not adopting another zone's view of the chain. Left as-is, a
 foreign `LatestBlock` would publish that zone's chain head into your cache as the block
-`latest`, `safe`, `finalized`, and `pending` resolve to — chain-wide, and unlowerable until
+`latest`, `safe`, `finalized`, and `pending` resolve to - chain-wide, and unlowerable until
 it expires. Foreign hash→height mappings would do the same by a different route: those
 heights raise the effective requested block (gating endpoint sync and optimiser selection)
 and decide archive routing, and the two tiers' values are folded max-for-latest /
 min-for-earliest, so the more extreme value always wins and a foreign tier would beat your
 own primary by construction. So the secondary lookup never asks for them, and hash-keyed
-archive detection uses your primary's mappings alone — or none in a secondary-only
+archive detection uses your primary's mappings alone - or none in a secondary-only
 topology, exactly as on a router with no cache configured.
 
 ## What happens in each situation
@@ -130,7 +130,7 @@ One setting enables it; the rest have defaults.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `secondary-cache-be` | *(unset — disabled)* | Secondary cache address, in the same `host:port` form as `cache-be`. |
+| `secondary-cache-be` | *(unset - disabled)* | Secondary cache address, in the same `host:port` form as `cache-be`. |
 | `secondary-cache-timeout` | `50ms` | Per-lookup budget. An exceeded lookup counts as a miss and the request falls through. Raise it for cross-zone network hops. |
 | `secondary-cache-mode` | `read-only` | Access mode. `read-only` is the only supported value. |
 
@@ -142,7 +142,7 @@ secondary configuration on one line.
 
 !!! note "Tuning options with no address are a warning, not a failure"
     Setting `secondary-cache-timeout` while `secondary-cache-be` is empty starts the router
-    with the secondary disabled and logs a warning. That shape is usually a typo — but it's
+    with the secondary disabled and logs a warning. That shape is usually a typo - but it's
     also what a single templated YAML looks like across a fleet where only some routers run
     a secondary, and failing startup there would turn an unused key into an outage on every
     router that doesn't.
@@ -155,12 +155,12 @@ Cache metrics are split per tier via the `cache_tier` label (`primary` | `second
 
 ```bash
 curl -s http://<router>:7779/metrics | grep smartrouter_cache_success_total
-# … cache_tier="primary"    — served from the router's own cache
-# … cache_tier="secondary"  — rescued from the secondary
+# … cache_tier="primary" - served from the router's own cache
+# … cache_tier="secondary" - rescued from the secondary
 ```
 
 Non-hits are classified in `smartrouter_cache_failed_total` by `outcome`: `miss` (not
-found), `error` (transport or server error), or `timeout` (budget exceeded) — so a broken
+found), `error` (transport or server error), or `timeout` (budget exceeded) - so a broken
 or slow secondary is immediately distinguishable from a cold one. Lookup latency is
 recorded per tier on every attempt, hits included. See the
 [Metrics reference](../../reference/metrics.md#cache) for the full series and the dashboard
@@ -169,7 +169,7 @@ migration note.
 With [tracing](../../reference/traces.md) enabled, each lookup is a span carrying
 `cache.tier` and `cache.outcome`, and the request's root span records which tier served it.
 
-The tier also logs its decisions — one line at startup and one per lookup:
+The tier also logs its decisions - one line at startup and one per lookup:
 
 ```bash
 grep -i 'secondary cache' <router log>
@@ -197,6 +197,6 @@ Deliberately out of scope, and rejected at startup rather than silently ignored:
 
 ## See also
 
-- [Cache](index.md) — what's cached, TTLs, and the default sidecar.
-- [Redis / Valkey backend](redis.md) — a persistent, shared primary; works with this tier.
-- [Metrics](../../reference/metrics.md#cache) — the per-tier `smartrouter_cache_*` series.
+- [Cache](index.md) - what's cached, TTLs, and the default sidecar.
+- [Redis / Valkey backend](redis.md) - a persistent, shared primary; works with this tier.
+- [Metrics](../../reference/metrics.md#cache) - the per-tier `smartrouter_cache_*` series.

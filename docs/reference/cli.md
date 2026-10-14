@@ -14,7 +14,7 @@ smartrouter <config.yml> --use-static-spec specs/ [flags...]
 
 !!! tip "Authoritative source"
     This table mirrors `smartrouter --help`. If anything here disagrees with the binary,
-    the binary wins — run `smartrouter --help` to confirm against your build.
+    the binary wins - run `smartrouter --help` to confirm against your build.
 
 ## Subcommands
 
@@ -30,9 +30,9 @@ smartrouter <config.yml> --use-static-spec specs/ [flags...]
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--use-static-spec` | — | Load specs from a file, directory, or remote GitHub/GitLab URL. Repeatable; later sources override earlier ones for the same chain id. |
-| `--github-token` | — | GitHub PAT for private spec repos / higher rate limits. |
-| `--gitlab-token` | — | GitLab PAT for private spec repos. |
+| `--use-static-spec` | - | Load specs from a file, directory, or remote GitHub/GitLab URL. Repeatable; later sources override earlier ones for the same chain id. |
+| `--github-token` | - | GitHub PAT for private spec repos / higher rate limits. |
+| `--gitlab-token` | - | GitLab PAT for private spec repos. |
 
 ## RPC node selection (QoS)
 
@@ -75,12 +75,12 @@ process-wide. Watch the effect on
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default — the larger of the per-pod savings. |
-| `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate; `0.25` — one poll per **four** block times — cuts it eightfold. Allowed `[0.25,8]`; out-of-range reverts to the default. See [Polling slower than the chain](#polling-slower-than-the-chain). |
+| `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default - the larger of the per-pod savings. |
+| `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate; `0.25` - one poll per **four** block times - cuts it eightfold. Allowed `[0.25,8]`; out-of-range reverts to the default. See [Polling slower than the chain](#polling-slower-than-the-chain). |
 | `--shared-state` (with `--cache-be`) | `false` | Share poll observations across router replicas through the cache, so an upstream is polled about once per interval **fleet-wide** rather than once per pod. See [Cache & shared state](#cache-shared-state). |
 
 The tracker also skips a poll whenever something else has already kept the upstream's
-tip fresh — the relays it served in the last block time, or (with `--shared-state`) a
+tip fresh - the relays it served in the last block time, or (with `--shared-state`) a
 poll another replica made. Skipped ticks show up on
 [`rpc_endpoint_tracker_gate_skips_total`](metrics.md#endpoint-scoped-rpc_endpoint_) by
 `source`, so `requests_total` falling while `gate_skips_total` rises is the relief
@@ -98,19 +98,19 @@ the relief is on a fast chain. Measured requests/min per endpoint:
 | Base | 60 | 30 | 15 | 7.5 |
 | Ethereum | 9.2 | 4.6 | 2.3 | 1.2 |
 
-What bounds the low end is the staleness window — `max(10 × avgBlockTime, 2s)`, past
+What bounds the low end is the staleness window - `max(10 × avgBlockTime, 2s)`, past
 which an observation stops counting for consensus, the tip reads unknown, and the probe
 scores a healthy upstream not-alive. The window does **not** move with this flag; the
 flag moves how long a tip can go unrefreshed, the other side of that comparison. Both
 common cases stay well inside it:
 
-- **Idle upstream** — nothing but its own poll refreshes the tip, so the gap *is* the
+- **Idle upstream** - nothing but its own poll refreshes the tip, so the gap *is* the
   interval: 4 × `avgBlockTime` at `0.25`, against a 10× window.
-- **Served upstream** — relays refresh the same tip, so traffic bounds the gap.
+- **Served upstream** - relays refresh the same tip, so traffic bounds the gap.
 
 The seam is between them: an upstream that trips the traffic gate and *then* goes quiet
-is refreshed by neither, and the worst-case gap becomes `(maxRelaySkips + 1) × interval`
-— 20 × `avgBlockTime` at `0.25`. That is a property of the **product** of this flag and
+is refreshed by neither, and the worst-case gap becomes `(maxRelaySkips + 1) × interval` -
+20 × `avgBlockTime` at `0.25`. That is a property of the **product** of this flag and
 the gate's skip budget, not of either alone, so the router warns once per chain at
 startup rather than refusing to start:
 
@@ -119,7 +119,7 @@ WRN poll cadence can outrun the staleness window when the traffic gate skips
     pollInterval=60s  worstCaseGapBetweenPolls=5m0s  stalenessWindow=2m30s  maxRelaySkips=4
 ```
 
-It is a line to read, not a failure — the configuration is safe for both common cases.
+It is a line to read, not a failure - the configuration is safe for both common cases.
 If you see it on a chain with bursty traffic, step back toward `0.5` or `1`.
 
 ## Consistency tuning
@@ -132,17 +132,17 @@ If you see it on a chain with bursty traffic, step back toward `0.5` or `1`.
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--cache-be` | — | Address of the cache server (e.g. `127.0.0.1:20100`). In Compose the cache address usually comes from `cache-be:` in the config instead. |
-| `--shared-state` | `false` | Share state across router replicas through the cache backend (`cache-be` or `resp-cache`): the consumer-consistency "seen block", per-endpoint chain-tracker poll observations (so the fleet polls each upstream about once per interval instead of once per replica), and cross-pod sticky sessions. Poll sharing additionally requires `--cache-be` — see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
-| `--resp-cache-addresses` | — | Comma-separated address(es) of a [RESP-compatible backend](../deployment/cache/redis.md) (Redis/Valkey). Enables the RESP backend, which takes precedence over `cache-be`. Standalone: the node address; sentinel: the sentinel addresses; cluster: the configuration endpoint. |
+| `--cache-be` | - | Address of the cache server (e.g. `127.0.0.1:20100`). In Compose the cache address usually comes from `cache-be:` in the config instead. |
+| `--shared-state` | `false` | Share state across router replicas through the cache backend (`cache-be` or `resp-cache`): the consumer-consistency "seen block", per-endpoint chain-tracker poll observations (so the fleet polls each upstream about once per interval instead of once per replica), and cross-pod sticky sessions. Poll sharing additionally requires `--cache-be` - see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
+| `--resp-cache-addresses` | - | Comma-separated address(es) of a [RESP-compatible backend](../deployment/cache/redis.md) (Redis/Valkey). Enables the RESP backend, which takes precedence over `cache-be`. Standalone: the node address; sentinel: the sentinel addresses; cluster: the configuration endpoint. |
 | `--resp-cache-topology` | `standalone` | `standalone`, `sentinel`, or `cluster`. |
-| `--secondary-cache-be` | — | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), queried when the primary produces no hit. |
+| `--secondary-cache-be` | - | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), queried when the primary produces no hit. |
 | `--secondary-cache-timeout` | `50ms` | Per-lookup budget for the secondary cache; an exceeded lookup is treated as a miss. |
 | `--secondary-cache-mode` | `read-only` | Secondary cache access mode. Only `read-only` is supported. |
 
 !!! note "The RESP backend's full surface is config-file only"
     TLS, credentials, credential rotation, the read/write split, and key prefixing live in
-    the `resp-cache:` YAML block — only addresses and topology have flags. See
+    the `resp-cache:` YAML block - only addresses and topology have flags. See
     [Redis / Valkey backend](../deployment/cache/redis.md#configuration-reference).
 
 With `--shared-state`, every replica publishes each successful poll of an upstream to
@@ -152,15 +152,15 @@ adopted as this replica's view of the upstream's tip. Four floors keep it safe:
 
 - a replica never borrows its own observation, so a single replica polls exactly as
   without the flag;
-- a replica whose own last poll of an upstream failed does not borrow at all — it
+- a replica whose own last poll of an upstream failed does not borrow at all - it
   returns to full-cadence local polling until it succeeds itself;
 - every replica still polls each upstream itself every few ticks (peer skips count
   against the same skip budget as relay skips), so a broken path from one pod stays
   detectable;
-- an upstream that was disabled is only re-enabled by that pod's own successful poll —
+- an upstream that was disabled is only re-enabled by that pod's own successful poll -
   a peer observation never touches poll health.
 
-Latency is never shared — a peer's round-trip says nothing about this pod's path.
+Latency is never shared - a peer's round-trip says nothing about this pod's path.
 
 ## WebSocket
 
@@ -189,7 +189,7 @@ Latency is never shared — a peer's round-trip says nothing about this pod's pa
 | --- | --- | --- |
 | `--metrics-listen-address` | `disabled` | Prometheus `/metrics` address, e.g. `:7779`. |
 | `--usage-otel-enabled` | `false` | Emit per-relay usage + QoS events as OTLP logs. |
-| `--usage-otel-endpoint` | — | OTLP/HTTP endpoint (default `localhost:4318` / `OTEL_EXPORTER_OTLP_ENDPOINT`). |
+| `--usage-otel-endpoint` | - | OTLP/HTTP endpoint (default `localhost:4318` / `OTEL_EXPORTER_OTLP_ENDPOINT`). |
 | `--usage-otel-insecure` | `true` | Skip TLS for the OTLP exporter. |
 | `--usage-otel-queue-size` | `50000` | In-memory usage-event queue capacity (full queue drops events). |
 | `--usage-otel-batch-size` | `1000` | Batch-size flush trigger. |
@@ -205,7 +205,7 @@ See [Metrics](metrics.md).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--relays-health-enable` | `true` | Enable relay health checks. When `false`, `/readyz` and `/metrics/overall-health` report `503` unconditionally — keep it on under a Kubernetes readiness probe. |
+| `--relays-health-enable` | `true` | Enable relay health checks. When `false`, `/readyz` and `/metrics/overall-health` report `503` unconditionally - keep it on under a Kubernetes readiness probe. |
 | `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. Real relays defer the probe, so this is the idle re-check cadence. |
 | `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`. A not-ready router receives no real relays, so this bounds how fast `/readyz` recovers once an upstream answers again. |
 | `--epoch-duration` | `15m` | Duration of each epoch (e.g. `30m`). Epochs always run: unset or `0` uses `15m`. Each epoch boundary re-verifies the upstreams and rebuilds the serving tier, so an upstream demoted or recovered mid-epoch can take up to this long to show in `smartrouter_endpoint_serving_tier`. |
@@ -231,15 +231,15 @@ See [Metrics](metrics.md).
 | `--debug-relays` | `false` | Add debug info to relay response metadata (pairs with the `lava-debug-relay` header). |
 | `--debug-probes` | `false` | Add debug info to probe responses. |
 | `--enable-selection-stats` | `false` | Emit the `lava-selection-stats` response header. |
-| `--debug-address` | — | Debug HTTP server (integration tests) — exposes `/debug/*`, among them [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions). |
+| `--debug-address` | - | Debug HTTP server (integration tests) - exposes `/debug/*`, among them [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions). |
 | `--test-mode` | `false` | Send dummy data and print all listener metadata. |
 | `--allow-insecure-provider-dialing` | `false` | Allow non-TLS upstream connections. Dev/test only. |
-| `--pprof-address` | — | pprof server address (e.g. `localhost:6060`). |
-| `--pyroscope-address` | — | Pyroscope continuous-profiling address. |
+| `--pprof-address` | - | pprof server address (e.g. `localhost:6060`). |
+| `--pyroscope-address` | - | Pyroscope continuous-profiling address. |
 | `--pyroscope-app-name` | `smartrouter` | Pyroscope application name. |
 | `--pyroscope-mutex-profile-fraction` | `5` | Mutex profile sampling rate (1 in N). |
 | `--pyroscope-block-profile-rate` | `1` | Block profile rate (ns; 1 records all). |
-| `--pyroscope-tags` | — | Comma-separated `key=value` tags. |
+| `--pyroscope-tags` | - | Comma-separated `key=value` tags. |
 
 ## Cache subcommand flags
 

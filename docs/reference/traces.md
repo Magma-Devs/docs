@@ -5,14 +5,14 @@ description: "OpenTelemetry traces covering inbound listener, provider selection
 
 # Traces
 
-Smart Router emits OpenTelemetry spans covering the whole relay lifecycle — inbound
+Smart Router emits OpenTelemetry spans covering the whole relay lifecycle - inbound
 listener → node selection → each attempt (retry / hedge) → cache lookup → outbound
 response. Spans propagate W3C trace context, so a request keeps its trace id end to end
 across the router.
 
 ## Configuration
 
-Tracing is **standard OpenTelemetry, driven by environment variables** — not CLI flags.
+Tracing is **standard OpenTelemetry, driven by environment variables** - not CLI flags.
 The SDK reads them directly. Tracing is active whenever the SDK is enabled and an
 exporter is selected (both true by default).
 
@@ -44,16 +44,16 @@ supported via `OTEL_EXPORTER_OTLP_CLIENT_KEY` / `_CLIENT_CERTIFICATE` / `_CERTIF
 
 ## Recording request/response bodies
 
-The one Smart Router-specific tracing flag is **`--otel-trace-body`** — record the
+The one Smart Router-specific tracing flag is **`--otel-trace-body`** - record the
 request and response bodies as span attributes (size capped via
 `OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT`, default unlimited).
 
-Leave it **off in production** — bodies can contain addresses, signed transactions, and
+Leave it **off in production** - bodies can contain addresses, signed transactions, and
 other sensitive data.
 
 ## Usage events (a separate stream)
 
 Distinct from spans, `--usage-otel-enabled` emits per-relay **usage + QoS events** as
 OTLP *logs* (off by default; the relay path pays nothing when off). Tune the queue, batch
-size, and flush interval with the `--usage-otel-*` flags — see the
+size, and flush interval with the `--usage-otel-*` flags - see the
 [CLI reference](cli.md#metrics-telemetry).

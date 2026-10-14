@@ -97,7 +97,7 @@ extra:
           name: This page could be improved
           data: 0
           note: >-
-            Thanks — <a href="https://github.com/Magma-Devs/docs/issues/new" target="_blank" rel="noopener">tell us what was missing</a>.
+            Thanks - <a href="https://github.com/Magma-Devs/docs/issues/new" target="_blank" rel="noopener">tell us what was missing</a>.
   # LinkedIn Insight Tag partner id — consumed by
   # overrides/partials/integrations/linkedin.html and fired under the same
   # consent gate as GA (see the analytics dispatcher override). Unset → no tag.
