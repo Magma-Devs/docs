@@ -1,15 +1,17 @@
 ---
 title: "Cosmos"
-description: "Run Smart Router for Cosmos - example config across Tendermint RPC and REST."
+description: "Run Smart Router for Cosmos: example config across Tendermint RPC and REST."
 ---
 
 # Cosmos
 
-Cosmos Hub mainnet (`cosmoshub-4`) over REST, gRPC, and Tendermint RPC. Includes the full Cosmos-ecosystem method surface (Cosmos SDK, CosmWasm, IBC, Tendermint).
+Smart Router serves Cosmos Hub mainnet (`cosmoshub-4`) over REST, gRPC, and Tendermint RPC. This page covers the supported methods, the example config, and how to connect a client.
+
+The setup includes the full Cosmos-ecosystem method surface (Cosmos SDK, CosmWasm, IBC, Tendermint).
 
 ## Endpoints
 
-The default Cosmos setup runs three listeners - one per API interface:
+The default Cosmos setup runs three listeners, one per API interface:
 
 | Port | Interface | Calling convention |
 |---|---|---|
@@ -73,13 +75,13 @@ The default Cosmos setup runs three listeners - one per API interface:
 
 ## Other Cosmos chains
 
-The spec catalog already covers the major Cosmos-SDK chains - Osmosis, Juno, Celestia, Stargaze, Secret, Stride, and more (see [Supported chains](index.md)). They all build on the shared Cosmos / CosmWasm / IBC / Tendermint method surface, so serving one is a matter of pointing your config at its spec and upstreams - no spec authoring on your side.
+The spec catalog already covers the major Cosmos-SDK chains: Osmosis, Juno, Celestia, Stargaze, Secret, Stride, and more (see [Supported chains](index.md)). They all build on the shared Cosmos / CosmWasm / IBC / Tendermint method surface. To serve one, point your config at its spec and upstreams. You do not need to write a spec.
 
-If a Cosmos chain you need isn't in the catalog, [request it](https://github.com/Magma-Devs/smart-router/issues) and Magma will add the spec.
+If a Cosmos chain you need is not in the catalog, [request it](https://github.com/Magma-Devs/smart-router/issues) and Magma will add the spec.
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_cosmos.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_cosmos.yml) - it opens all three Cosmos Hub listeners (REST `3360`, gRPC `3361`, Tendermint RPC `3362`), each backed by two distinct public vendor groups (PublicNode + Polkachu), no API key needed:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_cosmos.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_cosmos.yml). It opens all three Cosmos Hub listeners (REST `3360`, gRPC `3361`, Tendermint RPC `3362`). Each listener is backed by two distinct public vendor groups (PublicNode + Polkachu), and the config needs no API key:
 
 === "Docker Compose"
 
@@ -94,4 +96,4 @@ The repo ships a ready-to-run config at [`config/smartrouter_examples/smartroute
     smartrouter config/smartrouter_examples/smartrouter_cosmos.yml --use-static-spec specs/
     ```
 
-Then send a request with any of the [client snippets above](#connect-a-client). Edit the `node-urls` in the config to point at your own upstreams.
+Then send a request with any of the [client snippets above](#connect-a-client). To use your own upstreams, edit the `node-urls` in the config.

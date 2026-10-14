@@ -1,11 +1,11 @@
 ---
 title: "Bitcoin"
-description: "Run Smart Router for Bitcoin - example config and supported JSON-RPC methods."
+description: "Run Smart Router for Bitcoin: example config and supported JSON-RPC methods."
 ---
 
 # Bitcoin
 
-Bitcoin mainnet over Bitcoin Core JSON-RPC.
+Smart Router serves Bitcoin mainnet over Bitcoin Core JSON-RPC. This page covers the supported methods, the example config, and how to connect a client.
 
 ## Endpoint
 
@@ -18,7 +18,7 @@ Bitcoin mainnet over Bitcoin Core JSON-RPC.
 
 ## Supported method families
 
-Bitcoin speaks Bitcoin Core's JSON-RPC, not the Ethereum one.
+Bitcoin uses Bitcoin Core's JSON-RPC, not the Ethereum one.
 
 | Family | Examples |
 |---|---|
@@ -26,11 +26,11 @@ Bitcoin speaks Bitcoin Core's JSON-RPC, not the Ethereum one.
 | Transactions | `getrawtransaction`, `decoderawtransaction`, `sendrawtransaction`, `gettxout` |
 | Network / node | `getnetworkinfo`, `getmempoolinfo`, `estimatesmartfee`, `getmininginfo` |
 
-The full method list lives in the spec file linked above.
+The spec file linked above has the full method list.
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_bitcoin.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) - a single public upstream on PublicNode (`bitcoin-rpc.publicnode.com`), no API key needed. Bitcoin Core's JSON-RPC has no websocket surface, so run it with `--skip-websocket-verification`:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_bitcoin.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses a single public upstream on PublicNode (`bitcoin-rpc.publicnode.com`) and needs no API key. Bitcoin Core's JSON-RPC has no websocket surface, so run it with `--skip-websocket-verification`:
 
 === "Docker Compose"
 
@@ -77,4 +77,4 @@ curl -X POST http://127.0.0.1:3360 \
     print(r.json()["result"]["blocks"])
     ```
 
-Point at your own upstreams by editing the `node-urls` in the config - see [The config file](../../configuration/config-file.md).
+To use your own upstreams, edit the `node-urls` in the config. See [The config file](../../configuration/config-file.md).
