@@ -228,12 +228,6 @@
 .md-content__inner table:not([class]) td:first-child code { white-space: nowrap; }
 .md-content__inner table:not([class]) td:first-child { color: var(--ink); }
 
-/* Sortable header (javascripts/tablesort.js) */
-.md-content__inner th.th-sortable { cursor: pointer; user-select: none; }
-.md-content__inner th.th-sortable::after { content: " \21C5"; color: var(--faint); }
-.md-content__inner th.th-sortable[aria-sort="ascending"]::after { content: " \2191"; color: var(--accent-dark); }
-.md-content__inner th.th-sortable[aria-sort="descending"]::after { content: " \2193"; color: var(--accent-dark); }
-
 /* --- Callouts ------------------------------------------------------------- */
 /* Two surfaces only. Wash: a side note. Amber: read this before you act. */
 
