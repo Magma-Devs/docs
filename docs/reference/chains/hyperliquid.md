@@ -1,6 +1,6 @@
 ---
 title: "Hyperliquid"
-description: "Run Smart Router for Hyperliquid — example config and supported methods."
+description: "Run Smart Router for Hyperliquid - example config and supported methods."
 ---
 
 # Hyperliquid
@@ -22,7 +22,7 @@ Hyperliquid's EVM exposes the standard Ethereum JSON-RPC method surface (`eth_*`
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_hyperliquid.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — a single public upstream on the official Hyperliquid EVM RPC (`rpc.hyperliquid.xyz/evm`), no API key needed. It serves no websocket leg, so run it with `--skip-websocket-verification`:
+The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_hyperliquid.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) - a single public upstream on the official Hyperliquid EVM RPC (`rpc.hyperliquid.xyz/evm`), no API key needed. It serves no websocket leg, so run it with `--skip-websocket-verification`:
 
 === "Docker Compose"
 
@@ -72,4 +72,4 @@ curl -X POST http://127.0.0.1:3360 \
     const block = await provider.getBlockNumber();
     ```
 
-Point at your own upstreams by editing the `node-urls` in the config — see [The config file](../../configuration/config-file.md).
+Point at your own upstreams by editing the `node-urls` in the config - see [The config file](../../configuration/config-file.md).

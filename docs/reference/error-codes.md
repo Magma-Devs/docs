@@ -10,13 +10,13 @@ for logging, metrics, and retry decisions. Each code has a name, a layer, and a
 **retryable** flag that the failover state machine reads when deciding whether to
 rotate to another node.
 
-!!! info "These codes are internal — clients never see them"
+!!! info "These codes are internal - clients never see them"
     Smart Router is a transparent hop: your client always receives the **original**
     error from the upstream node, unmodified (the same JSON-RPC / HTTP / gRPC error
     you'd get talking to the node directly). Lava error codes appear only in the
     router's **logs** and in the [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
     metric. Use this
-    page to interpret those logs and metrics — not to handle codes on the wire.
+    page to interpret those logs and metrics - not to handle codes on the wire.
 
 The registry lives in
 [`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go).
@@ -25,7 +25,7 @@ The registry lives in
 
 | Layer | Range | Category | Means | Typical retryable? |
 | --- | --- | --- | --- | --- |
-| [`PROTOCOL_*`](#layer-a-protocol-errors-protocol_-10001999) | 1000s | Internal | The router's own plumbing — connection, session, consistency. | Mostly **yes** |
+| [`PROTOCOL_*`](#layer-a-protocol-errors-protocol_-10001999) | 1000s | Internal | The router's own plumbing - connection, session, consistency. | Mostly **yes** |
 | [`NODE_*`](#layer-b-node-errors-node_-20002999) | 2000s | External | The node responded with an error (5xx, rate-limit, syncing, method-not-found). | Mixed |
 | [`CHAIN_*`](#layer-c-blockchain-errors-chain_-30003999) | 3000s | External | The chain's execution/state layer (revert, nonce, block-not-found). | Mixed |
 | [`USER_*`](#layer-d-user-errors-user_-40004999) | 4000s | External | The client sent a bad request (malformed JSON, invalid params). | **No** |
@@ -50,7 +50,7 @@ In **metrics** (`smartrouter_errors_total`, labelled by name/category/retryabili
 # Which errors are firing, by name?
 sum by (error_name) (rate(smartrouter_errors_total[5m]))
 
-# Terminal (non-retryable) errors only — these reach the client
+# Terminal (non-retryable) errors only - these reach the client
 sum by (error_name) (rate(smartrouter_errors_total{retryable="false"}[5m]))
 ```
 
@@ -59,20 +59,20 @@ sum by (error_name) (rate(smartrouter_errors_total{retryable="false"}[5m]))
 | You see… | Likely cause | Next step |
 | --- | --- | --- |
 | `NODE_RATE_LIMITED` climbing | A node is throttling you | Add upstreams, or check your node plan; failover already spreads load. |
-| `PROTOCOL_NO_PROVIDERS` | The pool emptied for a relay | Every node was excluded — check health and the [circuit breaker](../configuration/failover/circuit-breaker.md). |
+| `PROTOCOL_NO_PROVIDERS` | The pool emptied for a relay | Every node was excluded - check health and the [circuit breaker](../configuration/failover/circuit-breaker.md). |
 | `CHAIN_STATE_PRUNED` on historical queries | Hitting a non-archive node | Mark archive upstreams with the `archive` addon; see [config](../configuration/config-file.md). |
 | `NODE_METHOD_NOT_FOUND` | Method isn't on that node's surface | Terminal + cached; confirm the chain spec actually exposes it. |
-| `USER_*` spike | Clients sending bad requests | Not an infra issue — inspect the offending client. |
-| `CHAIN_EXECUTION_REVERTED` | Contract reverted | Expected for failing `eth_call` / sims — terminal, not retried. |
+| `USER_*` spike | Clients sending bad requests | Not an infra issue - inspect the offending client. |
+| `CHAIN_EXECUTION_REVERTED` | Contract reverted | Expected for failing `eth_call` / sims - terminal, not retried. |
 
 ## How classification works
 
 Errors are classified with a two-level, chain-family-aware lookup:
 
-1. **Tier 2 — chain-specific** matchers run first. They exist only where a chain's
+1. **Tier 2 - chain-specific** matchers run first. They exist only where a chain's
    error means something with *different* retryability than the generic pattern
    (e.g. Solana `-32009` vs `-32007`, Bitcoin warmup, Starknet class errors).
-2. **Tier 1 — generic semantic** matchers are the fallback, partitioned by transport
+2. **Tier 1 - generic semantic** matchers are the fallback, partitioned by transport
    (`jsonrpc` / `rest` / `grpc`) so an EVM chain never evaluates gRPC matchers and
    vice-versa.
 
@@ -91,15 +91,15 @@ carry extra behaviour:
   response is cached, no node scoring. The node won't be hit again for it.
 - **Rate limit** (`NODE_RATE_LIMITED`) → back off without marking the endpoint
   unhealthy (it's busy, not broken).
-- **User-input errors** (`USER_*`) are non-retryable but charge **normal CU** — the
+- **User-input errors** (`USER_*`) are non-retryable but charge **normal CU** - the
   response isn't cached because the next request from the same client may be valid, so
   the node still does real work.
 
 ---
 
-## Layer A — Protocol errors (`PROTOCOL_*`, 1000–1999)
+## Layer A - Protocol errors (`PROTOCOL_*`, 1000–1999)
 
-Category: **Internal**. Raised from within the Lava protocol itself — not from nodes
+Category: **Internal**. Raised from within the Lava protocol itself - not from nodes
 or chains.
 
 | Code | Name | Description | Retryable |
@@ -136,7 +136,7 @@ or chains.
 | 1040 | `PROTOCOL_FINALIZATION_ERROR` | Node finalization data incorrect | Yes |
 | 1041 | `PROTOCOL_CONSISTENCY_ERROR` | Response consistency validation failed | Yes |
 | 1042 | `PROTOCOL_HASH_CONSENSUS_ERROR` | Conflicting response hashes detected | Yes |
-| 1043 | `PROTOCOL_NO_RESPONSE_TIMEOUT` | Relay race timeout — no node returned within the deadline | Yes |
+| 1043 | `PROTOCOL_NO_RESPONSE_TIMEOUT` | Relay race timeout - no node returned within the deadline | Yes |
 | 1044 | `PROTOCOL_RELAY_PROCESSING_FAILED` | Relay response processing failed on consumer side | Yes |
 | 1050 | `PROTOCOL_SUBSCRIPTION_NOT_FOUND` | Subscription not found | No |
 | 1051 | `PROTOCOL_SUBSCRIPTION_INIT_FAILED` | Failed to initialize subscription | No |
@@ -145,7 +145,7 @@ or chains.
 
 ---
 
-## Layer B — Node errors (`NODE_*`, 2000–2999)
+## Layer B - Node errors (`NODE_*`, 2000–2999)
 
 Category: **External**. Returned by the blockchain node itself (not execution/state
 errors). "Standard code" is the protocol-level code the matcher keys off.
@@ -168,16 +168,16 @@ errors). "Standard code" is the protocol-level code the matcher keys off.
 | 2014 | `NODE_GATEWAY_TIMEOUT` | Gateway timeout from node | Yes | HTTP 504 |
 | 2015 | `NODE_BAD_GATEWAY` | Bad gateway from node | Yes | HTTP 502 |
 | 2016 | `NODE_UNAUTHORIZED` | Upstream rejected router credentials (HTTP 401) | No | HTTP 401 |
-| 2101 | `NODE_BITCOIN_WARMUP` | Node still warming up (Bitcoin -28) | Yes | — |
-| 2102 | `NODE_BITCOIN_INITIAL_DOWNLOAD` | Node in initial block download (Bitcoin -10) | Yes | — |
-| 2103 | `NODE_BITCOIN_NOT_CONNECTED` | Node has no peers (Bitcoin -9) | Yes | — |
-| 2150 | `NODE_SOLANA_UNHEALTHY` | Solana node behind/unhealthy (-32005) | Yes | — |
+| 2101 | `NODE_BITCOIN_WARMUP` | Node still warming up (Bitcoin -28) | Yes | - |
+| 2102 | `NODE_BITCOIN_INITIAL_DOWNLOAD` | Node in initial block download (Bitcoin -10) | Yes | - |
+| 2103 | `NODE_BITCOIN_NOT_CONNECTED` | Node has no peers (Bitcoin -9) | Yes | - |
+| 2150 | `NODE_SOLANA_UNHEALTHY` | Solana node behind/unhealthy (-32005) | Yes | - |
 
 ---
 
-## Layer C — Blockchain errors (`CHAIN_*`, 3000–3999)
+## Layer C - Blockchain errors (`CHAIN_*`, 3000–3999)
 
-Category: **External**. From the blockchain execution/state layer — transaction
+Category: **External**. From the blockchain execution/state layer - transaction
 failures, state queries, etc. Tier-2 (chain-specific) codes exist only where
 retryability differs from the generic pattern.
 
@@ -228,7 +228,7 @@ retryability differs from the generic pattern.
 | 3207 | `CHAIN_LOG_RESPONSE_TOO_LARGE` | Log query returned too many results | No | EVM |
 
 Chain-specific Tier-2 ranges also exist for **Solana** (3300–3319), **Starknet**
-(3320–3339), **Bitcoin/UTXO** (3340–3359), and **NEAR** (3360–3379) — see the
+(3320–3339), **Bitcoin/UTXO** (3340–3359), and **NEAR** (3360–3379) - see the
 [registry source](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)
 for the full list. Most are non-retryable; the retryable exceptions are the Solana
 `CHAIN_SOLANA_LEDGER_JUMP`, `CHAIN_SOLANA_BLOCK_STATUS_UNAVAILABLE`, and
@@ -239,9 +239,9 @@ block/chunk garbage-collection codes (`CHAIN_NEAR_UNKNOWN_BLOCK`, `CHAIN_NEAR_UN
 
 ---
 
-## Layer D — User errors (`USER_*`, 4000–4999)
+## Layer D - User errors (`USER_*`, 4000–4999)
 
-Category: **External**. Malformed or invalid client requests — classified by nature of
+Category: **External**. Malformed or invalid client requests - classified by nature of
 the error, regardless of whether Lava catches it pre-forwarding or the node returns it.
 All non-retryable; all charge **normal CU** (responses aren't cached).
 
@@ -266,8 +266,8 @@ result rather than in a JSON-RPC `error` object. On a `submit` or
 
 | Reply | Treated as | Example codes |
 | --- | --- | --- |
-| `tesSUCCESS`, `terQUEUED` | Success | — |
-| `tec*` (applied, fee claimed) | Success — the transaction's final outcome, not a refusal | — |
+| `tesSUCCESS`, `terQUEUED` | Success | - |
+| `tec*` (applied, fee claimed) | Success - the transaction's final outcome, not a refusal | - |
 | `tef*`, `tem*`, `tel*`, other `ter*` | Node error | `CHAIN_NONCE_TOO_LOW` (`tefPAST_SEQ`), `CHAIN_TX_ALREADY_KNOWN` (`tefALREADY`), `CHAIN_NONCE_TOO_HIGH` (`terPRE_SEQ`), `CHAIN_TX_REJECTED` (the rest) |
 | A catalogued API error beside `"status":"error"` | Node error | `NODE_SYNCING` (`noNetwork`, `notSynced`), `NODE_SERVICE_UNAVAILABLE` (`amendmentBlocked`), `NODE_RATE_LIMITED` (`tooBusy`, `slowDown`), `NODE_INTERNAL_ERROR` (`internal*`), `USER_INVALID_PARAMS` (`invalidTransaction`, `notSupported`, …) |
 
@@ -279,7 +279,7 @@ peer gossip could answer `tefPAST_SEQ` before the node that applied it answered
 
 These replies carry `lava-identified-node-error: true` (see
 [Response headers](../api/directives.md#response-headers)). A ledger verdict is
-non-retryable and is **not** charged against the answering node's availability —
+non-retryable and is **not** charged against the answering node's availability -
 the node reported the truth. An API error that names the node's own state, such
 as `noNetwork`, is charged against it.
 
@@ -294,7 +294,7 @@ success again.
 ## Chain families
 
 Tier-2 classification keys off a chain's **family**. An unregistered chain id resolves
-to the `Unknown` sentinel — Tier-2 lookups intentionally miss and classification falls
+to the `Unknown` sentinel - Tier-2 lookups intentionally miss and classification falls
 through to the transport-scoped Tier-1 matchers.
 
 | Family | Example chain ids |
@@ -312,4 +312,4 @@ through to the transport-scoped Tier-1 matchers.
 | `TON` | TON, TONT |
 | `Tron` | TRX, TRXT |
 | `Cardano` | CARDANO, CARDANOT |
-| `Unknown` | sentinel — Tier-2 misses, falls through to Tier-1 |
+| `Unknown` | sentinel - Tier-2 misses, falls through to Tier-1 |

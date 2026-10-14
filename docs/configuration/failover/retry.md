@@ -9,11 +9,11 @@ When an upstream returns a **retryable** error, Smart Router rotates to a differ
 
 ## What's retryable
 
-The error classifier ([`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)) assigns every failure a coded classification with a **retryable** flag. The flag is the primary signal: a non-retryable classification short-circuits retries for *every* terminal error — connection failures, malformed requests, and chain-level rejections alike.
+The error classifier ([`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)) assigns every failure a coded classification with a **retryable** flag. The flag is the primary signal: a non-retryable classification short-circuits retries for *every* terminal error - connection failures, malformed requests, and chain-level rejections alike.
 
 | Layer | Examples | Behaviour |
 |---|---|---|
-| **`PROTOCOL_*`** (connection / session) | network timeout, connection reset, node unavailable | mostly retryable — rotate node |
+| **`PROTOCOL_*`** (connection / session) | network timeout, connection reset, node unavailable | mostly retryable - rotate node |
 | **`NODE_*`** (node response) | 5xx upstream, rate limited, node syncing → retryable; method not found / unimplemented → terminal | per-code; unsupported methods are zero-CU and cached |
 | **`CHAIN_*`** (execution / state) | `eth_call` reverted, out of gas, nonce too low → terminal; block/tx not found, state pruned → retryable | per-code |
 | **`USER_*`** (bad request) | malformed JSON, invalid params, invalid address | always terminal; charges normal CU |
@@ -29,22 +29,22 @@ Archive routing is decided once, before the first attempt, from the block the re
 | Limit | Value | Notes |
 |---|---|---|
 | Error-retry limit | `--set-relay-retry-limit` (default `2`) | Errors tolerated before the relay gives up. `0` disables retries entirely. This is the knob you tune. |
-| Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries` — an upper bound on *total* attempts including ticker-driven [hedges](hedge.md), separate from the error-retry limit and not exposed as a flag. |
+| Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries` - an upper bound on *total* attempts including ticker-driven [hedges](hedge.md), separate from the error-retry limit and not exposed as a flag. |
 | Overall budget | `--default-processing-timeout` (default `30s`) | Ends retries even if attempts remain. |
 | Per-attempt window | `--min-relay-timeout` floor, or `lava-relay-timeout` header | When the window passes, the next node is tried in parallel; the attempt in flight keeps running. See [Timeout](timeout.md). |
 
 The cap you actually control is `--set-relay-retry-limit`: the error-retry path stops
 after that many errors (default 2). The hardcoded `10` is only the ceiling the
-ticker/hedge path can reach — most relays stop far sooner.
+ticker/hedge path can reach - most relays stop far sooner.
 
 ## Turning retries down or off
 
 Retries are on by default, tolerating `--set-relay-retry-limit` errors (default 2). Change that with the flag:
 
-- `--set-relay-retry-limit 0` — **disable retries**: the first error surfaces immediately.
-- `--set-relay-retry-limit 5` — tolerate more errors before giving up.
+- `--set-relay-retry-limit 0` - **disable retries**: the first error surfaces immediately.
+- `--set-relay-retry-limit 5` - tolerate more errors before giving up.
 
-This is a global startup flag, not a per-relay control — there's no per-request header to disable retry for a single call.
+This is a global startup flag, not a per-relay control - there's no per-request header to disable retry for a single call.
 
 ## Batch requests
 
@@ -66,9 +66,9 @@ With the default `--disable-batch-request-retry true`, `--batch-node-error-on-an
 
 ## When retries don't help
 
-Some classes of failure look retryable on the wire but won't recover by switching nodes — for example:
+Some classes of failure look retryable on the wire but won't recover by switching nodes - for example:
 
-- A bad request (malformed JSON, unknown method) — always terminal.
+- A bad request (malformed JSON, unknown method) - always terminal.
 - A consensus-level error returned by every healthy node (the chain itself rejected it).
 - A method your nodes genuinely don't support.
 
@@ -76,8 +76,8 @@ The classifier handles these cases without burning the budget.
 
 ## Rate-limited upstreams
 
-A `429` is retryable — the relay rotates to another node like any other retryable
-error — but the node that said it is treated differently from one that failed. A
+A `429` is retryable - the relay rotates to another node like any other retryable
+error - but the node that said it is treated differently from one that failed. A
 rate-limited node is healthy and busy, so the attempt is scored as neither a failure nor
 a success (no availability or latency sample), and the node is **held off**: selection
 skips it for the rest of this relay and for later relays until the hold-off expires.
@@ -87,22 +87,22 @@ skips it for the rest of this relay and for later relays until the hold-off expi
   the same URL, capped at 30m. Up to 20% jitter is added so a fleet held off by the same
   vendor does not come back in one burst.
 - **Account-wide caps.** When two different URLs of the same provider are held off at
-  once, the whole provider is held off on every chain — a vendor cap is usually
+  once, the whole provider is held off on every chain - a vendor cap is usually
   per-account, and per-URL hold-offs alone would keep hammering the account through its
   other chains.
-- **Any answer clears it.** Once the node answers a request — success or a genuine error
-  — its hold-off and strike count are dropped.
+- **Any answer clears it.** Once the node answers a request - success or a genuine error -
+  its hold-off and strike count are dropped.
 - **You still get an answer.** If every candidate is held off, the one that expires
   soonest is used anyway; the router never synthesizes a `429` to the client, and
   `Retry-After` is never forwarded. A `lava-select-provider` pin and existing sticky
-  sessions bypass the hold-off — an explicit ask outranks it.
+  sessions bypass the hold-off - an explicit ask outranks it.
 
 The same hold-off covers spec re-verification, recovery probes, and WebSocket
 subscriptions, so a node that said stop is not re-probed on a fixed cadence either.
 
 ## Pinning to one node
 
-The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** — pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
+The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** - pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
 
 ## Observability
 
@@ -111,7 +111,7 @@ The `lava-select-provider` header pins the request to a specific upstream. If th
 | `smartrouter_retries_total` | retry attempts triggered (beyond the first try) |
 | `smartrouter_retries_success_total` / `smartrouter_retries_failed_total` | retried requests that succeeded / failed |
 | `smartrouter_retry_attempts` | histogram of attempts per retried request (buckets 1…10) |
-| `smartrouter_rate_limit_holdoffs_total` | hold-off events by `provider` and `event` (`recorded` / `escalated` / `cleared`) — the signal that an upstream is rate-limiting you |
+| `smartrouter_rate_limit_holdoffs_total` | hold-off events by `provider` and `event` (`recorded` / `escalated` / `cleared`) - the signal that an upstream is rate-limiting you |
 | `smartrouter_rate_limit_holdoff_seconds` | histogram of applied hold-off durations, per `provider` |
 | Tracing | each retry attempt is a span; correlate via the trace ID in response headers |
 

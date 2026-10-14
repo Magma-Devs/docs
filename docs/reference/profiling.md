@@ -23,13 +23,13 @@ smartrouter config.yml --use-static-spec specs/ \
 
 | Flag | Default | Purpose |
 | --- | --- | --- |
-| `--pyroscope-address` | — | Pyroscope server URL. Profiling is off until this is set. |
+| `--pyroscope-address` | - | Pyroscope server URL. Profiling is off until this is set. |
 | `--pyroscope-app-name` | `smartrouter` | Application name shown in Pyroscope. |
-| `--pyroscope-tags` | — | Comma-separated `key=value` tags (instance, region, …) for filtering. |
+| `--pyroscope-tags` | - | Comma-separated `key=value` tags (instance, region, …) for filtering. |
 | `--pyroscope-mutex-profile-fraction` | `5` | Mutex profile sampling rate (1 in N events). |
 | `--pyroscope-block-profile-rate` | `1` | Block profile rate (ns; `1` records all blocking events). |
 
-The tags are how you separate replicas in the Pyroscope UI — set at least `instance`
+The tags are how you separate replicas in the Pyroscope UI - set at least `instance`
 when you run more than one router.
 
 ## One-off profiling (pprof)
@@ -44,5 +44,5 @@ smartrouter config.yml --use-static-spec specs/ --pprof-address localhost:6060
 go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
 ```
 
-Bind it to localhost (or behind your network controls) — the `pprof` endpoints are
+Bind it to localhost (or behind your network controls) - the `pprof` endpoints are
 unauthenticated.

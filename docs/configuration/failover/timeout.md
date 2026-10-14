@@ -17,7 +17,7 @@ Two timeouts apply to every relay: an **overall budget** for the whole request, 
 If both are set:
 
 - The **overall** timeout caps the entire relay including all retries and hedges. When it fires, the client gets whatever's most useful (the best partial response, or a timeout error). It is never shorter than the per-attempt window.
-- The **per-attempt window** is how long a node is expected to take. When it passes with no answer, Smart Router sends the same request to another node — a [hedge](hedge.md). The first attempt is **not** cancelled: it keeps running, and whichever attempt answers first wins. It's the more important knob for tuning tail latency.
+- The **per-attempt window** is how long a node is expected to take. When it passes with no answer, Smart Router sends the same request to another node - a [hedge](hedge.md). The first attempt is **not** cancelled: it keeps running, and whichever attempt answers first wins. It's the more important knob for tuning tail latency.
 
 ## What happens when the window passes
 
@@ -67,17 +67,17 @@ See [Directives](../../api/directives.md).
 
 - **Setting the window ≥ overall.** Doesn't crash. The overall budget is raised to match the window, so the window never passes before the request ends and no hedge is ever sent.
 - **Setting the window below upstream RTT.** Healthy nodes still answer, but every request gets hedged, so you pay for extra upstream calls on every request. If `smartrouter_hedge_total` tracks your request rate on healthy upstreams, raise the floor.
-- **Header override below the floor.** The header is *not* clamped to `--min-relay-timeout`, only to `300ms`. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `300ms` even when `--min-relay-timeout` is `1s` — the flag only governs the server-derived default, not an explicit override.
+- **Header override below the floor.** The header is *not* clamped to `--min-relay-timeout`, only to `300ms`. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `300ms` even when `--min-relay-timeout` is `1s` - the flag only governs the server-derived default, not an explicit override.
 - **Header override above the budget.** A client asking for more than the request's own budget gets that budget, unless the operator set `--max-caller-relay-timeout`. Check `Lava-Relay-Timeout-Applied` on the response to see what was used.
 
 ## Observability
 
-There's no dedicated timeout counter — timeouts surface through the latency, retry, and error series:
+There's no dedicated timeout counter - timeouts surface through the latency, retry, and error series:
 
 | Metric | Meaning |
 |---|---|
 | `smartrouter_end_to_end_latency_milliseconds` | router-level end-to-end relay latency (histogram; ms buckets to 30 000) |
-| `rpc_endpoint_end_to_end_latency_milliseconds` | per-endpoint latency — spot the slow upstream |
+| `rpc_endpoint_end_to_end_latency_milliseconds` | per-endpoint latency - spot the slow upstream |
 | `smartrouter_hedge_total` | hedges sent because an attempt outlived its window |
 | `smartrouter_retries_total` | retries triggered when an attempt returns an error |
 | `smartrouter_total_errored` | relays that ultimately failed, including overall-budget exhaustion |

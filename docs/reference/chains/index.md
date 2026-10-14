@@ -5,14 +5,14 @@ description: "Chain-agnostic JSON specs for {{ chains.total }} chains across EVM
 
 # Supported chains
 
-Smart Router serves any chain described by a JSON [chain spec](specs.md) — no code
+Smart Router serves any chain described by a JSON [chain spec](specs.md) - no code
 change, no rebuild. It ships knowing a handful of chains out of the box and resolves the
 rest from the [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) catalog
 at startup.
 
-New here? Read [Chain specs](specs.md) first — what a spec is and how the router loads
+New here? Read [Chain specs](specs.md) first - what a spec is and how the router loads
 it. Then see [Examples](examples/index.md) for ready-to-run configs and per-chain
-walkthroughs — [Ethereum](ethereum.md), [Solana](solana.md), [Bitcoin](bitcoin.md),
+walkthroughs - [Ethereum](ethereum.md), [Solana](solana.md), [Bitcoin](bitcoin.md),
 [Hyperliquid](hyperliquid.md), [Cosmos](cosmos.md), and [Aptos](aptos.md).
 
 ## Browse chains

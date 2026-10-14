@@ -5,7 +5,7 @@ description: "Build and run the Smart Router binary natively on your host machin
 
 # Local binary
 
-Run Smart Router as a native binary on the host — no Docker. Best when you want the
+Run Smart Router as a native binary on the host - no Docker. Best when you want the
 smallest footprint, are wiring it into your own process manager (systemd, supervisor),
 or are developing against the router.
 
@@ -24,7 +24,7 @@ make build     # builds ./build/smartrouter without installing
 ```
 
 `make install` produces a single `smartrouter` binary. The cache is the same binary's
-`cache` subcommand — there's nothing else to build.
+`cache` subcommand - there's nothing else to build.
 
 ## Run the router
 
@@ -45,7 +45,7 @@ A non-error JSON-RPC result means the listener is live; the metrics server also 
 `:7779/metrics/overall-health`. See [Confirm it's healthy](docker-compose.md#confirm-its-healthy)
 for the full set of checks.
 
-- The **config file is positional** — there's no `--config` flag.
+- The **config file is positional** - there's no `--config` flag.
 - `--use-static-spec` accepts a local directory (the bundled `specs/`) **or** a
   GitHub/GitLab URL to resolve chains that aren't bundled (e.g. `LAV1`). Repeatable.
 - See the [CLI reference](../reference/cli.md) for every flag.
@@ -59,10 +59,10 @@ The cache is a separate process. Start it, then point the router at it with
 why it's a config key, not a flag):
 
 ```bash
-# terminal 1 — cache server (address is positional)
+# terminal 1 - cache server (address is positional)
 smartrouter cache 127.0.0.1:20100 --metrics_address 127.0.0.1:5555
 
-# terminal 2 — router, with cache-be: "127.0.0.1:20100" in the config
+# terminal 2 - router, with cache-be: "127.0.0.1:20100" in the config
 smartrouter config/smartrouter_examples/smartrouter_eth_cached.yml \
   --use-static-spec specs/
 ```

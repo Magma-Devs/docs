@@ -1,6 +1,6 @@
 ---
 title: "Bitcoin"
-description: "Run Smart Router for Bitcoin — example config and supported JSON-RPC methods."
+description: "Run Smart Router for Bitcoin - example config and supported JSON-RPC methods."
 ---
 
 # Bitcoin
@@ -30,7 +30,7 @@ The full method list lives in the spec file linked above.
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_bitcoin.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — a single public upstream on PublicNode (`bitcoin-rpc.publicnode.com`), no API key needed. Bitcoin Core's JSON-RPC has no websocket surface, so run it with `--skip-websocket-verification`:
+The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_bitcoin.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) - a single public upstream on PublicNode (`bitcoin-rpc.publicnode.com`), no API key needed. Bitcoin Core's JSON-RPC has no websocket surface, so run it with `--skip-websocket-verification`:
 
 === "Docker Compose"
 
@@ -77,4 +77,4 @@ curl -X POST http://127.0.0.1:3360 \
     print(r.json()["result"]["blocks"])
     ```
 
-Point at your own upstreams by editing the `node-urls` in the config — see [The config file](../../configuration/config-file.md).
+Point at your own upstreams by editing the `node-urls` in the config - see [The config file](../../configuration/config-file.md).
