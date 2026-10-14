@@ -21,7 +21,7 @@ For catching *wrong* data by comparing answers across nodes, see [Cross-validati
 
 ## How they compose
 
-![Failover pipeline — request flows through integrity, selection, attempt, and branches to success, retry, hedge, or circuit-breaker trip](../../assets/diagrams/failsafe-flow.svg)
+![Failover pipeline: an integrity check skips a node that is behind the chain head, selection picks Node A, Node A returns a retryable error, the router retries on Node B, and the answer goes back to your app](../../assets/diagrams/failsafe-flow.svg)
 
 The overall timeout (`--default-processing-timeout`) wraps the whole pipeline; if it fires, whatever's most useful is returned. The per-attempt window (`--min-relay-timeout` floor or `lava-relay-timeout` header) sets when the next node is tried; it does not cancel the attempt already in flight.
 

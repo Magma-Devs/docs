@@ -1,0 +1,299 @@
+/* ============================================================================
+   Widgets added by javascripts/ and overrides/: copy-page menu, chains
+   explorer, managed-service prompt, cookie consent, 404 page.
+   All are scanned or clicked, so all are --sans at --t-14.
+   ============================================================================ */
+
+/* --- Copy page (javascripts/copy-page.js) --------------------------------- */
+/* Sits on the title row, at the right edge of the wide column. */
+
+.mdx-copy-page {
+  position: relative;
+  float: right;
+  display: inline-flex;
+  margin: var(--s-4) 0 var(--s-8) var(--s-16);
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  letter-spacing: 0;
+}
+.mdx-copy-page__btn,
+.mdx-copy-page__caret {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  height: var(--s-32);
+  padding: 0 var(--s-12);
+  font: inherit;
+  font-weight: 700;
+  color: var(--sub);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+.mdx-copy-page__btn { border-radius: var(--r-control) 0 0 var(--r-control); }
+.mdx-copy-page__caret { border-left: 0; border-radius: 0 var(--r-control) var(--r-control) 0; padding: 0 var(--s-8); }
+:is(.mdx-copy-page__btn, .mdx-copy-page__caret):is(:hover, :focus-visible) { color: var(--ink); background: var(--wash); }
+.mdx-copy-page__btn--done,
+.mdx-copy-page__btn--done:hover { color: var(--accent-dark); }
+.mdx-copy-page__menu {
+  position: absolute;
+  top: calc(100% + var(--s-4));
+  right: 0;
+  z-index: 10;
+  min-width: var(--w-menu);
+  padding: var(--s-4);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  box-shadow: var(--lift);
+}
+.md-content__inner .mdx-copy-page__menu a {
+  display: block;
+  padding: var(--s-8) var(--s-12);
+  color: var(--ink);
+  border-radius: var(--s-4);
+  text-decoration: none;
+}
+.md-content__inner .mdx-copy-page__menu a:is(:hover, :focus-visible) { background: var(--wash); }
+
+@media screen and (max-width: 44.9375em) {
+  .mdx-copy-page { float: none; margin: 0 0 var(--s-12); }
+}
+
+/* --- Chains explorer (javascripts/chains-explorer.js) --------------------- */
+
+#chains-explorer {
+  max-width: var(--w-wide);
+  margin: var(--s-24) 0 var(--s-48);
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.cx-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-12) var(--s-16); margin-bottom: var(--s-24); }
+.cx-search {
+  flex: 1 1 var(--w-menu);
+  height: var(--h-control);
+  padding: 0 var(--s-12);
+  font: inherit;
+  color: var(--ink);
+  background: var(--wash);
+  border: 0;
+  border-radius: var(--r-control);
+}
+.cx-search::placeholder { color: var(--sub); }
+
+/* Ecosystem filter. The chosen one is ink, the rest are plain text. */
+.cx-chips { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+.cx-chip {
+  height: var(--s-32);
+  padding: 0 var(--s-12);
+  font: inherit;
+  font-weight: 700;
+  color: var(--sub);
+  background: none;
+  border: 0;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+.cx-chip:hover { color: var(--ink); background: var(--wash); }
+.cx-chip.on { color: var(--paper); background: var(--ink); }
+
+/* Logo wall: every chain at a glance. A logo jumps to its card. */
+.cx-wall { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-bottom: var(--s-32); }
+.md-content__inner .cx-tile {
+  display: block;
+  width: var(--s-32);
+  height: var(--s-32);
+  background: var(--wash);
+  border-radius: 50%;
+  transition: opacity var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.cx-tile:is(:hover, :focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
+.cx-tile.dim { opacity: 0.15; pointer-events: none; }
+.cx-tile img { display: block; width: 100%; height: 100%; border-radius: 50%; }
+
+.cx-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-16); }
+.cx-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--s-32) minmax(0, 1fr);
+  gap: var(--s-4) var(--s-12);
+  align-items: center;
+  padding: var(--s-16);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  scroll-margin-top: calc(var(--h-header) + var(--s-16));
+  transition: box-shadow var(--fast) var(--ease);
+}
+/* Where the reader landed after choosing a logo on the wall. */
+.cx-card.flash { box-shadow: 0 0 0 2px var(--accent); }
+.cx-card img.cx-ico { width: var(--s-32); height: var(--s-32); border-radius: 50%; background: var(--wash); }
+.cx-name {
+  font-weight: 700;
+  color: var(--ink);
+  padding-right: var(--s-24);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cx-nets,
+.cx-ifs { grid-column: 2; color: var(--sub); }
+.cx-card .badge + .badge::before { content: "\00A0\00B7\00A0"; }
+.cx-spec-row { position: absolute; top: var(--s-12); right: var(--s-12); display: flex; gap: var(--s-4); }
+.md-content__inner .cx-spec { color: var(--sub); text-decoration: none; }
+.md-content__inner .cx-spec:is(:hover, :focus-visible) { color: var(--accent-dark); }
+.cx-empty { color: var(--sub); margin: var(--s-24) 0; }
+
+.cx-pager { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-12); margin-top: var(--s-24); }
+.cx-page-btn,
+.cx-showall {
+  height: var(--s-32);
+  padding: 0 var(--s-12);
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease);
+}
+:is(.cx-page-btn, .cx-showall):hover:not(:disabled) { background: var(--wash); }
+.cx-page-btn:disabled { color: var(--faint); cursor: default; }
+.cx-page-info { color: var(--sub); }
+.cx-showall { margin-left: auto; }
+
+@media screen and (max-width: 60em) { .cx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media screen and (max-width: 44.9375em) {
+  .cx-cards { grid-template-columns: minmax(0, 1fr); }
+  /* On a phone the wall is twenty rows of logos before the first card. Search
+     and the filter do the same job in one row. */
+  .cx-wall { display: none; }
+}
+
+/* --- Floating prompts ----------------------------------------------------- */
+/* Managed-service prompt and cookie consent share one corner and one card. */
+
+.sr-managed-popup,
+.md-consent__inner {
+  position: fixed;
+  right: var(--s-24);
+  bottom: var(--s-24);
+  left: auto;
+  z-index: 5;
+  width: min(var(--w-card), calc(100vw - var(--s-48)));
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--body);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--lift);
+}
+
+/* Managed-service prompt (javascripts/managed-popup.js) */
+.sr-managed-popup {
+  z-index: 3;                     /* under the header, so open search dims it */
+  padding: var(--s-16) var(--s-24) var(--s-24);
+  opacity: 0;
+  transform: translateY(var(--s-12));
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
+  pointer-events: none;
+}
+.sr-managed-popup.is-visible { opacity: 1; transform: none; pointer-events: auto; }
+.sr-managed-title { margin: 0 var(--s-24) var(--s-4) 0; font-weight: 700; color: var(--ink); }
+.sr-managed-body { margin: 0 0 var(--s-16); }
+.sr-managed-cta {
+  display: inline-block;
+  padding: var(--s-8) var(--s-16);
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: var(--r-control);
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease);
+}
+.sr-managed-cta:is(:hover, :focus-visible) { color: var(--paper); background: var(--body); }
+.sr-managed-close {
+  position: absolute;
+  top: var(--s-8);
+  right: var(--s-8);
+  width: var(--s-32);
+  height: var(--s-32);
+  font-size: var(--t-19);
+  line-height: 1;
+  color: var(--sub);
+  background: none;
+  border: 0;
+  border-radius: var(--r-control);
+  cursor: pointer;
+}
+.sr-managed-close:is(:hover, :focus-visible) { color: var(--ink); background: var(--wash); }
+
+/* Cookie consent. A card in the corner, not a wall in front of the page:
+   analytics stay off until the reader answers, so nothing needs blocking. */
+.md-consent__overlay { display: none; }
+.md-consent__inner { padding: 0; max-height: calc(100vh - var(--s-48)); }
+.md-consent__form { padding: var(--s-16) var(--s-24) var(--s-24); }
+.md-consent__inner.md-typeset h4 {
+  margin: 0 0 var(--s-4);
+  font-size: var(--t-14);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.md-consent__inner.md-typeset { font-size: var(--t-14); }
+.md-consent__inner.md-typeset p { margin: 0; }
+.md-consent__settings { margin: var(--s-12) 0 0; }
+.md-consent__settings ul { margin: 0; }
+.md-consent__controls { display: flex; flex-wrap: wrap; gap: var(--s-8); margin: var(--s-16) 0 0; }
+.md-typeset .md-consent__controls .md-button { margin: 0; }
+/* The theme marks Accept and Reject both as primary. Only Accept is. */
+.md-typeset .md-consent__controls button[type="reset"].md-button {
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--line);
+}
+.md-typeset .md-consent__controls button[type="reset"].md-button:is(:hover, :focus-visible) {
+  color: var(--ink);
+  background: var(--wash);
+  border-color: var(--faint);
+}
+
+@media screen and (max-width: 44.9375em) {
+  .sr-managed-popup,
+  .md-consent__inner { right: var(--s-12); bottom: var(--s-12); width: calc(100vw - var(--s-24)); }
+  /* Three buttons on one row, so the card stays out of the way of the page. */
+  .md-consent__form { padding: var(--s-16); }
+  .md-typeset .md-consent__controls .md-button { display: inline-block; width: auto; margin: 0; padding: var(--s-8) var(--s-12); }
+}
+
+/* --- 404 (overrides/404.html) --------------------------------------------- */
+
+.mdx-404 { max-width: var(--w-prose); margin: var(--s-48) 0; }
+/* There is no page to copy on a 404. */
+.mdx-404 .mdx-copy-page { display: none; }
+.md-content__inner .mdx-404__code {
+  font-family: var(--sans);
+  font-size: var(--t-12);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent-dark);
+  margin: 0 0 var(--s-8);
+}
+.md-content__inner .mdx-404__lead {
+  font-family: var(--sans);
+  font-size: var(--t-24);
+  line-height: 1.4;
+  letter-spacing: -0.014em;
+  color: var(--sub);
+}
+.mdx-404__actions { display: flex; flex-wrap: wrap; gap: var(--s-8); margin: var(--s-32) 0 var(--s-16); }
+.md-content__inner .mdx-404__hint { font-family: var(--sans); font-size: var(--t-14); color: var(--sub); }

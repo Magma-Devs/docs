@@ -1,0 +1,388 @@
+/* ============================================================================
+   Page shell: header, search, left navigation, table of contents, footer.
+   Everything here is scanned or clicked, so it is set in --sans at --t-14.
+   Structure comes from space and weight. The only lines are the header and
+   footer hairlines.
+   ============================================================================ */
+
+/* One root size on every screen. The theme enlarges it on wide monitors,
+   which would scale the whole type scale off its steps. */
+html { font-size: 125%; }
+body { -webkit-font-smoothing: antialiased; }
+
+.md-grid { max-width: var(--w-page); }
+
+/* --- Header --------------------------------------------------------------- */
+
+/* Loading bar for in-place page loads (shown only when a load is slow). */
+.md-progress { background: var(--accent); }
+
+/* "Skip to content": appears only for keyboard users, on the first Tab. */
+.md-skip {
+  font-size: var(--t-14);
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: var(--r-control);
+  padding: var(--s-8) var(--s-16);
+}
+
+.md-header {
+  height: var(--h-header);
+  color: var(--ink);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+}
+.md-header--shadow { box-shadow: none; }
+.md-header__inner {
+  height: 100%;
+  padding: 0 var(--s-24);
+  gap: var(--s-8);
+}
+.md-header__button { margin: 0; padding: var(--s-8); color: var(--ink); }
+.md-header__button:hover { opacity: 1; color: var(--accent-dark); }
+.md-header__button.md-logo { margin: 0; padding: 0; }
+.md-header__button.md-logo :is(img, svg) { height: var(--s-32); width: auto; }
+
+/* Product name beside the logo. Swaps to the page title once the reader has
+   scrolled past it. */
+.md-header__title {
+  height: var(--s-24);
+  margin: 0 var(--s-8);
+  font-size: var(--t-14);
+  font-weight: 700;
+  line-height: var(--s-24);
+  letter-spacing: 0;
+}
+/* The hairline separates the name from the logo, so it only exists when the
+   logo does. */
+@media screen and (min-width: 76.25em) {
+  .md-header__title { margin: 0 var(--s-16); padding-left: var(--s-16); border-left: 1px solid var(--line); }
+}
+
+/* GitHub link: icon only */
+.md-header__source { width: auto; margin-left: 0; }
+.md-header__source .md-source { display: flex; padding: var(--s-8); color: var(--ink); }
+.md-header__source .md-source:hover { opacity: 1; color: var(--accent-dark); }
+.md-header__source .md-source__icon { width: var(--s-24); height: var(--s-24); }
+.md-header__source .md-source__icon svg { width: var(--s-24); height: var(--s-24); margin: 0; }
+.md-header__source .md-source__repository { display: none; }
+
+/* --- Search --------------------------------------------------------------- */
+/* At rest: a quiet field in the header. Open: one panel, the field on top and
+   the results below, joined by a hairline. On narrow screens the field fills
+   the header bar and the results fill the screen. */
+
+.md-search__form {
+  height: var(--h-control);
+  background: var(--wash);
+  border-radius: var(--r-control);
+  box-shadow: none;
+  transition: background-color var(--fast) var(--ease);
+}
+.md-search__form:hover { background: var(--line); }
+.md-search__input {
+  font-size: var(--t-14);
+  color: var(--ink);
+  background: transparent;
+}
+.md-search__input::placeholder { color: var(--sub); }
+.md-search__icon { display: flex; align-items: center; justify-content: center; color: var(--sub); }
+.md-search__form .md-search__icon svg { width: var(--s-16); height: var(--s-16); }
+.md-search__icon[for="__search"] { top: var(--s-8); left: var(--s-12); }
+.md-search__options { top: var(--s-8); right: var(--s-12); }
+.md-search__options > .md-icon { color: var(--sub); }
+.md-search__suggest { font-size: var(--t-14); color: var(--faint); }
+
+/* Shortcut hint (javascripts/search-hint.js), drawn as a key cap. */
+.md-search__keyhint {
+  position: absolute;
+  top: 50%;
+  right: var(--s-12);
+  transform: translateY(-50%);
+  font-family: var(--sans);
+  font-size: var(--t-12);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sub);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--s-4);
+  padding: var(--s-4) var(--s-8);
+  pointer-events: none;
+}
+.md-search__input:is(:focus, :not(:placeholder-shown)) ~ .md-search__keyhint { display: none; }
+
+/* Results */
+.md-search__overlay { background: var(--scrim); }
+.md-search__scrollwrap { background: var(--paper); }
+.md-search-result__meta {
+  font-size: var(--t-14);
+  line-height: 1.5;
+  color: var(--sub);
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  padding: var(--s-12) var(--s-16);
+}
+.md-search-result__item { box-shadow: 0 -1px var(--line); }
+.md-search-result__link { transition: background-color var(--fast) var(--ease); }
+.md-search-result__link:is(:hover, :focus),
+.md-search-result__link[data-md-state="active"] { background: var(--wash); }
+.md-search-result__article { padding: var(--s-4) var(--s-16) var(--s-8); }
+.md-search-result__icon { display: none; }
+.md-search-result mark { color: var(--ink); background: none; font-weight: 700; text-decoration: none; }
+.md-search-result__terms { font-size: var(--t-14); color: var(--sub); }
+/* A result is a slice of a real page, so it would inherit article sizes.
+   Results are a scanned list: one title size, one excerpt size. */
+.md-search-result .md-typeset {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--sub);
+}
+.md-search-result .md-typeset :is(h1, h2) {
+  font-size: var(--t-14);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--ink);
+  margin: var(--s-8) 0 var(--s-4);
+}
+.md-search-result .md-typeset :is(p, li, td, th, code, h1 + p) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: 0;
+  color: inherit;
+  background: none;
+  padding: 0;
+  margin: 0 0 var(--s-8);
+}
+.md-search-result__more > summary > div { font-size: var(--t-14); color: var(--sub); padding: var(--s-8) var(--s-16); }
+
+@media screen and (min-width: 60em) {
+  .md-search__inner { width: var(--w-search); padding: var(--s-12) 0; }
+  .md-search__input { padding-left: calc(var(--s-12) + var(--s-32)); }
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    background: var(--paper);
+    border-radius: var(--r-card) var(--r-card) 0 0;
+    box-shadow: 0 0 0 1px var(--line), var(--lift);
+  }
+  /* The extra pixel lines the panel's edge up with the field's edge, so the
+     two read as one hairline. */
+  .md-search__output {
+    top: calc(var(--s-12) + var(--h-control) + 1px);
+    border-radius: 0 0 var(--r-card) var(--r-card);
+  }
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__output { box-shadow: 0 0 0 1px var(--line), var(--lift); }
+}
+
+@media screen and (max-width: 59.984375em) {
+  .md-search__form,
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    height: var(--h-header);
+    background: var(--paper);
+    border-radius: 0;
+    box-shadow: 0 1px 0 var(--line);
+  }
+  /* 16px is the smallest size at which phones do not zoom into the field. */
+  .md-search__input { font-size: var(--t-16); padding-left: calc(var(--s-16) + var(--s-24) + var(--s-16)); }
+  .md-search__icon[for="__search"],
+  .md-search__options { top: var(--s-16); }
+  .md-search__icon[for="__search"] { left: var(--s-16); }
+  .md-search__options { right: var(--s-16); }
+  .md-search__form .md-search__icon svg { width: var(--s-24); height: var(--s-24); }
+  .md-search__output { top: var(--h-header); }
+  .md-search__keyhint { display: none; }
+}
+
+/* --- Layout --------------------------------------------------------------- */
+
+/* Where a jumped-to heading lands, and when the table of contents counts its
+   section as current, are linked. The theme marks a section current once its
+   heading is closer to the top than: header height + 0.8 x this margin
+   (64 + 25.6 = 89.6px). Headings land at header + 16 = 80px, inside that
+   line. Change one of these numbers and the table of contents highlights the
+   item above the one clicked. */
+.md-main__inner { margin-top: var(--s-32); }
+.md-typeset :target { --md-scroll-margin: calc(var(--h-header) + var(--s-16)); --md-scroll-offset: 0px; }
+.md-sidebar { top: var(--h-header); padding: var(--s-16) 0; }
+/* Sidebar scrollbars stay out of sight until the pointer is over the list. */
+.md-sidebar__scrollwrap { scrollbar-color: transparent transparent; }
+.md-sidebar__scrollwrap:is(:hover, :focus-within) { scrollbar-color: var(--line) transparent; }
+.md-content__inner {
+  max-width: var(--w-wide);
+  margin: 0 var(--s-16) var(--s-48);
+  padding-top: 0;
+}
+.md-content__inner::before { display: none; }
+
+/* Breadcrumb above the title */
+.md-path {
+  font-size: var(--t-14);
+  margin: 0 var(--s-16);
+  padding-top: 0;
+}
+.md-path + .md-content__inner { padding-top: var(--s-8); }
+.md-path__list { gap: var(--s-4); }
+.md-path__link { color: var(--sub); }
+.md-path__link:is(:hover, :focus-visible) { color: var(--ink); }
+.md-path__item:not(:first-child)::before { background-color: var(--faint); }
+
+@media screen and (min-width: 60em) {
+  .md-sidebar--secondary { width: var(--w-toc); }
+  .md-content__inner { margin: 0 var(--s-32) var(--s-48); padding-top: var(--s-16); }
+  .md-path { margin: 0 var(--s-32); padding-top: var(--s-16); }
+}
+
+/* --- Left navigation (desktop) -------------------------------------------- */
+
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--primary { width: var(--w-nav); }
+  .md-sidebar--primary .md-sidebar__scrollwrap { margin: 0; }
+  .md-sidebar--primary .md-sidebar__inner { padding: 0 var(--s-24); }
+  .md-sidebar--primary .md-nav { font-size: var(--t-14); line-height: 1.5; }
+  .md-nav--primary > .md-nav__title { display: none; }
+  .md-nav--primary > .md-nav__list { padding: 0; }
+
+  /* Page links */
+  .md-sidebar--primary .md-nav__link { color: var(--sub); transition: color var(--fast) var(--ease); }
+  .md-sidebar--primary .md-nav__link:not(.md-nav__container) { margin: 0; padding: var(--s-4) 0; }
+  .md-sidebar--primary .md-nav__container { margin: 0; }
+  .md-sidebar--primary .md-nav__link:is([href], [for]):hover { color: var(--ink); }
+  .md-sidebar--primary .md-nav__item .md-nav__link--active { color: var(--accent-dark); font-weight: 700; }
+
+  /* Section labels: same size as the links, set apart by weight and ink */
+  .md-nav--primary > .md-nav__list > .md-nav__item--section { margin: 0 0 var(--s-24); }
+  .md-nav--primary .md-nav__item--section > .md-nav { margin: 0; }
+  .md-nav--primary .md-nav__item--section > .md-nav > .md-nav__list { padding: 0; }
+  .md-nav--primary .md-nav__item--section > .md-nav__container > .md-nav__link { color: var(--ink); font-weight: 700; }
+  .md-nav--primary .md-nav__item--section > .md-nav__container > .md-nav__link--active { color: var(--accent-dark); }
+
+  /* Groups inside a section (Cache, Failover & retry, Examples) */
+  .md-nav--primary .md-nav__item--nested .md-nav__item--nested > .md-nav { margin: 0; }
+  .md-nav--primary .md-nav__item--nested .md-nav__item--nested > .md-nav > .md-nav__list { padding: 0 0 0 var(--s-16); }
+  .md-sidebar--primary .md-nav__icon { color: var(--faint); }
+}
+
+/* --- Table of contents (right) -------------------------------------------- */
+
+@media screen and (min-width: 60em) {
+  .md-sidebar--secondary .md-sidebar__scrollwrap { margin: 0; }
+  .md-sidebar--secondary .md-sidebar__inner { padding: 0 var(--s-24) 0 var(--s-8); }
+  .md-sidebar--secondary .md-nav { font-size: var(--t-14); line-height: 1.4; margin: 0; }
+  .md-nav--secondary .md-nav__title {
+    position: static;
+    color: var(--ink);
+    font-weight: 700;
+    background: none;
+    box-shadow: none;
+    padding: 0 0 var(--s-8);
+  }
+  .md-nav--secondary .md-nav__list { padding: 0; }
+  .md-nav--secondary .md-nav .md-nav__list { padding: 0 0 0 var(--s-12); }
+  .md-nav--secondary .md-nav__link {
+    display: block;
+    margin: 0;
+    padding: var(--s-4) 0;
+    color: var(--sub);
+    transition: color var(--fast) var(--ease);
+  }
+  .md-nav--secondary .md-nav__link:is(:hover, :focus-visible) { color: var(--ink); }
+  .md-nav--secondary .md-nav__item .md-nav__link--active { color: var(--ink); }
+  .md-nav--secondary .md-nav__link--passed { color: var(--sub); }
+}
+
+/* --- Back to top ---------------------------------------------------------- */
+
+.md-top {
+  top: calc(var(--h-header) + var(--s-16));
+  font-size: var(--t-14);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  box-shadow: var(--lift);
+  padding: var(--s-8) var(--s-16);
+}
+.md-top:is(:hover, :focus-visible) { color: var(--paper); background: var(--ink); }
+
+/* --- Page feedback and last-updated stamp --------------------------------- */
+
+.md-source-file {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  color: var(--sub);
+  margin: var(--s-48) 0 0;
+}
+/* The theme shows a bare clock icon and a date. Say what the date is. */
+.md-source-file__fact { font-size: inherit; }
+.md-source-file__fact .md-icon { display: none; }
+.md-source-file__fact::before { content: "Last updated"; margin-right: var(--s-4); }
+
+.md-feedback {
+  font-family: var(--sans);
+  margin: var(--s-32) 0 0;
+  padding-top: var(--s-24);
+  border-top: 1px solid var(--line);
+  text-align: left;
+  max-width: var(--w-prose);
+}
+.md-feedback fieldset { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-8) var(--s-16); }
+.md-feedback__title { float: left; margin: 0; font-size: var(--t-14); font-weight: 700; color: var(--ink); }
+.md-feedback__inner { position: static; }
+.md-feedback__list { display: flex; gap: var(--s-4); }
+.md-feedback__icon { color: var(--sub); }
+.md-feedback__icon:is(:hover, :focus-visible) { color: var(--accent-dark); }
+.md-feedback__note { position: static; flex-basis: 100%; font-size: var(--t-14); color: var(--sub); margin: 0; }
+.md-feedback__note > * { margin: 0; }
+
+/* --- Footer --------------------------------------------------------------- */
+
+.md-footer { border-top: 1px solid var(--line); }
+.md-footer__inner { padding: var(--s-16) var(--s-24); }
+.md-footer__link { opacity: 1; margin: 0; padding: var(--s-8) 0; transition: color var(--fast) var(--ease); }
+.md-footer__link:is(:hover, :focus-visible) { opacity: 1; color: var(--accent-dark); }
+.md-footer__title { font-size: var(--t-19); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0; }
+.md-footer__direction { font-size: var(--t-14); opacity: 1; color: var(--sub); }
+.md-footer__button { color: var(--sub); }
+
+.md-footer-meta__inner { padding: var(--s-16) var(--s-24); align-items: center; }
+/* Telegram link reads as an invitation: icon plus handle, not a bare glyph. */
+.md-social { padding: 0; }
+.md-social__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+  width: auto;
+  height: auto;
+  font-size: var(--t-14);
+  font-weight: 700;
+  color: var(--sub);
+  white-space: nowrap;
+}
+.md-social__link::after { content: "@magmadevs"; }
+.md-social__link svg { width: var(--s-16); height: var(--s-16); max-height: none; }
+.md-social__link:is(:hover, :focus-visible) { color: var(--accent-dark); }
+
+@media screen and (min-width: 76.25em) {
+  /* Previous and next sit under the article column, not under the sidebars. */
+  .md-footer__inner {
+    padding-left: calc(var(--w-nav) + var(--s-32));
+    padding-right: calc(var(--w-toc) + var(--s-32));
+  }
+}
+
+/* --- Mobile drawer -------------------------------------------------------- */
+
+@media screen and (max-width: 76.1875em) {
+  .md-nav--primary .md-nav__title { font-size: var(--t-14); color: var(--ink); background: var(--wash); }
+  .md-nav--primary .md-nav__title[for="__drawer"] { color: var(--ink); background: var(--paper); border-bottom: 1px solid var(--line); }
+  .md-nav--primary .md-nav__item { font-size: var(--t-14); border-top: 1px solid var(--line); }
+  .md-nav--primary .md-nav__link { color: var(--body); }
+  .md-nav--primary .md-nav__item .md-nav__link--active { color: var(--accent-dark); font-weight: 700; }
+  .md-nav__source { display: none; }
+}
