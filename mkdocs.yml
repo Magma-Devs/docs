@@ -129,9 +129,7 @@ extra_css:
   - stylesheets/widgets.css
 
 extra_javascript:
-  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
   - javascripts/consent-mode.js
-  - javascripts/tablesort.js
   - javascripts/toc-title.js
   - javascripts/copy-page.js
   - javascripts/search-hint.js
