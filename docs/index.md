@@ -59,7 +59,7 @@ That request now flows through the full pipeline — upstream selection, retry, 
 
 -   **Supported chains**
 
-    Ethereum, Lava, and 100+ chains, each configured by a chain spec.
+    {{ chains.total }} chains, including Ethereum and Lava, each configured by a chain spec.
 
     [Browse chains →](reference/chains/index.md)
 
