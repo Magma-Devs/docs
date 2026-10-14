@@ -49,7 +49,7 @@ only binds the listeners it declares, the rest sit idle.
 | `3365` | Cosmos Hub (`COSMOSHUB`) | Tendermint RPC | cosmos, multichain |
 | `3366` | Cosmos Hub (`COSMOSHUB`) | gRPC | cosmos, multichain |
 | `3367` | Aptos (`APT1`) | REST | aptos, multichain |
-| `7779` | — | — | router Prometheus metrics |
+| `7779` | - | - | router Prometheus metrics |
 
 Single-chain examples (e.g. `smartrouter_solana.yml`) bind their chain on `3360`;
 the `multichain` example is the only config that lights up the whole `3360`–`3367`
@@ -60,7 +60,7 @@ range at once, one listener per chain/interface as above.
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `SR_CONFIG` | `config/smartrouter_examples/smartrouter_eth.yml` | Which config the router runs. |
-| `SR_SPEC` | `specs/` | Spec source — the bundled snapshot, or a lava-specs GitHub/GitLab URL to resolve any chain (e.g. `LAV1`). See [the wizard's `SR_SPEC` note](wizard.md#which-specs-the-router-loads-sr_spec). |
+| `SR_SPEC` | `specs/` | Spec source - the bundled snapshot, or a lava-specs GitHub/GitLab URL to resolve any chain (e.g. `LAV1`). See [the wizard's `SR_SPEC` note](wizard.md#which-specs-the-router-loads-sr_spec). |
 | `SR_LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error`. |
 | `SR_LOG_FORMAT` | `json` | `json` or `text`. |
 
@@ -75,18 +75,18 @@ SR_CONFIG=config/smartrouter_examples/smartrouter_eth_cached.yml \
                  -f docker/docker-compose.cache.yml up --build
 ```
 
-Without the overlay the cache service never starts. Full detail — what's cached, TTLs,
-shared state — is on the [Cache](cache/index.md) page.
+Without the overlay the cache service never starts. Full detail - what's cached, TTLs,
+shared state - is on the [Cache](cache/index.md) page.
 
 Two more overlays sit on top of this one:
 
 ```bash
-# Redis / Valkey instead of the sidecar — pair with a config declaring `resp-cache:`
+# Redis / Valkey instead of the sidecar - pair with a config declaring `resp-cache:`
 SR_CONFIG=config/smartrouter_examples/smartrouter_eth_resp_cache.yml \
   docker compose -f docker/docker-compose.yml \
                  -f docker/docker-compose.resp-cache.yml up --build
 
-# A read-only secondary tier — layered on top of the cache overlay
+# A read-only secondary tier - layered on top of the cache overlay
 SR_CONFIG=config/smartrouter_examples/smartrouter_eth_two_tier.yml \
   docker compose -f docker/docker-compose.yml \
                  -f docker/docker-compose.cache.yml \
@@ -110,11 +110,11 @@ shows, the full port map, and configuration (auth, values file, logs).
 
 ## Confirm it's healthy
 
-The router has no separate "ready" page — a listener is healthy once it answers a real
+The router has no separate "ready" page - a listener is healthy once it answers a real
 RPC query, and the metrics server exposes an aggregate health probe. Three checks tell
 you the stack came up cleanly:
 
-**1. Overall health probe** — the metrics server answers `200` with `Health status OK`
+**1. Overall health probe** - the metrics server answers `200` with `Health status OK`
 once startup health checks pass (`503 Unhealthy` otherwise):
 
 ```bash
@@ -124,14 +124,14 @@ curl -i http://localhost:7779/metrics/overall-health
 # Health status OK
 ```
 
-**2. Metrics are being scraped** — the Prometheus endpoint returns exposition text, and
+**2. Metrics are being scraped** - the Prometheus endpoint returns exposition text, and
 `smartrouter_*` series appear once the router has served traffic:
 
 ```bash
 curl -s http://localhost:7779/metrics | head
 ```
 
-**3. A real relay succeeds** — send a JSON-RPC request to the chain's listener and get a
+**3. A real relay succeeds** - send a JSON-RPC request to the chain's listener and get a
 non-error result back. For the default Ethereum example on `3360`:
 
 ```bash
@@ -140,7 +140,7 @@ curl -s -X POST http://localhost:3360 \
      -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
-A healthy response is a JSON-RPC result, not an `error` object — the hex value is the
+A healthy response is a JSON-RPC result, not an `error` object - the hex value is the
 current block height (it advances on each call):
 
 ```json
@@ -148,14 +148,14 @@ current block height (it advances on each call):
 ```
 
 If you ran the `multichain` example, swap the port and method for the chain you want to
-hit — e.g. `3364` for the Cosmos Hub REST listener:
+hit - e.g. `3364` for the Cosmos Hub REST listener:
 
 ```bash
 curl -s http://localhost:3364/cosmos/base/tendermint/v1beta1/blocks/latest
 ```
 
 A successful relay also carries `Smart-Router-*` response headers naming the upstream
-that served it — add `-i` to the `curl` to see them. Persistent `error` responses or
+that served it - add `-i` to the `curl` to see them. Persistent `error` responses or
 connection refusals mean the listener never came up; check the container logs
 (`docker compose -f docker/docker-compose.yml logs router`) for the failing upstream or
 config.

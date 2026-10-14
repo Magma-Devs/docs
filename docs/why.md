@@ -1,11 +1,11 @@
 ---
 title: "Why Smart Router?"
-description: "Cut RPC costs with caching, add reliability with automatic failover, and get full request visibility — and how Smart Router differs from a plain reverse proxy."
+description: "Cut RPC costs with caching, add reliability with automatic failover, and get full request visibility - and how Smart Router differs from a plain reverse proxy."
 ---
 
 # Why Smart Router?
 
-RPC proxies have been built in-house thousands of times — along with the failover, caching, and monitoring that surround them. Smart Router is that layer as a standard, actively maintained component.
+RPC proxies have been built in-house thousands of times - along with the failover, caching, and monitoring that surround them. Smart Router is that layer as a standard, actively maintained component.
 
 <p class="intro-lede">Instead of building and maintaining your own RPC proxy, you get multi-chain support across EVM and non-EVM networks, automatic failover, data cross-validation, built-in observability, caching, and more.</p>
 
@@ -13,7 +13,7 @@ RPC proxies have been built in-house thousands of times — along with the failo
 
 ## Failover
 
-Smart Router's failovers kick in under different scenarios, or "incidents" — for example, if an upstream is unavailable, returns errors, returns stale data, takes too long, or times out.
+Smart Router's failovers kick in under different scenarios, or "incidents" - for example, if an upstream is unavailable, returns errors, returns stale data, takes too long, or times out.
 
 [Failover & retry →](configuration/failover/index.md)
 
@@ -43,7 +43,7 @@ Serves all standard blockchain API formats: JSON-RPC, REST, gRPC, Tendermint, an
 
 ## Observability
 
-Prometheus metrics, OpenTelemetry traces, structured logs, and a typed error taxonomy cover the full request lifecycle — along with a prebuilt dashboard for easy, immediate observability out of the box.
+Prometheus metrics, OpenTelemetry traces, structured logs, and a typed error taxonomy cover the full request lifecycle - along with a prebuilt dashboard for easy, immediate observability out of the box.
 
 [Observability →](reference/observability/index.md) · [Metrics →](reference/metrics.md) · [Dashboard →](deployment/dashboard.md)
 

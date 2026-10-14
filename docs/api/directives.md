@@ -11,7 +11,7 @@ Override Smart Router's default behaviour for a single request by setting reques
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream — the cache is still consulted first. |
+| `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream - the cache is still consulted first. |
 | `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
 | `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
@@ -30,13 +30,13 @@ lava-select-provider: <upstream-name>
 
 Expresses a **preference** for one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
 
-!!! warning "The cache answers first — a pinned request may never reach the named node"
+!!! warning "The cache answers first - a pinned request may never reach the named node"
     The response cache is consulted **before** node selection runs, and pinning does *not*
     bypass it. A cacheable method with a warm entry returns `Lava-Provider-Address: Cached`
-    and the named node is never contacted — including when that node is unreachable.
+    and the named node is never contacted - including when that node is unreachable.
 
-    So a pinned request is **not a node health check**. For any cacheable method — which is
-    most reads — an unreachable node is indistinguishable from a healthy one: you get
+    So a pinned request is **not a node health check**. For any cacheable method - which is
+    most reads - an unreachable node is indistinguishable from a healthy one: you get
     HTTP 200 and a real answer either way. Pair the pin with
     [`lava-force-cache-refresh`](#force-a-cache-refresh) whenever the point of the request
     is the *node* rather than the data.
@@ -44,7 +44,7 @@ Expresses a **preference** for one named upstream at node selection, bypassing t
 !!! warning "`Lava-Provider-Address` is a response header, not a request directive"
     To pin a request, send **`lava-select-provider`**. `Lava-Provider-Address` is only
     emitted by the router on the *response* to name the node that served the request
-    (see [Response headers](#response-headers)) — sending it as a *request* header has no
+    (see [Response headers](#response-headers)) - sending it as a *request* header has no
     effect and is silently ignored.
 
 **When to use:** debugging an upstream, sticky requests within a session, A/B comparing responses.
@@ -58,7 +58,7 @@ curl -X POST http://127.0.0.1:3360 \
 
 A gRPC call pins the same way, with the header sent as call metadata. See [Over gRPC](#over-grpc).
 
-To reach the node itself — for a health check, or to compare two nodes on the same query —
+To reach the node itself - for a health check, or to compare two nodes on the same query -
 add `lava-force-cache-refresh` so the cache cannot answer on its behalf:
 
 ```bash
@@ -77,15 +77,15 @@ An unreachable node then fails loudly rather than returning a cached answer.
 lava-stickiness: <your-session-id>
 ```
 
-Routes every request carrying the same id to the same upstream, on every router replica. The value is any string you choose — a worker id, a batch id, a user id.
+Routes every request carrying the same id to the same upstream, on every router replica. The value is any string you choose - a worker id, a batch id, a user id.
 
 Unlike `lava-select-provider`, you do not name the node: the router picks one on the first request and keeps the rest of the session on it.
 
-**When to use:** a sequence of calls that has to agree with each other — reading the chain head and then fetching that block, for example, where a node a few blocks behind would return an empty result for a block that exists.
+**When to use:** a sequence of calls that has to agree with each other - reading the chain head and then fetching that block, for example, where a node a few blocks behind would return an empty result for a block that exists.
 
 !!! warning "Send the id on **every** call in the sequence"
     Sending it only on the later call leaves the first one unpinned, so the two can still be
-    answered by different nodes — the problem the header exists to prevent.
+    answered by different nodes - the problem the header exists to prevent.
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
@@ -104,9 +104,9 @@ lava-force-cache-refresh: true
 
 Bypasses the cache for this request. The relay goes upstream, the response is returned, and the cache entry is refreshed.
 
-The refresh triggers on the header's **presence**, not its value — `lava-force-cache-refresh: false` (or any value) still forces it. Send the header only when you mean it.
+The refresh triggers on the header's **presence**, not its value - `lava-force-cache-refresh: false` (or any value) still forces it. Send the header only when you mean it.
 
-**When to use:** known-stale entry, suspected reorg, post-deploy verification, and any request whose purpose is to reach a *specific node* rather than to get data — see [the pin caveat](#pin-to-a-specific-node).
+**When to use:** known-stale entry, suspected reorg, post-deploy verification, and any request whose purpose is to reach a *specific node* rather than to get data - see [the pin caveat](#pin-to-a-specific-node).
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
@@ -139,7 +139,7 @@ The response carries [`Lava-Relay-Timeout-Applied`](#response-headers) with the 
 lava-debug-relay: true
 ```
 
-Emits verbose per-attempt logs for this request only — without changing the global log level.
+Emits verbose per-attempt logs for this request only - without changing the global log level.
 
 **When to use:** investigating a specific user-visible failure without flooding logs.
 
@@ -154,10 +154,10 @@ lava-providers-block: my-eth-upstream-3,my-eth-upstream-4
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | Prefer one named node for this request (the [pin](#pin-to-a-specific-node) header) — a cache hit still answers before selection runs. |
+| `lava-select-provider` | Prefer one named node for this request (the [pin](#pin-to-a-specific-node) header) - a cache hit still answers before selection runs. |
 | `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. |
 
-There is no limit on how many nodes you exclude, and spaces around the commas are ignored. The exclusion also applies to backup nodes. If the list covers every node that could serve the request, the request fails — the router never falls back to a node you excluded.
+There is no limit on how many nodes you exclude, and spaces around the commas are ignored. The exclusion also applies to backup nodes. If the list covers every node that could serve the request, the request fails - the router never falls back to a node you excluded.
 
 **When to use:** pin away from a node you've seen misbehave, or force a comparison against a specific one. Failover still applies across whatever nodes remain eligible.
 
@@ -167,9 +167,9 @@ There is no limit on how many nodes you exclude, and spaces around the commas ar
 lava-extension: archive
 ```
 
-Forces a request onto an extension (e.g. `archive`) instead of letting the router infer it from the requested block. The value is case-insensitive. Only nodes whose config declares the matching add-on are eligible — see the per-chain [Upstream capabilities](../reference/chains/ethereum.md#upstream-capabilities).
+Forces a request onto an extension (e.g. `archive`) instead of letting the router infer it from the requested block. The value is case-insensitive. Only nodes whose config declares the matching add-on are eligible - see the per-chain [Upstream capabilities](../reference/chains/ethereum.md#upstream-capabilities).
 
-If **no** node on the router declares the add-on, the request is not refused: it is served without the extension, by an ordinary node, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension — for `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension so the operator can add a capable node.
+If **no** node on the router declares the add-on, the request is not refused: it is served without the extension, by an ordinary node, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension - for `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension so the operator can add a capable node.
 
 **When to use:** a historical query the router would otherwise route to a non-archive node.
 
@@ -182,7 +182,7 @@ lava-cross-validation-agreement-threshold: 2
 
 Fans this request out to `max-participants` nodes in parallel and only returns once `agreement-threshold` of them return matching responses. Both headers are required together. Subject to operator policy (an operator can mandate, cap, or forbid cross-validation per method). See [Cross-validation](../configuration/failover/cross-validation.md).
 
-**When to use:** correctness-critical reads (`eth_getLogs`, `debug_*`, `eth_call` at a fixed block) where one lying node is unacceptable. It multiplies upstream cost — pair with caching.
+**When to use:** correctness-critical reads (`eth_getLogs`, `debug_*`, `eth_call` at a fixed block) where one lying node is unacceptable. It multiplies upstream cost - pair with caching.
 
 ## Combining directives
 
@@ -231,23 +231,23 @@ Smart Router annotates every response with metadata about how the relay was serv
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that ultimately served the response. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and *no* node was contacted — including when the request named one with `lava-select-provider`. |
+| `Lava-Provider-Address` | The node that ultimately served the response. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and *no* node was contacted - including when the request named one with `lava-select-provider`. |
 | `Lava-Retries` | Number of retry attempts made for this relay. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
-| `Lava-Guid` | Unique request id — correlate with logs and traces. |
+| `Lava-Guid` | Unique request id - correlate with logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |
-| `lava-identified-node-error` | The body is a node error the router recognised, not a router failure. Present whether the error came from a live node or a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ` — the node answered correctly and is not penalised. |
+| `lava-identified-node-error` | The body is a node error the router recognised, not a router failure. Present whether the error came from a live node or a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ` - the node answered correctly and is not penalised. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
 | `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |
 | `Lava-Relay-Timeout-Applied` | The per-attempt timeout the router used, as a Go duration, after [bounding `lava-relay-timeout`](#override-the-per-attempt-timeout). Only on a request that sent that header; it carries the router's own timeout when the value was ignored. Absent when the request failed without any reply. |
-| `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
+| `lava-selection-stats` | Node-selection debug stats - only when the router runs with `--enable-selection-stats`. |
 
-When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, `lava-cross-validation-pending-providers` (queried providers whose answer had not arrived when the reply was built), and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
+When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, `lava-cross-validation-pending-providers` (queried providers whose answer had not arrived when the reply was built), and - on failure - `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
 
 A failed quorum also returns `lava-cross-validation-plurality-size` and `lava-cross-validation-plurality-providers`: how many providers returned the most common response, and which ones (sorted, comma-separated). The providers list is empty on a tie, and the size is `0` when no non-empty response arrived. This names who came closest, not who was right, so `lava-cross-validation-disagreeing-providers` still lists every provider that answered. A structural `insufficient-capacity` / `insufficient-groups` failure queries no provider and returns neither header.
 
 ## Operator restrictions
 
-Smart Router honours the request directives above as a fixed set — there is no per-header server-side toggle to disable an individual directive such as node pinning. The one operator-configurable restriction is **cross-validation policy**: an operator can mandate, cap, or forbid cross-validation per `(chain, interface, method)` in the config file. See [Cross-validation](../configuration/failover/cross-validation.md) and [the config file](../configuration/config-file.md#cross-validation).
+Smart Router honours the request directives above as a fixed set - there is no per-header server-side toggle to disable an individual directive such as node pinning. The one operator-configurable restriction is **cross-validation policy**: an operator can mandate, cap, or forbid cross-validation per `(chain, interface, method)` in the config file. See [Cross-validation](../configuration/failover/cross-validation.md) and [the config file](../configuration/config-file.md#cross-validation).

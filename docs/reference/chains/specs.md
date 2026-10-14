@@ -5,12 +5,12 @@ description: "How chain specs declare API methods, parser rules, finality parame
 
 # Chain specs
 
-Smart Router is **chain-agnostic**. It has no chain logic baked in — every chain it
+Smart Router is **chain-agnostic**. It has no chain logic baked in - every chain it
 serves is described by a **JSON spec**. The spec is what teaches the router how to talk
 to a chain: which RPC methods exist, how to parse each one, where finality sits, and
 which capabilities (archive, debug, …) a node must have to serve a given method.
 
-This is why adding a chain never means a code change or a new build — it's just another
+This is why adding a chain never means a code change or a new build - it's just another
 spec file the router loads at startup.
 
 ## What a spec defines
@@ -18,9 +18,9 @@ spec file the router loads at startup.
 | Part | What it's for |
 | --- | --- |
 | **API methods** | Every RPC method the chain exposes, per interface (`jsonrpc` / `rest` / `grpc` / `tendermintrpc` / `graphql`). |
-| **Parser rules** | How to read a method's request/response — e.g. which param holds the block number — so the router can cache, route, and apply [consistency](../../configuration/failover/integrity.md) correctly. |
+| **Parser rules** | How to read a method's request/response - e.g. which param holds the block number - so the router can cache, route, and apply [consistency](../../configuration/failover/integrity.md) correctly. |
 | **Categories** | Per-method flags: read vs. write (stateful), whether it's cacheable, which addon/extension it needs (archive, debug). These drive [node selection](../../configuration/projects/selection-policies.md) and caching. |
-| **Finality parameters** | Block times and finalization distance — feed the integrity lag gate and finalized-vs-not cache TTLs. |
+| **Finality parameters** | Block times and finalization distance - feed the integrity lag gate and finalized-vs-not cache TTLs. |
 | **Imports** | A spec can import another (e.g. Arbitrum imports `ETH1`), inheriting its methods and addons. The router resolves imports transitively. |
 
 ## How specs are loaded
@@ -32,7 +32,7 @@ override earlier ones for the same chain id):
 # a local directory
 smartrouter config.yml --use-static-spec specs/
 
-# or straight from a GitHub/GitLab repo — no manual copy
+# or straight from a GitHub/GitLab repo - no manual copy
 smartrouter config.yml \
   --use-static-spec https://github.com/Magma-Devs/lava-specs/tree/main
 ```
@@ -46,12 +46,12 @@ bundled `specs/` still resolves when you point at the catalog.
 
 | Source | What's in it | Use when |
 |---|---|---|
-| **Bundled** — [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs) in the repo | A handful of production chains + reusable Cosmos building blocks (what the example configs use) | quickest start; what the `init_smartrouter_*` scripts use |
-| **Catalog** — [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) | The full set spanning every major ecosystem, kept up to date | production deployments serving any chain beyond the bundled ones |
+| **Bundled** - [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs) in the repo | A handful of production chains + reusable Cosmos building blocks (what the example configs use) | quickest start; what the `init_smartrouter_*` scripts use |
+| **Catalog** - [`Magma-Devs/lava-specs`](https://github.com/Magma-Devs/lava-specs) | The full set spanning every major ecosystem, kept up to date | production deployments serving any chain beyond the bundled ones |
 
 ## Building blocks
 
-Some specs describe no chain of their own — they exist purely to be **imported** by chain
+Some specs describe no chain of their own - they exist purely to be **imported** by chain
 specs that share an API surface. The router never serves these directly.
 
 | Spec | Role |

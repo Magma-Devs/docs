@@ -1,20 +1,20 @@
 ---
 title: "RPC node selection"
-description: "QoS-weighted provider selection by latency, sync status, and availability — tuned per method category."
+description: "QoS-weighted provider selection by latency, sync status, and availability - tuned per method category."
 ---
 
 # RPC Node selection
 
-Smart Router doesn't pick RPC nodes randomly. Every relay flows through a QoS-weighted selector that scores nodes on latency, sync freshness, and reliability — then picks one according to the **strategy** you configure.
+Smart Router doesn't pick RPC nodes randomly. Every relay flows through a QoS-weighted selector that scores nodes on latency, sync freshness, and reliability - then picks one according to the **strategy** you configure.
 
 ## How selection works
 
 1. The chain parser identifies the request's category (latest vs. archive, heavy vs. light, free vs. paid).
 2. The provider optimizer narrows the pool to upstreams that support the relevant API interface and category.
 3. The weighted selector scores each candidate on:
-    - **Latency** — recent observed response times.
-    - **Sync** — how close the node is to the chain head.
-    - **Availability** — recent error and timeout rates.
+    - **Latency** - recent observed response times.
+    - **Sync** - how close the node is to the chain head.
+    - **Availability** - recent error and timeout rates.
 4. The active strategy adjusts those weights (see below).
 5. A weighted-random pick is made, with a configurable minimum-selection floor that keeps every healthy node in rotation.
 
@@ -27,7 +27,7 @@ Source: [`protocol/provideroptimizer/provider_optimizer.go`](https://github.com/
 | `balanced` *(default)* | latency + sync + availability | most workloads |
 | `latency` | lowest response time | latency-sensitive reads (UI, fast quote) |
 | `sync-freshness` | node closest to chain head | indexers, mempool watchers |
-| `accuracy` | higher accuracy at higher cost — diversifies node selection (like `distributed`; no direct link to cross-validation) | financial / critical reads |
+| `accuracy` | higher accuracy at higher cost - diversifies node selection (like `distributed`; no direct link to cross-validation) | financial / critical reads |
 | `distributed` | spread across nodes | avoiding hot spots, fairness |
 | `cost` | cheapest per compute unit | high-volume non-critical traffic |
 | `privacy` | pins to a single provider per stream *(not fully implemented)* | minimising correlation across calls |
@@ -40,7 +40,7 @@ Pick a strategy at startup with the `--strategy` flag:
 smartrouter config.yml --use-static-spec specs/ --strategy latency
 ```
 
-To tune the underlying score weights directly, use the `--qos-*` flags —
+To tune the underlying score weights directly, use the `--qos-*` flags -
 `--qos-latency-weight`, `--qos-sync-weight`, `--qos-availability-weight`,
 `--qos-stake-weight`, and `--qos-min-selection-chance` (the floor that keeps every
 healthy node in rotation). These weights are set independently of `--strategy`: a
@@ -53,6 +53,6 @@ Pin a single request to a specific node with the `lava-select-provider` header. 
 
 ## Related
 
-- [Failover & retry](../failover/index.md) — what happens when the picked node fails or returns suspect data
-- [Hedge](../failover/hedge.md) — race two nodes in parallel
-- [Cross-validation](../failover/cross-validation.md) — require agreement across RPC nodes
+- [Failover & retry](../failover/index.md) - what happens when the picked node fails or returns suspect data
+- [Hedge](../failover/hedge.md) - race two nodes in parallel
+- [Cross-validation](../failover/cross-validation.md) - require agreement across RPC nodes

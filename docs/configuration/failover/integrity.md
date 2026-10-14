@@ -9,7 +9,7 @@ A pre-request check that filters out nodes too far behind the chain head. Protec
 
 ## How it works
 
-Before sending a relay, Smart Router compares each candidate node's most recently observed block height against the "seen block" — the freshest height observed across the pool. Nodes behind by more than `EndpointLagThreshold` are dropped from the selection pool for that request.
+Before sending a relay, Smart Router compares each candidate node's most recently observed block height against the "seen block" - the freshest height observed across the pool. Nodes behind by more than `EndpointLagThreshold` are dropped from the selection pool for that request.
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -17,7 +17,7 @@ Before sending a relay, Smart Router compares each candidate node's most recentl
 | `EnableWaitForCatchup` | `false` | wait for endpoints to catch up instead of skipping |
 | `MaxWaitTime` | derived per-chain (500ms–5s) | max wait if `EnableWaitForCatchup` is on |
 
-Defaults are computed from the chain spec's block-time and finalization parameters — see [`consistency_config.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/relaycore/consistency_config.go). On Ethereum, this works out to ~10 blocks. On fast chains, more.
+Defaults are computed from the chain spec's block-time and finalization parameters - see [`consistency_config.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/relaycore/consistency_config.go). On Ethereum, this works out to ~10 blocks. On fast chains, more.
 
 The lag check is conservative: with `EnableWaitForCatchup: false` (the default), lagging nodes are simply skipped, so the user never sees their stale state. With `EnableWaitForCatchup: true`, the relay waits up to `MaxWaitTime` for a node to catch up.
 
@@ -33,15 +33,15 @@ The lag check is conservative: with `EnableWaitForCatchup: false` (the default),
 
 - It doesn't catch *wrong* data when nodes all agree on the wrong answer. For that, see [cross-validation](cross-validation.md).
 - It doesn't validate signatures, Merkle proofs, or anything cryptographic. The reorg-aware cache handles those concerns separately.
-- It doesn't check responses *after* they return — once a node passes the lag filter, its response is accepted (subject to [retry](retry.md) on transport-level errors).
+- It doesn't check responses *after* they return - once a node passes the lag filter, its response is accepted (subject to [retry](retry.md) on transport-level errors).
 
 ## Configuration
 
 The pre-request thresholds are derived from the chain spec. To override per-chain, edit the spec values that feed `NewConsistencyValidationConfig`:
 
-- `allowed_block_lag_for_qos_sync` — feeds `EndpointLagThreshold = max(2 × this, finalization_distance, 10)`.
-- `block_distance_for_finalized_data` — also feeds the threshold.
-- `average_block_time` — feeds `MaxWaitTime = clamp(2 × this, 500ms, 5s)`.
+- `allowed_block_lag_for_qos_sync` - feeds `EndpointLagThreshold = max(2 × this, finalization_distance, 10)`.
+- `block_distance_for_finalized_data` - also feeds the threshold.
+- `average_block_time` - feeds `MaxWaitTime = clamp(2 × this, 500ms, 5s)`.
 
 The `EnableWaitForCatchup` flag is not currently exposed as a CLI/YAML knob.
 
@@ -53,7 +53,7 @@ The pre-request lag filter has no dedicated counter; observe it through the cons
 |---|---|
 | `smartrouter_consistency_total` | requests enforcing consistency (seen-block) |
 | `smartrouter_consistency_success_total` / `smartrouter_consistency_failed_total` | consistency-enforced requests that succeeded / failed |
-| `rpc_endpoint_latest_block` | per-endpoint head — compare across endpoints to see which are lagging |
+| `rpc_endpoint_latest_block` | per-endpoint head - compare across endpoints to see which are lagging |
 | Tracing | lag check emits span events with `lag_blocks` and decision (`skipped` / `kept` / `waited`) |
 
 See the [Metrics reference](../../reference/metrics.md#consistency) for labels and types.
