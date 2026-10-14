@@ -1,11 +1,11 @@
 ---
 title: "Ethereum"
-description: "Run Smart Router for Ethereum - example config and supported methods."
+description: "Run Smart Router for Ethereum: example config and supported methods."
 ---
 
 # Ethereum
 
-Ethereum mainnet over JSON-RPC.
+Smart Router serves Ethereum mainnet over JSON-RPC. This page covers the supported methods, the example config, and how to connect a client.
 
 ## Endpoint
 
@@ -25,11 +25,11 @@ Ethereum mainnet over JSON-RPC.
 | Account abstraction (ERC-4337) | `eth_estimateUserOperationGas`, `eth_sendUserOperation`, etc. (node-dependent) |
 | Network / client | `web3_*`, `net_*` |
 
-The full method list lives in the spec file linked above.
+The spec file linked above has the full method list.
 
 ## Upstream capabilities
 
-Some methods only work on upstreams with specific capabilities. Mark these as add-ons in your config; the router only routes matching methods to capable upstreams. If no upstream declares an add-on, matching requests are served by the upstreams you have; a request that explicitly asked for the extension gets a [`Lava-Extension-Unavailable`](../../api/directives.md#response-headers) response header saying so.
+Some methods only work on upstreams with specific capabilities. Mark these capabilities as add-ons in your config. The router then routes matching methods only to capable upstreams. If no upstream declares an add-on, the upstreams you have serve the matching requests. If a request explicitly asked for the extension, it gets a [`Lava-Extension-Unavailable`](../../api/directives.md#response-headers) response header that says so.
 
 | Add-on | Required for |
 |---|---|
@@ -80,13 +80,13 @@ Some methods only work on upstreams with specific capabilities. Mark these as ad
 
 ## Migrating from Alchemy / Infura / QuickNode
 
-Swap the node URL for your Smart Router URL. The JSON-RPC protocol is identical - your existing client code doesn't change.
+Replace the node URL with your Smart Router URL. The JSON-RPC protocol is the same, so your existing client code does not change.
 
-If you relied on vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream nodes expose the equivalent methods. Coverage for a method is determined by the chain spec, which is maintained in the catalog - if something you need isn't covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
+If you used vendor-specific extensions (Alchemy enhanced APIs, QuickNode add-ons, etc.), check whether your upstream nodes expose the equivalent methods. The chain spec decides which methods are covered, and the spec is maintained in the catalog. If a method you need is not covered, [request it](https://github.com/Magma-Devs/smart-router/issues).
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) - two public upstreams (PublicNode, Tenderly), HTTP + WS, no API key needed:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_eth.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses two public upstreams (PublicNode, Tenderly) over HTTP + WS and needs no API key:
 
 === "Docker Compose"
 
@@ -101,4 +101,4 @@ The repo ships a ready-to-run config at [`config/smartrouter_examples/smartroute
     smartrouter config/smartrouter_examples/smartrouter_eth.yml --use-static-spec specs/
     ```
 
-It listens on port `3360` - send it a request with any of the [client snippets above](#connect-a-client).
+It listens on port `3360`. Send it a request with any of the [client snippets above](#connect-a-client).

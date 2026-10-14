@@ -1,11 +1,11 @@
 ---
 title: "Solana"
-description: "Run Smart Router for Solana - example config and supported methods."
+description: "Run Smart Router for Solana: example config and supported methods."
 ---
 
 # Solana
 
-Solana mainnet over JSON-RPC.
+Smart Router serves Solana mainnet over JSON-RPC. This page covers the supported methods, the example config, and how to connect a client.
 
 ## Endpoint
 
@@ -18,7 +18,7 @@ Solana mainnet over JSON-RPC.
 
 ## Supported method families
 
-Solana speaks its own JSON-RPC, not the Ethereum one.
+Solana uses its own JSON-RPC, not the Ethereum one.
 
 | Family | Examples |
 |---|---|
@@ -27,17 +27,17 @@ Solana speaks its own JSON-RPC, not the Ethereum one.
 | Transactions | `getTransaction`, `getSignatureStatuses`, `sendTransaction`, `simulateTransaction` |
 | Network / node | `getHealth`, `getVersion`, `getEpochInfo`, `getClusterNodes`, `getGenesisHash` |
 
-The full method list lives in the spec file linked above.
+The spec file linked above has the full method list.
 
 !!! note "Slot vs. block height"
-    Solana's `context.slot` and `lastValidBlockHeight` diverge by the skip rate
-    (tens of millions on mainnet). Smart Router tracks the **slot** on both the
-    chain-tracker and consistency sides so cross-node consistency checks compare
-    like units.
+    Smart Router tracks the **slot** on both the chain-tracker and consistency
+    sides, so cross-node consistency checks compare the same units. Solana's
+    `context.slot` and `lastValidBlockHeight` differ by the skip rate (tens of
+    millions on mainnet).
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_solana.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) - two public upstreams (PublicNode and the Solana Labs public RPC), no API key needed. The example is HTTP-only, so run it with `--skip-websocket-verification`:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_solana.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses two public upstreams (PublicNode and the Solana Labs public RPC) and needs no API key. The example is HTTP-only, so run it with `--skip-websocket-verification`:
 
 === "Docker Compose"
 
@@ -80,4 +80,4 @@ curl -X POST http://127.0.0.1:3360 \
       -d '{"jsonrpc":"2.0","method":"getBalance","params":["11111111111111111111111111111111"],"id":1}'
     ```
 
-Point at your own upstreams by editing the `node-urls` in the config - see [The config file](../../configuration/config-file.md).
+To use your own upstreams, edit the `node-urls` in the config. See [The config file](../../configuration/config-file.md).
