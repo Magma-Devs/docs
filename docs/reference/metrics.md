@@ -28,7 +28,7 @@ If you only graph a handful of things, graph these:
 | Is the router up and serving? | `smartrouter_overall_health`, `smartrouter_total_relays_serviced` |
 | Are requests failing? | `smartrouter_total_errored`, `smartrouter_errors_total` (by `error_category` / `retryable`) |
 | How fast is it? | `smartrouter_end_to_end_latency_milliseconds` (histogram → p50/p95/p99) |
-| Is a node degrading? | `rpc_endpoint_overall_health`, `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
+| Is a node degrading? | `rpc_endpoint_overall_health`, `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block`; `rpc_endpoint_url_latest_block` with `rpc_endpoint_url_answered_until_seconds` for one url of a provider that froze ([stuck or down](#telling-a-stuck-url-from-a-down-one)) |
 | How much load does the router itself put on my node? | `rpc_endpoint_tracker_requests_total` (by `kind`) — the router's own polling, separate from the relays you sent it; `rpc_endpoint_tracker_gate_skips_total` (by `source`) — the polls it chose not to send |
 | Is failover working hard? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
 | Is an upstream rate-limiting us? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
@@ -203,6 +203,9 @@ They split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 | `rpc_endpoint_overall_health_breakdown` | Gauge | `spec`, `apiInterface` | Aggregate health per chain/interface. |
 | `rpc_endpoint_selection_score` | Gauge | `spec`, `apiInterface`, `endpoint_id`, `score_type` | Selection scores by `score_type` (availability / latency / sync / stake / composite). |
 | `rpc_endpoint_latest_block` | Gauge | `spec`, `apiInterface`, `endpoint_id` | Latest block reported by the endpoint. |
+| `rpc_endpoint_url_latest_block` | Gauge | `spec`, `apiInterface`, `endpoint_id`, `url`, `internal_path` | Latest block one node url of a provider answered with, one series per (provider, url). Written on every answered poll, the same block again included, and by served relays. `url` is a fingerprint, not the url — see [Telling a stuck url from a down one](#telling-a-stuck-url-from-a-down-one). |
+| `rpc_endpoint_url_answered_until_seconds` | Gauge | as `rpc_endpoint_url_latest_block` | Unix time until which the url counts as answering: its last answer plus max(2m, 2 × the chain's poll interval). Past it, the url has stopped answering. |
+| `rpc_endpoint_url_relays_serviced_total` | Counter | as `rpc_endpoint_url_latest_block` | Relays one node url of a provider served successfully — the per-url counterpart of `rpc_endpoint_total_relays_serviced`. |
 | `rpc_endpoint_fetch_latest_fails` | Counter | `spec`, `apiInterface`, `endpoint_id` | Latest-block fetch failures. An **event** counter, not a request counter. |
 | `rpc_endpoint_fetch_block_fails` | Counter | `spec`, `apiInterface`, `endpoint_id` | Failed specific-block fetches. |
 | `rpc_endpoint_fetch_latest_success` | Counter | `spec`, `apiInterface`, `endpoint_id` | New-block **detections** by the chain tracker, not successful requests. |
@@ -233,6 +236,44 @@ Two caveats when reading the chain-tracker counters:
   `rpc_endpoint_tracker_requests_total` counts one physical request once per
   provider sharing that URL. When estimating the load on a metered node, keep
   the `endpoint_id` breakdown (or dedupe by URL) instead of summing blindly.
+
+#### Telling a stuck url from a down one
+
+A provider can have several node urls — a REST chain with `/v2` and `/v3` paths, or a
+primary and a fallback node. Every url of the provider writes `rpc_endpoint_latest_block`,
+so while one url keeps climbing, that series keeps moving and cannot show another url that
+has frozen. The `rpc_endpoint_url_*` series are kept per url for that:
+
+- **Stuck**: `rpc_endpoint_url_latest_block` stands still while
+  `rpc_endpoint_url_answered_until_seconds` keeps moving. The url answers every poll, with the
+  same block.
+- **Down**: both stand still. The url stopped answering, so it serves no stale block either.
+
+Compare `answered_until` with the time the sample was scraped, `timestamp(...)`, not with
+`time()`. With `time()`, a scrape that arrives late flips an answering url to down; with
+`timestamp()` it only delays the verdict.
+
+```promql
+# urls that kept answering for 5m with the same block
+(changes(rpc_endpoint_url_latest_block[5m]) == 0)
+  and on (spec, apiInterface, endpoint_id, url, internal_path)
+(rpc_endpoint_url_answered_until_seconds > timestamp(rpc_endpoint_url_answered_until_seconds))
+```
+
+A chain at rest (no new blocks anywhere) matches too, so compare against the router's own head,
+`smartrouter_latest_block`, before calling a url stuck.
+
+Labels:
+
+- `url` is the first 8 hex digits of the node url's sha256, and nothing of the url itself, since
+  a node url can carry an api key anywhere in it. To find which configured url a fingerprint
+  names, hash each candidate: `printf '%s' 'https://node.example/key' | sha256sum | cut -c1-8` (`shasum -a 256` on macOS).
+  On a router run with `--debug-address`, `GET /debug/endpoint-state` also shows it as
+  `URLFingerprint` beside each endpoint.
+- `internal_path` is the spec path the url serves (`/v2`), empty for the root.
+
+Websocket urls and urls not in the provider configuration get no series, and a url whose
+tracker is removed loses its series.
 
 ### Optimizer
 
