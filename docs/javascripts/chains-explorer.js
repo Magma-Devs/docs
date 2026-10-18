@@ -29,8 +29,8 @@ document$.subscribe(function () {
   }
   function ifaceBadges(c) {
     var meta = {
-      "JSON-RPC": ["iface-rpc", "RPC"], "REST": ["iface-rest", "REST"],
-      "Tendermint": ["iface-tm", "TM"], "gRPC": ["iface-grpc", "gRPC"]
+      "JSON-RPC": ["iface-rpc", "JSON-RPC"], "REST": ["iface-rest", "REST"],
+      "Tendermint": ["iface-tm", "Tendermint"], "gRPC": ["iface-grpc", "gRPC"]
     };
     return c.ifs.map(function (i) {
       var m = meta[i] || ["iface-rpc", i];

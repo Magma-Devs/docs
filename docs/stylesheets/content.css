@@ -1,0 +1,398 @@
+/* ============================================================================
+   Article content: type, links, code, tables, callouts, tabs, figures.
+   Text is narrow (--w-prose), data is wide (--w-wide). Both share a left edge.
+   Rules are scoped to the article (.md-content__inner) so they cannot leak
+   into search results or dialogs, which reuse the theme's .md-typeset class.
+   ============================================================================ */
+
+.md-content__inner {
+  font-family: var(--prose);
+  font-size: var(--t-16);
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--body);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reading measure. Paragraphs, lists and headings stop at --w-prose; tables,
+   code and figures run to the full column. */
+.md-content__inner > :is(p, ul, ol, dl, blockquote, h1, h2, h3, h4, h5, h6, .admonition, details, hr) {
+  max-width: var(--w-prose);
+}
+
+/* --- Headings ------------------------------------------------------------- */
+
+.md-content__inner :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--sans);
+  font-weight: 700;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.md-content__inner h1 {
+  font-size: var(--t-32);
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+  margin: 0 0 var(--s-16);
+}
+.md-content__inner h2 {
+  font-size: var(--t-24);
+  line-height: 1.3;
+  letter-spacing: -0.018em;
+  margin: var(--s-48) 0 var(--s-12);
+}
+.md-content__inner h3 {
+  font-size: var(--t-19);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  margin: var(--s-32) 0 var(--s-8);
+}
+.md-content__inner :is(h4, h5, h6) {
+  font-size: var(--t-16);
+  line-height: 1.4;
+  letter-spacing: 0;
+  margin: var(--s-24) 0 var(--s-8);
+}
+.md-content__inner :is(h1, h2, h3, h4) code {
+  font-size: inherit;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Permalink mark beside a heading: hidden until the heading is hovered. */
+.md-content__inner .headerlink {
+  color: var(--faint);
+  font-weight: 400;
+  text-decoration: none;
+  margin-left: var(--s-8);
+}
+.md-content__inner .headerlink:is(:hover, :focus-visible) { color: var(--accent-dark); }
+
+/* --- Paragraphs and lists ------------------------------------------------- */
+
+.md-content__inner p { margin: 0 0 var(--s-16); text-wrap: pretty; }
+.md-content__inner :is(ul, ol) { margin: 0 0 var(--s-16); }
+.md-content__inner :is(ul, ol) li { margin-bottom: var(--s-8); }
+.md-content__inner :is(ul, ol) li :is(ul, ol) { margin: var(--s-8) 0 0; }
+.md-content__inner :is(ul, ol) > li::marker { color: var(--sub); }
+.md-content__inner :is(strong, b) { font-weight: 700; color: var(--ink); }
+.md-content__inner hr { border-bottom: 1px solid var(--line); margin: var(--s-32) 0; }
+
+/* Summary: the first paragraph under the page title, set apart by a quiet
+   panel instead of a bigger size or a lighter color. */
+.md-content__inner h1 + p {
+  background: var(--wash);
+  border-radius: var(--r-card);
+  padding: var(--s-16) var(--s-24);
+  margin-bottom: var(--s-32);
+}
+
+/* Kicker above a page title. */
+.md-content__inner .eyebrow {
+  font-family: var(--sans);
+  font-size: var(--t-12);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin: 0 0 var(--s-8);
+}
+
+/* --- Links ---------------------------------------------------------------- */
+
+.md-content__inner a {
+  color: var(--accent-dark);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color var(--fast) var(--ease);
+}
+.md-content__inner a:is(:hover, :focus-visible) {
+  color: var(--accent-dark);
+  text-decoration-color: var(--accent);
+}
+.md-content__inner a code { color: inherit; }
+/* On a panel that is already wash, the chip flips to paper so it stays visible. */
+.md-content__inner :is(h1 + p, .admonition, details) code { background: var(--paper); }
+
+/* The search field is the exception: its open panel is its focus signal. */
+:is(a, button, input, label, summary, [tabindex]):not(.md-search__input):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--s-4);
+}
+
+/* --- Code ----------------------------------------------------------------- */
+
+/* Inline code: a faint chip, so a name stands out from the words around it. */
+.md-content__inner code {
+  font-family: var(--mono);
+  font-size: var(--t-14);
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: var(--wash);
+  padding: 0 var(--s-4);
+  border-radius: var(--s-4);
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Code block */
+.md-content__inner pre { margin: var(--s-24) 0; line-height: 1.6; }
+.md-content__inner pre > code {
+  font-size: var(--t-14);
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--wash);
+  border-radius: var(--r-control);
+  padding: var(--s-16) var(--s-24);
+  overflow-wrap: normal;
+}
+.md-content__inner .highlight { margin: var(--s-24) 0; }
+.md-content__inner .highlight > pre { margin: 0; }
+.md-content__inner .highlight span.filename {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--wash);
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r-control) var(--r-control) 0 0;
+  margin: 0;
+  padding: var(--s-8) var(--s-24);
+}
+.md-content__inner .highlight span.filename + pre > code { border-radius: 0 0 var(--r-control) var(--r-control); }
+
+/* Copy button on a code block */
+.md-content__inner .md-code__nav {
+  background: var(--wash);
+  border-radius: var(--r-control);
+  padding: var(--s-4);
+  top: var(--s-8);
+  right: var(--s-8);
+}
+.md-content__inner .md-code__button { color: var(--sub); }
+.md-content__inner .md-code__button:is(:hover, :focus-visible) { color: var(--accent-dark); }
+.md-content__inner .md-clipboard { color: var(--sub); }
+.md-content__inner .md-clipboard:is(:hover, :focus-visible) { color: var(--accent-dark); }
+
+.md-content__inner kbd {
+  font-family: var(--mono);
+  font-size: var(--t-14);
+  color: var(--ink);
+  background: var(--wash);
+  border-radius: var(--s-4);
+  box-shadow: none;
+  padding: 0 var(--s-4);
+}
+
+/* --- Tables: horizontal rules only ---------------------------------------- */
+
+.md-typeset__scrollwrap { margin: var(--s-24) 0; }
+.md-typeset__table { display: block; padding: 0; margin: 0; }
+.md-content__inner table:not([class]) {
+  display: table;
+  width: 100%;
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  line-height: 1.5;
+  letter-spacing: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  border-collapse: collapse;
+}
+.md-content__inner table:not([class]) th {
+  min-width: 0;
+  padding: var(--s-8) var(--s-24) var(--s-8) 0;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  vertical-align: bottom;
+  border-bottom: 1px solid var(--ink);
+}
+.md-content__inner table:not([class]) td {
+  padding: var(--s-12) var(--s-24) var(--s-12) 0;
+  color: var(--body);
+  vertical-align: top;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+}
+.md-content__inner table:not([class]) :is(th, td):last-child { padding-right: 0; }
+.md-content__inner table:not([class]) tbody tr:hover { background: none; box-shadow: none; }
+.md-content__inner table:not([class]) code { font-size: var(--t-14); }
+/* A name in the first column is looked up, not read: it never breaks mid-word. */
+.md-content__inner table:not([class]) td:first-child code { white-space: nowrap; }
+.md-content__inner table:not([class]) td:first-child { color: var(--ink); }
+
+/* Sortable header (javascripts/tablesort.js) */
+.md-content__inner th.th-sortable { cursor: pointer; user-select: none; }
+.md-content__inner th.th-sortable::after { content: " \21C5"; color: var(--faint); }
+.md-content__inner th.th-sortable[aria-sort="ascending"]::after { content: " \2191"; color: var(--accent-dark); }
+.md-content__inner th.th-sortable[aria-sort="descending"]::after { content: " \2193"; color: var(--accent-dark); }
+
+/* --- Callouts ------------------------------------------------------------- */
+/* Two surfaces only. Wash: a side note. Amber: read this before you act. */
+
+.md-content__inner :is(.admonition, details) {
+  font-size: inherit;
+  color: var(--body);
+  background: var(--wash);
+  border: 0;
+  border-radius: var(--r-control);
+  box-shadow: none;
+  margin: var(--s-24) 0;
+  padding: var(--s-16) var(--s-24);
+}
+.md-content__inner :is(.admonition, details):focus-within { box-shadow: none; }
+.md-content__inner :is(.admonition, details):is(.warning, .caution, .attention, .danger, .error, .failure, .bug) {
+  background: var(--amber);
+}
+.md-content__inner :is(.admonition, details) > :is(.admonition-title, summary) {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  margin: 0 0 var(--s-4);
+  padding: 0;
+}
+.md-content__inner :is(.admonition, details) > :is(.admonition-title, summary)::before { display: none; }
+.md-content__inner :is(.admonition-title, summary) code { font-size: inherit; }
+.md-content__inner :is(.admonition, details) > :last-child { margin-bottom: 0; }
+.md-content__inner :is(.admonition, details) :is(pre > code, .md-code__nav) { background: var(--paper); }
+
+/* Collapsible callout */
+.md-content__inner details > summary { cursor: pointer; padding-right: var(--s-24); }
+.md-content__inner details:not([open]) { padding-bottom: var(--s-16); }
+.md-content__inner details:not([open]) > summary { margin-bottom: 0; }
+.md-content__inner details > summary::after {
+  top: 0.2em;
+  right: 0;
+  width: var(--s-16);
+  height: var(--s-16);
+  background-color: var(--sub);
+}
+
+.md-content__inner blockquote {
+  color: var(--body);
+  font-style: italic;
+  border-left: 2px solid var(--accent);
+  margin: var(--s-24) 0;
+  padding-left: var(--s-24);
+}
+
+/* --- Tabs ----------------------------------------------------------------- */
+
+.md-content__inner .tabbed-set { margin: var(--s-24) 0; border-radius: 0; }
+.md-content__inner .tabbed-labels { box-shadow: 0 -1px var(--line) inset; }
+.md-content__inner .tabbed-labels > label {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--sub);
+  padding: var(--s-8) 0;
+  margin-right: var(--s-24);
+  border-radius: 0;
+  transition: color var(--fast) var(--ease);
+}
+.md-content__inner .tabbed-labels > label:hover { color: var(--ink); }
+/* With linked tabs the theme moves the padding onto a link inside the label. */
+.md-content__inner .tabbed-labels--linked > label { padding: 0; }
+.md-content__inner .tabbed-labels--linked > label > a {
+  display: block;
+  padding: var(--s-8) 0;
+  color: inherit;
+  text-decoration: none;
+}
+.md-content__inner .tabbed-labels::before { background: var(--accent); }
+.md-content__inner .tabbed-content { padding-top: var(--s-16); }
+.md-content__inner .tabbed-block > :first-child { margin-top: 0; }
+.md-content__inner .tabbed-button { color: var(--sub); }
+
+/* --- Figures -------------------------------------------------------------- */
+
+.md-content__inner img { max-width: 100%; height: auto; }
+.md-content__inner p > img[src$=".svg"] { display: block; margin: var(--s-32) 0; }
+/* A diagram is data, not prose: it gets the wide column so its text stays at
+   the size it was drawn. */
+.md-content__inner > p:has(> img[src$=".svg"]:only-child) { max-width: var(--w-wide); }
+
+/* --- Buttons -------------------------------------------------------------- */
+/* Primary is ink, not accent: the accent stays scarce. */
+
+.md-typeset .md-button {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  padding: var(--s-8) var(--s-16);
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.md-typeset .md-button:is(:hover, :focus-visible) {
+  color: var(--ink);
+  background: var(--wash);
+  border-color: var(--faint);
+}
+.md-typeset .md-button--primary {
+  color: var(--paper);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.md-typeset .md-button--primary:is(:hover, :focus-visible) {
+  color: var(--paper);
+  background: var(--body);
+  border-color: var(--body);
+}
+.md-typeset .md-button:active { transform: scale(0.97); }
+
+/* --- Next-step list (the "grid cards" block on Quick start) --------------- */
+
+.md-content__inner .grid.cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-32) var(--s-48);
+  margin: var(--s-24) 0 var(--s-48);
+  max-width: var(--w-wide);
+}
+.md-content__inner .grid.cards > ul > li {
+  font-family: var(--sans);
+  font-size: var(--t-14);
+  line-height: 1.5;
+  letter-spacing: 0;
+  border: 0;
+  border-top: 1px solid var(--ink);
+  border-radius: 0;
+  padding: var(--s-12) 0 0;
+  margin: 0;
+}
+.md-content__inner .grid.cards > ul > li:is(:hover, :focus-within) { border-color: var(--ink); box-shadow: none; }
+.md-content__inner .grid.cards > ul > li > p { margin: 0 0 var(--s-4); }
+.md-content__inner .grid.cards > ul > li > p:first-child { font-size: var(--t-19); letter-spacing: -0.01em; }
+.md-content__inner .grid.cards > ul > li > p:last-child { margin: var(--s-8) 0 0; font-weight: 700; }
+
+/* --- Small screens -------------------------------------------------------- */
+
+@media screen and (max-width: 44.9375em) {
+  .md-content__inner h1 { font-size: var(--t-24); }
+  .md-content__inner h1 + p { padding: var(--s-12) var(--s-16); }
+  .md-content__inner pre > code { padding: var(--s-16); }
+  .md-content__inner .grid.cards { grid-template-columns: minmax(0, 1fr); gap: var(--s-24); }
+  /* Edge-to-edge code blocks need no rounding. */
+  .md-content__inner > .highlight pre > code { border-radius: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-content__inner *, .md-header *, .md-sidebar * { transition-duration: 0s; animation: none; }
+}
