@@ -248,6 +248,20 @@ When cross-validation runs, the router also returns `lava-cross-validation-statu
 
 A failed quorum also returns `lava-cross-validation-plurality-size` and `lava-cross-validation-plurality-providers`: how many providers returned the most common response, and which ones (sorted, comma-separated). The providers list is empty on a tie, and the size is `0` when no non-empty response arrived. This names who came closest, not who was right, so `lava-cross-validation-disagreeing-providers` still lists every provider that answered. A structural `insufficient-capacity` / `insufficient-groups` failure queries no provider and returns neither header.
 
+### Upstream response headers
+
+The headers above are the router's own. An upstream node's response headers are not passed
+through. The reply keeps only what a client needs to decode the body (`Content-Type`,
+`Content-Encoding`), what a 429's wait is computed from (`Retry-After`, measured against the
+upstream's `Date`), and the headers the chain's spec declares in the reply direction for
+that API interface. Today those are the Cosmos block-height header and Aptos's ledger-state
+headers (`x-aptos-chain-id`, `x-aptos-ledger-version`, `x-aptos-ledger-timestampusec`,
+`x-aptos-epoch`, `x-aptos-ledger-oldest-version`, `x-aptos-block-height`,
+`x-aptos-oldest-block-height`, `x-aptos-cursor`), on every Aptos route. A vendor's edge and
+product headers (`server`, `cf-ray`, its CORS policy, cookies, quota counters) are dropped,
+and so is any header an upstream sends under a router-owned name. A cached reply is filtered
+the same way when it is served.
+
 ## Operator restrictions
 
 Smart Router honours the request directives above as a fixed set — there is no per-header server-side toggle to disable an individual directive such as node pinning. The one operator-configurable restriction is **cross-validation policy**: an operator can mandate, cap, or forbid cross-validation per `(chain, interface, method)` in the config file. See [Cross-validation](../configuration/failover/cross-validation.md) and [the config file](../configuration/config-file.md#cross-validation).
