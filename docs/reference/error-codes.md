@@ -12,8 +12,8 @@ rotate to another node.
 
 !!! info "These codes are internal — clients never see them"
     Smart Router is a transparent hop: your client always receives the **original**
-    error from the upstream node, unmodified (the same JSON-RPC / HTTP / gRPC error
-    you'd get talking to the node directly). Lava error codes appear only in the
+    error from the upstream node, unmodified (the same JSON-RPC / HTTP / gRPC / GraphQL
+    error you'd get talking to the node directly). Lava error codes appear only in the
     router's **logs** and in the [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
     metric. Use this
     page to interpret those logs and metrics — not to handle codes on the wire.
@@ -288,6 +288,44 @@ Every other XRPL method keeps the envelope rule: an engine result elsewhere, as
 is refused with `USER_INVALID_REQUEST` before any node is called, because a batch
 is classified by its envelopes alone and a rejection inside one would read as a
 success again.
+
+---
+
+## GraphQL replies
+
+A GraphQL node reports a failure inside an ordinary HTTP 200, in the reply's
+`errors` list, and GraphQL fixes no error codes: each server chooses its own (Sui's
+server sets `extensions.code`). The router therefore reads the body of every 2xx
+reply before it decides anything, and treats the HTTP status as what it is on a
+GraphQL endpoint: the gateway's or the transport's verdict, never the node's.
+
+| Reply | Treated as | What the router does |
+| --- | --- | --- |
+| 2xx, `data` is an object, `errors` absent or empty | Success | Served and cached as usual. A null field inside `data` (`{"data":{"checkpoint":null}}`) is that node's real answer, not an error. |
+| 2xx, `errors` non-empty, with or without `data` | Node error | The row for the error's code (below) decides whether another upstream is asked first and whether the answering node is scored. The client receives the node's error document as sent, with `lava-identified-node-error: true`. Never cached. |
+| 2xx with neither `data` nor `errors`, or `data: null` and no `errors` — `{}`, a gateway's `{"error":"Invalid API key"}`, a JSON-RPC envelope | Not a GraphQL reply | The gateway or a vendor answered in the node's place. Another upstream is asked; a transaction broadcast keeps waiting for the other upstreams; nothing is cached. When every upstream answers this way, the client receives the first reply as it was sent, status and body. |
+| 4xx or 5xx | Gateway or transport error | Handled as on a JSON-RPC endpoint: not the node's answer, retried on another upstream, returned as is when no upstream answers properly. A 429 backs that upstream off; when every upstream answers 429 the client receives a 503. |
+
+Sui's server codes:
+
+| `extensions.code` | Another upstream asked | Scored against the node |
+| --- | --- | --- |
+| `INTERNAL_SERVER_ERROR`, `REQUEST_TIMEOUT` | Yes | Yes |
+| `UNAVAILABLE`, `DEADLINE_EXCEEDED` (gRPC-style names some servers use) | Yes | Yes |
+| `FEATURE_UNAVAILABLE` | Yes | No — this deployment lacks the feature; the node is healthy |
+| `RESOURCE_EXHAUSTED` | Yes | No — the upstream backs off, as for HTTP 429 |
+| `BAD_USER_INPUT`, `GRAPHQL_PARSE_FAILED`, `GRAPHQL_VALIDATION_FAILED` | No | No — the query would fail the same on every node |
+| Any other code, or no code | Yes, once | No |
+
+Why it matters for a write: a transaction is broadcast to every upstream and the
+caller gets the first success. A gateway's instant `{"error":…}` under a 200 would
+otherwise end that broadcast at once with no transaction ID while another upstream
+executed the transaction. Why it matters for a read: a caller's own mistake
+(`GRAPHQL_VALIDATION_FAILED`) answered by the node is still the node's answer, and
+the router never replaces it, but it is not a result either, so it is never cached.
+
+In every row the client receives a node's reply, status and body unchanged. The
+router answers in its own words only when no upstream answered at all.
 
 ---
 
