@@ -28,7 +28,7 @@ Each is detailed below. The router's [response headers](#response-headers) carry
 lava-select-provider: <upstream-name>
 ```
 
-Expresses a **preference** for one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+Pins the request to one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it or the request fails: if the node answers with an error, that error is returned with `Lava-Retries: 0`, and the router neither retries nor hedges on another node. [Failover](../configuration/failover/index.md) policies do not apply to a pinned request.
 
 !!! warning "The cache answers first — a pinned request may never reach the named node"
     The response cache is consulted **before** node selection runs, and pinning does *not*
