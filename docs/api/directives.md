@@ -13,6 +13,7 @@ Override Smart Router's default behaviour for a single request by setting reques
 |---|---|
 | `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream — the cache is still consulted first. |
 | `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
+| `lava-pin-allow-retry` | With a pin, [allow retries on other nodes](#allow-retries-on-a-pinned-request) after the first attempt. |
 | `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
@@ -28,7 +29,7 @@ Each is detailed below. The router's [response headers](#response-headers) carry
 lava-select-provider: <upstream-name>
 ```
 
-Expresses a **preference** for one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+Pins the request to one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it or the request fails: if the node answers with an error, that error is returned with `Lava-Retries: 0`, and the router neither retries nor hedges on another node. [Failover](../configuration/failover/index.md) policies do not apply to a pinned request.
 
 !!! warning "The cache answers first — a pinned request may never reach the named node"
     The response cache is consulted **before** node selection runs, and pinning does *not*
@@ -95,6 +96,26 @@ curl -X POST http://127.0.0.1:3360 \
 ```
 
 Working across replicas requires a cache backend and `--shared-state`; without them the header only applies within a single replica. If the chosen node cannot serve a request, the request fails rather than being served elsewhere. See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
+
+## Allow retries on a pinned request
+
+```
+lava-pin-allow-retry: true
+```
+
+Sent together with `lava-select-provider` or `lava-stickiness`. The pinned node still gets the first attempt, but the request is no longer "this node or fail": if the pinned node answers with an error, is too slow, or is too far behind the chain tip, the router may retry or hedge on another node, and `Lava-Retries` counts it. A sticky session keeps its node; the next request starts on it again.
+
+Only the value `true` (any case) turns it on. Without a pin header it has no effect.
+
+**When to use:** you prefer one node but would rather get an answer from another node than an error. Do not use it for a head-then-fetch sequence or for node-local state (filters, subscriptions): an answer from another node is exactly what the pin protects you from there.
+
+```bash
+curl -X POST http://127.0.0.1:3360 \
+  -H 'Content-Type: application/json' \
+  -H 'lava-select-provider: my-eth-upstream-1' \
+  -H 'lava-pin-allow-retry: true' \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
 
 ## Force a cache refresh
 

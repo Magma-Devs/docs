@@ -96,7 +96,7 @@ With either missing, each replica keeps its own private table. The header still 
 
 The guarantee is **route to the session's node, or fail** — never quietly serve the request from a different one. Substituting a node silently is the problem this feature exists to remove, so the router does not do it, even when another node could answer.
 
-In practice that means a request fails if the session's node cannot serve it, or if the cache backend holding the session's choice is unreachable.
+In practice a request fails if the session's node cannot serve it, if that node answers with an error, if the router's own freshness check finds the node too far behind the chain tip on a `latest` call, or if the cache backend holding the session's choice is unreachable. The session keeps its node through such a failure; the choice is remade only when the node leaves the pool or the session expires.
 
 !!! info "Requests without the header are never affected"
     This applies only to traffic carrying `lava-stickiness`. Everything else is served as usual.
@@ -108,7 +108,7 @@ In practice that means a request fails if the session's node cannot serve it, or
 | [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) | Wins. Naming a node explicitly is the more specific instruction. |
 | [Cross-validation](failover/cross-validation.md) | Wins. Cross-validation needs several nodes, which is incompatible with pinning to one. |
 | [`lava-extension`](../api/directives.md#override-the-extension) | A session id used for both plain and `archive` calls gets an independent node for each. |
-| [Retry](failover/retry.md) | A retry after a genuine error deliberately goes to a different node. |
+| [Retry](failover/retry.md) | Never moves a sticky request. If the session's node answers with an error, that error is returned to the caller with `Lava-Retries: 0`; the router does not retry or hedge on another node. Add [`lava-pin-allow-retry: true`](../api/directives.md#allow-retries-on-a-pinned-request) to let a failed request be retried elsewhere; the session keeps its node. |
 
 ## Trade-offs
 

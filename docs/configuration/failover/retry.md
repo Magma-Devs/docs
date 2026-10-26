@@ -102,7 +102,7 @@ subscriptions, so a node that said stop is not re-probed on a fixed cadence eith
 
 ## Pinning to one node
 
-The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry kicks in **on the rest of the pool** — pinning isn't a way to disable retry. See [Directives](../../api/directives.md).
+The `lava-select-provider` header pins the request to a specific upstream, and a `lava-stickiness` session does the same for the node it chose. A pinned request is **never retried or hedged on another node**: if the pinned upstream answers with an error, that error is returned to the caller with `Lava-Retries: 0`, and if the router's own freshness check finds the pinned node too far behind the chain tip on a `latest` call, the request fails. To keep the pinned node as the first choice but allow retries and hedges elsewhere, add [`lava-pin-allow-retry: true`](../../api/directives.md#allow-retries-on-a-pinned-request). See [Directives](../../api/directives.md) and [Sticky sessions](../sticky-sessions.md).
 
 ## Observability
 
