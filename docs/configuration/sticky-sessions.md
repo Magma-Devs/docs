@@ -108,7 +108,7 @@ In practice a request fails if the session's node cannot serve it, if that node 
 | [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) | Wins. Naming a node explicitly is the more specific instruction. |
 | [Cross-validation](failover/cross-validation.md) | Wins. Cross-validation needs several nodes, which is incompatible with pinning to one. |
 | [`lava-extension`](../api/directives.md#override-the-extension) | A session id used for both plain and `archive` calls gets an independent node for each. |
-| [Retry](failover/retry.md) | Never moves a sticky request. If the session's node answers with an error, that error is returned to the caller with `Lava-Retries: 0`; the router does not retry or hedge on another node. |
+| [Retry](failover/retry.md) | Never moves a sticky request. If the session's node answers with an error, that error is returned to the caller with `Lava-Retries: 0`; the router does not retry or hedge on another node. Add [`lava-pin-allow-retry: true`](../api/directives.md#allow-retries-on-a-pinned-request) to let a failed request be retried elsewhere; the session keeps its node. |
 
 ## Trade-offs
 
