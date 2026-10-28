@@ -85,7 +85,7 @@ endpoints:
 
 ## `direct-rpc[]` — upstream nodes
 
-Each entry is one named backend serving one chain + interface, with one or more URLs.
+Each entry is one named backend serving one chain + interface, with one or more URLs. All urls of an entry share one state — see [One entry or two](#one-entry-or-two-how-urls-share-state).
 
 | Field | Required | Description |
 | --- | --- | --- |
@@ -104,6 +104,49 @@ direct-rpc:
     node-urls:
       - url: "https://ethereum-rpc.publicnode.com"
       - url: "wss://ethereum-rpc.publicnode.com"
+```
+
+### One entry or two: how urls share state
+
+The router treats each `direct-rpc` entry as **one backend**. Every url listed under one
+entry shares that entry's state:
+
+- **One score.** The router ranks entries, not urls. A slow or lagging url lowers the score
+  of the whole entry.
+- **One latest-block reading.** The entry reports a single block height on its `endpoint_id`
+  series. It comes from whichever url reported last.
+- **One place in failover.** When a request fails on an entry, a retry or hedge goes to a
+  **different entry**. It does not try another url of the same entry.
+- **One name.** The response header `Lava-Provider-Address`, the `lava-select-provider` pin
+  and [sticky sessions](sticky-sessions.md) all use the entry's `name`.
+
+Inside an entry, each request goes to the first listed url that can serve it (the right
+transport, add-on and path). The next url is used only when that one is out of rotation, for
+example after it stops answering. A url that is **behind but still answering** stays in
+rotation and keeps getting the traffic.
+
+So the choice depends on what the urls are:
+
+| Your urls are… | Configure them as… | Why |
+| --- | --- | --- |
+| Different jobs of one node: the `https://` url and its `wss://` url, an archive or debug url, gateway paths | **One entry** | They are one backend. A `wss://` url can't be an entry on its own: every entry needs an `http(s)://` url. |
+| Independent nodes that do the same job: two regions, two plans, two vendors | **One entry per node** | Each node gets its own score, block height and failover. A lagging node loses traffic to the healthy one instead of hiding behind it. |
+
+```yaml
+direct-rpc:
+  # two independent nodes: two entries, each with its own state
+  - name: "eth-vendor-eu"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://eu.your-eth-provider.example.com"
+      - url: "wss://eu.your-eth-provider.example.com"
+  - name: "eth-vendor-us"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://us.your-eth-provider.example.com"
+      - url: "wss://us.your-eth-provider.example.com"
 ```
 
 ### `node-urls[]` — per-URL options
