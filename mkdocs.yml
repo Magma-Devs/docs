@@ -156,6 +156,7 @@ nav:
       - Local binary: deployment/local-binary.md
       - Docker Compose: deployment/docker-compose.md
       - Config wizard: deployment/wizard.md
+      - Kubernetes: deployment/kubernetes.md
       - Cache:
           - deployment/cache/index.md
           - Redis / Valkey backend: deployment/cache/redis.md
