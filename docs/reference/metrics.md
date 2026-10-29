@@ -87,7 +87,7 @@ Starting points — tune thresholds to your traffic.
 
 | Alert | Expression sketch | Why |
 | --- | --- | --- |
-| Router unhealthy | `smartrouter_overall_health == 0 for 1m` | No endpoint is serving. |
+| Router unhealthy | `smartrouter_overall_health == 0 for 1m` | The router reaches no upstream of any chain (see [When readiness changes](#when-readiness-changes)). Upstreams that answer with errors show on the error ratio instead. |
 | High error ratio | error-ratio recipe `> 0.05 for 5m` | Something broke upstream or in config. |
 | Latency regression | p99 recipe `> 2000 for 10m` | Tail latency degraded. |
 | Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
@@ -105,10 +105,42 @@ metrics manager.
 | Path | Format | Description |
 | --- | --- | --- |
 | `/metrics` | Prometheus | All registered metrics ([`promhttp.Handler()`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go#L647)) |
-| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy`. Fail-closed at boot: turns `200` once endpoint setup has verified a provider, and health transitions publish immediately. While a chain is unhealthy the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
+| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 chain is healthy, else `503 Unhealthy` — see [When readiness changes](#when-readiness-changes). Fail-closed at boot: turns `200` once endpoint setup has verified a provider, and health transitions publish immediately. While a chain is unhealthy the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
 | `/metrics/health-overall` | text | Alias of the above (backward-compat path) |
 | `/readyz` | text | Alias of `/metrics/overall-health` for a Kubernetes readiness probe — pulls the pod from the Service without restarting it. |
 | `/livez` | text | Always `200` while the process serves HTTP — liveness only; provider health is deliberately not consulted. |
+
+### When readiness changes
+
+`/readyz`, `/metrics/overall-health` and `smartrouter_overall_health` say whether the router
+reaches its upstreams. Each chain and api-interface is healthy or unhealthy, and the router
+is healthy while any one of them is. A health check sends the chain's latest-block request,
+moving to another upstream when a try fails, and ends in one of three verdicts:
+
+| The check gets | Verdict |
+| --- | --- |
+| A result from an upstream | The chain is healthy. |
+| No answer at all: every try timed out, failed to connect, or had no upstream to go to | The chain is unhealthy. |
+| An error, an error status or a rate limit from an upstream | No change. The router reaches that upstream, and every replica sharing it gets the same answer, so it is no reason to take one out of rotation. The answer does not show the chain serves either, so an unhealthy chain stays unhealthy until a check gets a result. |
+
+When the check runs:
+
+- Every `--relays-health-interval` (default `5m`) while the chain is healthy. Each client
+  relay an upstream answers with a result pushes it back, so a busy healthy chain is not
+  probed.
+- Within `--relays-health-unhealthy-interval` (default `15s`) of a client relay that no
+  upstream answered, and of another chain or api-interface of the same router turning
+  unhealthy.
+- Every `--relays-health-unhealthy-interval` while the chain is unhealthy, so recovery shows
+  within it.
+
+A client relay an upstream answered with an error, a cache hit, and a client that hangs up
+change nothing.
+
+!!! tip "An upstream outage keeps the router Ready"
+    When every upstream of a chain answers with errors or rate limits, every replica sees the
+    same thing, so the router stays Ready and `smartrouter_overall_health` stays `1`. Alert on
+    the [error ratio](#suggested-alerts) for that, not on readiness.
 
 ### Configuration
 
