@@ -206,8 +206,8 @@ See [Metrics](metrics.md).
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--relays-health-enable` | `true` | Enable relay health checks. When `false`, `/readyz` and `/metrics/overall-health` report `503` unconditionally — keep it on under a Kubernetes readiness probe. |
-| `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. Real relays defer the probe, so this is the idle re-check cadence. |
-| `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`. A not-ready router receives no real relays, so this bounds how fast `/readyz` recovers once an upstream answers again. |
+| `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. A client relay an upstream answers with a result defers the probe, so this is the idle re-check cadence. See [When readiness changes](metrics.md#when-readiness-changes). |
+| `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`, and the longest a client relay no upstream answered waits for the next probe. A not-ready router receives no client relays, so this bounds how fast `/readyz` follows upstreams going out of reach and coming back. |
 | `--epoch-duration` | `15m` | Duration of each epoch (e.g. `30m`). Epochs always run: unset or `0` uses `15m`. Each epoch boundary re-verifies the upstreams and rebuilds the serving tier, so an upstream demoted or recovered mid-epoch can take up to this long to show in `smartrouter_endpoint_serving_tier`. |
 | `--shutdown-grace-period` | `25s` | Graceful-shutdown deadline for in-flight requests + WS clients. |
 
