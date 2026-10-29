@@ -11,6 +11,7 @@ The umbrella for everything Smart Router does when a relay misbehaves: an RPC no
 
 | Policy | Trigger | What it does |
 |---|---|---|
+| [**Primary and backup**](backup.md) | no primary can take the request | sends the attempt to a `backup-direct-rpc` node; the next request starts with the primaries again |
 | [**Retry**](retry.md) | upstream returns a retryable error | rotates to a different node; tolerates `--set-relay-retry-limit` errors (default 2) |
 | [**Hedge**](hedge.md) | request hasn't returned within a tick | fires a parallel attempt to another node; first response wins |
 | [**Timeout**](timeout.md) | per-attempt window passes, or overall budget runs out | window: sends a hedge while the first attempt keeps running; budget: ends the relay |

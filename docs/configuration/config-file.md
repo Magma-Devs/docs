@@ -50,7 +50,7 @@ serve; a node with no matching listener is never used.
 | --- | --- | --- |
 | `endpoints` | yes | The listeners the router opens — one per chain × API interface. |
 | `direct-rpc` | yes | The upstream node pool. |
-| `backup-direct-rpc` | no | Emergency-fallback nodes, only used once the primary pool is exhausted. Same shape as `direct-rpc`. |
+| `backup-direct-rpc` | no | Emergency-fallback nodes, used only for a request that no primary can take. Same shape as `direct-rpc`; names must not repeat a `direct-rpc` name. See [Primary and backup nodes](failover/backup.md). |
 | `cache-be` | no | Address of the [cache](../deployment/cache/index.md) sidecar, e.g. `cache:20100`. Omit to disable caching. |
 | `resp-cache` | no | Block configuring a [Redis / Valkey cache backend](../deployment/cache/redis.md) in place of the sidecar. Takes precedence over `cache-be` when both are set. |
 | `secondary-cache-be` | no | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), consulted on a primary miss. `secondary-cache-timeout` and `secondary-cache-mode` tune it. |
