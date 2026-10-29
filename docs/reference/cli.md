@@ -54,7 +54,10 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--set-relay-retry-limit` | `2` | Max total retry attempts across all error types (node + protocol). `0` disables retries. |
+| `--set-relay-retry-limit` | `2` | Errors a request tolerates, across every node and error type (rate limits included), before it stops. `0` disables retries. The count does not know a backup is still untried: with more primaries than this limit, a request whose primaries all fail stops before any backup. See [Primary and backup nodes](../configuration/failover/backup.md#errors-the-retry-limit-can-end-a-request-before-any-backup). |
+| `--stateful-to-backup` | `false` | Also broadcast writes (transaction submission) to the backup tier. A write goes to every node it selects, so this sends **every** write to the backups, including the ones the primaries serve fine. See [Writes and batches](../configuration/failover/backup.md#writes-and-batches). |
+| `--bench-after` | `50` | Consecutive failed requests to one URL before it is taken out of rotation; a success resets the count. A provider with every URL out is blocked, and requests go to the other primaries or the backups. Must be greater than 0. |
+| `--read-your-writes-window` | `30s` | How long a written transaction's sender and hash stay tied to the node that accepted it, so the sender's follow-up reads go there first (a backup included). Pod-local, first attempt only. `0` turns it off. |
 | `--default-processing-timeout` | `30s` | Overall budget for a whole relay (all retries + hedges). |
 | `--min-relay-timeout` | `1s` | Per-attempt window floor: when to try the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. |
 | `--max-caller-relay-timeout` | `0` | Longest a caller's `lava-relay-timeout` header may make the router hold one request. It only lets the header extend a request past the budget it gets with no header, and never shortens one; `0` allows no extension. An extended request does not hedge. |

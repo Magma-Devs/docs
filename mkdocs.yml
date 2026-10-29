@@ -172,6 +172,7 @@ nav:
       - Cross-validation: configuration/failover/cross-validation.md
       - Failover & retry:
           - configuration/failover/index.md
+          - Primary and backup nodes: configuration/failover/backup.md
           - Retry: configuration/failover/retry.md
           - Hedge: configuration/failover/hedge.md
           - Timeout: configuration/failover/timeout.md
