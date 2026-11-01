@@ -30,7 +30,7 @@ If you only graph a few things, graph these:
 | Is the router up and serving? | `smartrouter_overall_health`, `smartrouter_total_relays_serviced` |
 | Are requests failing? | `smartrouter_total_errored`, `smartrouter_errors_total` (by `error_category` / `retryable`) |
 | How fast is it? | `smartrouter_end_to_end_latency_milliseconds` (histogram → p50/p95/p99) |
-| Is a node degrading? | `rpc_endpoint_overall_health`, `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
+| Is an upstream out of rotation, or degrading? | `smartrouter_csm_provider_blocked` (1 = the router sends it no traffic), `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
 | How much load does the router itself put on your node? | `rpc_endpoint_tracker_requests_total` (by `kind`) - the router's own polling, separate from the relays you sent it; `rpc_endpoint_tracker_gate_skips_total` (by `source`) - the polls it chose not to send |
 | How often does the router retry or hedge? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
 | Is an upstream rate-limiting you? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
@@ -64,8 +64,11 @@ sum(rate(smartrouter_retries_total[5m]))
 # Non-retryable (terminal) errors only - usually client/chain problems, not infra
 sum by (error_name) (rate(smartrouter_errors_total{retryable="false"}[5m]))
 
-# Nodes currently unhealthy
-rpc_endpoint_overall_health == 0
+# Upstreams the router is sending no traffic to right now
+smartrouter_csm_provider_blocked == 1
+
+# The same, for any moment in the last 5 minutes (see "Upstream out of rotation" below)
+max_over_time(smartrouter_csm_provider_blocked[5m]) == 1
 
 # Per-node request share (is selection lopsided?)
 sum by (provider_address) (rate(smartrouter_requests_total[5m]))
@@ -92,7 +95,7 @@ Starting points. Tune the thresholds to your traffic.
 | Router unhealthy | `smartrouter_overall_health == 0 for 1m` | The router reaches no upstream of any chain (see [When readiness changes](#when-readiness-changes)). Upstreams that answer with errors show on the error ratio instead. |
 | High error ratio | error-ratio recipe `> 0.05 for 5m` | Something broke upstream or in config. |
 | Latency regression | p99 recipe `> 2000 for 10m` | Tail latency degraded. |
-| Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
+| Upstream out of rotation | `max_over_time(smartrouter_csm_provider_blocked[5m]) == 1` | The router blocked a configured upstream, or none of its urls can take a request right now. Use the window rather than `for`: when every upstream of a chain is out, the router releases them all so it has something to serve from, and the instant value can read `0` in the middle of an outage. |
 | Cache cold | hit-ratio recipe `< 0.2 for 30m` | The cache is misconfigured or bypassed. This is a cost and latency risk. |
 | RESP cache backend unreachable | `smartrouter_resp_cache_connected == 0 for 5m` | Redis/Valkey is down or rejecting auth. Relays still succeed through the upstreams, so nothing else alerts, but you pay for every read. |
 | Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data. This is a high-signal correctness alert. |
@@ -183,6 +186,8 @@ The flag name and the `disabled` sentinel value are defined in
       `sum by (...)` over it gives the aggregate. Requests to methods outside the
       spec appear as `Default-<method>`.
 - **Boolean gauges** encode `1 = true / healthy / present`, `0 = false / unhealthy / absent`.
+  The exception is `smartrouter_csm_provider_blocked`, where `1` means the upstream is out of
+  rotation.
 - **Protocol version** gauges encode `major*1e6 + minor*1e3 + patch`.
 - Metrics are registered with `registerOrReuse`, which returns the already-registered
   collector instead of panicking on a duplicate. So re-registration (e.g. across test
@@ -231,7 +236,6 @@ and split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 | `rpc_endpoint_total_errored` | Counter | `spec`, `apiInterface`, `endpoint_id`, `function` | Errored relays for this endpoint. |
 | `rpc_endpoint_requests_in_flight` | Gauge | `spec`, `apiInterface`, `endpoint_id`, `function` | Relays currently in flight to this endpoint. |
 | `rpc_endpoint_end_to_end_latency_milliseconds` | Histogram | `spec`, `apiInterface`, `endpoint_id`, `function` | End-to-end latency per function for this endpoint. |
-| `rpc_endpoint_overall_health` | Gauge | `spec`, `apiInterface`, `endpoint_id` | Endpoint health (1 healthy / 0 unhealthy). |
 | `rpc_endpoint_overall_health_breakdown` | Gauge | `spec`, `apiInterface` | Aggregate health per chain/interface. |
 | `rpc_endpoint_selection_score` | Gauge | `spec`, `apiInterface`, `endpoint_id`, `score_type` | Selection scores by `score_type` (availability / latency / sync / stake / composite). |
 | `rpc_endpoint_latest_block` | Gauge | `spec`, `apiInterface`, `endpoint_id` | Latest block reported by the endpoint. |
@@ -285,6 +289,22 @@ Keep two things in mind when you read the chain-tracker counters:
 | `smartrouter_overall_health_breakdown` | Gauge | `spec`, `apiInterface` | Per-chain/interface health. |
 | `smartrouter_latest_block` | Gauge | `spec`, `apiInterface` | Latest block known to the router. |
 | `smartrouter_protocol_version` | Gauge | `version` | Encoded protocol version. |
+
+#### Upstream rotation
+
+An upstream is in rotation while the router can send it a request. It leaves rotation when
+the router blocks it (every request it was picked for found no url to use) or when none of its
+urls can take a request: a url is disabled after too many straight failures and held out while
+its latest block stays behind the chain. One url back in rotation brings the upstream back.
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_csm_provider_blocked` | Gauge | `spec`, `apiInterface`, `provider_address` | Whether the router is sending this upstream traffic: `1` = out of rotation (blocked, or no url can take a request right now), `0` = at least one url in rotation. Covers primary and backup upstreams, and is republished every second from the router's own state, so it never sticks. The label is the upstream's configured name, never its url. A rate-limit hold-off does not show here; see [rate-limit hold-off](#rate-limit-hold-off). |
+| `smartrouter_csm_blocked_providers` | Gauge | `spec`, `apiInterface` | How many primary upstreams the router has blocked. Non-zero means the chain is degraded. |
+| `smartrouter_csm_blocked_backup_providers` | Gauge | `spec`, `apiInterface` | How many backup upstreams the router has blocked. |
+
+An upstream whose urls alone take it out reads `1` on the per-upstream gauge without being
+counted by the two totals, so the count of upstreams at `1` can exceed their sum.
 
 #### WebSocket
 
