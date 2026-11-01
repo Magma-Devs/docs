@@ -77,7 +77,7 @@ A session's choice lasts about two router epochs (30 minutes at the default `--e
 |---|---|
 | Two or more calls that must agree — read the head, then fetch that block | **Yes** — this is what it is for |
 | Node-side state tied to one node — an `eth_newFilter` id, a subscription handle | **Yes** |
-| Read-your-own-write after `eth_sendRawTransaction` | **Yes** |
+| Read-your-own-write after `eth_sendRawTransaction` | **Yes**. The write itself then goes to the session's node only, not to every node: a sticky write gives up the broadcast. Send the write without the header if you want the broadcast, and the follow-up reads with it |
 | Independent single reads with no relationship to each other | No — pinning costs you the optimizer's choice for nothing |
 | A specific node you already know by name | No — use [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) |
 
