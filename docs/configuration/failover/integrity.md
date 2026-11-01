@@ -54,6 +54,7 @@ The pre-request lag filter has no dedicated counter; observe it through the cons
 | `smartrouter_consistency_total` | requests enforcing consistency (seen-block) |
 | `smartrouter_consistency_success_total` / `smartrouter_consistency_failed_total` | consistency-enforced requests that succeeded / failed |
 | `rpc_endpoint_latest_block` | per-endpoint head — compare across endpoints to see which are lagging |
+| `rpc_endpoint_url_latest_block` | per-url head of a provider with several node urls — shows one url lagging while the provider's other urls keep up (see [stuck or down](../../reference/metrics.md#telling-a-stuck-url-from-a-down-one)) |
 | Tracing | lag check emits span events with `lag_blocks` and decision (`skipped` / `kept` / `waited`) |
 
 See the [Metrics reference](../../reference/metrics.md#consistency) for labels and types.
