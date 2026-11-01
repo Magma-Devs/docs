@@ -17,7 +17,7 @@ spec file the router loads at startup.
 
 | Part | What it's for |
 | --- | --- |
-| **API methods** | Every RPC method the chain exposes, per interface (`jsonrpc` / `rest` / `grpc` / `tendermintrpc`). |
+| **API methods** | Every RPC method the chain exposes, per interface (`jsonrpc` / `rest` / `grpc` / `tendermintrpc` / `graphql`). |
 | **Parser rules** | How to read a method's request/response — e.g. which param holds the block number — so the router can cache, route, and apply [consistency](../../configuration/failover/integrity.md) correctly. |
 | **Categories** | Per-method flags: read vs. write (stateful), whether it's cacheable, which addon/extension it needs (archive, debug). These drive [node selection](../../configuration/projects/selection-policies.md) and caching. |
 | **Finality parameters** | Block times and finalization distance — feed the integrity lag gate and finalized-vs-not cache TTLs. |

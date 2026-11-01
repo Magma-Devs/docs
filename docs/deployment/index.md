@@ -21,6 +21,11 @@ Pick how you want to run it:
     These docs cover the **self-hosted** Smart Router. If you'd rather not operate it
     yourself, [talk to us](https://magmadevs.com/contact).
 
+!!! note "Running on Kubernetes?"
+    Smart Router runs on Kubernetes, and Magma Devs supports Kubernetes deployments.
+    [Kubernetes](kubernetes.md) lists what a cluster needs from the router;
+    [talk to us](https://magmadevs.com/contact) to run it on yours.
+
 ## Prerequisites
 
 All three methods start from a clone of the repo — it carries the compose files, example

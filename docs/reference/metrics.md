@@ -87,7 +87,7 @@ Starting points — tune thresholds to your traffic.
 
 | Alert | Expression sketch | Why |
 | --- | --- | --- |
-| Router unhealthy | `smartrouter_overall_health == 0 for 1m` | No endpoint is serving. |
+| Router unhealthy | `smartrouter_overall_health == 0 for 1m` | The router reaches no upstream of any chain (see [When readiness changes](#when-readiness-changes)). Upstreams that answer with errors show on the error ratio instead. |
 | High error ratio | error-ratio recipe `> 0.05 for 5m` | Something broke upstream or in config. |
 | Latency regression | p99 recipe `> 2000 for 10m` | Tail latency degraded. |
 | Node down | `rpc_endpoint_overall_health == 0 for 5m` | A configured upstream is out. |
@@ -105,10 +105,42 @@ metrics manager.
 | Path | Format | Description |
 | --- | --- | --- |
 | `/metrics` | Prometheus | All registered metrics ([`promhttp.Handler()`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/metrics/smartrouter_metrics_manager.go#L647)) |
-| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 endpoint is healthy, else `503 Unhealthy`. Fail-closed at boot: turns `200` once endpoint setup has verified a provider, and health transitions publish immediately. While a chain is unhealthy the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
+| `/metrics/overall-health` | text | `200 Health status OK` if ≥1 chain is healthy, else `503 Unhealthy` — see [When readiness changes](#when-readiness-changes). Fail-closed at boot: turns `200` once endpoint setup has verified a provider, and health transitions publish immediately. While a chain is unhealthy the router re-probes it every `--relays-health-unhealthy-interval` (default `15s`). |
 | `/metrics/health-overall` | text | Alias of the above (backward-compat path) |
 | `/readyz` | text | Alias of `/metrics/overall-health` for a Kubernetes readiness probe — pulls the pod from the Service without restarting it. |
 | `/livez` | text | Always `200` while the process serves HTTP — liveness only; provider health is deliberately not consulted. |
+
+### When readiness changes
+
+`/readyz`, `/metrics/overall-health` and `smartrouter_overall_health` say whether the router
+reaches its upstreams. Each chain and api-interface is healthy or unhealthy, and the router
+is healthy while any one of them is. A health check sends the chain's latest-block request,
+moving to another upstream when a try fails, and ends in one of three verdicts:
+
+| The check gets | Verdict |
+| --- | --- |
+| A result from an upstream | The chain is healthy. |
+| No answer at all: every try timed out, failed to connect, or had no upstream to go to | The chain is unhealthy. |
+| An error, an error status or a rate limit from an upstream | No change. The router reaches that upstream, and every replica sharing it gets the same answer, so it is no reason to take one out of rotation. The answer does not show the chain serves either, so an unhealthy chain stays unhealthy until a check gets a result. |
+
+When the check runs:
+
+- Every `--relays-health-interval` (default `5m`) while the chain is healthy. Each client
+  relay an upstream answers with a result pushes it back, so a busy healthy chain is not
+  probed.
+- Within `--relays-health-unhealthy-interval` (default `15s`) of a client relay that no
+  upstream answered, and of another chain or api-interface of the same router turning
+  unhealthy.
+- Every `--relays-health-unhealthy-interval` while the chain is unhealthy, so recovery shows
+  within it.
+
+A client relay an upstream answered with an error, a cache hit, and a client that hangs up
+change nothing.
+
+!!! tip "An upstream outage keeps the router Ready"
+    When every upstream of a chain answers with errors or rate limits, every replica sees the
+    same thing, so the router stays Ready and `smartrouter_overall_health` stays `1`. Alert on
+    the [error ratio](#suggested-alerts) for that, not on readiness.
 
 ### Configuration
 
@@ -140,7 +172,7 @@ The flag name and the `disabled` sentinel live in
 - **Attempt histograms** (`retry_attempts`, `hedge_attempts`) use integer buckets `1…10`.
 - **Common labels**:
     - `spec` — chain spec id (e.g. `ETH1`, `LAV1`).
-    - `apiInterface` — `jsonrpc`, `tendermintrpc`, `rest`, `grpc`.
+    - `apiInterface` — `jsonrpc`, `tendermintrpc`, `rest`, `grpc`, `graphql`.
     - `endpoint_id` — the configured upstream RPC endpoint.
     - `provider_address` — node the relay was routed to.
     - `method` — RPC method name. Batch requests carry a
@@ -445,8 +477,45 @@ assert `/debug/reset-all` emptied each store. All drop to `0` after a reset.
 | --- | --- | --- | --- |
 | `smartrouter_csm_blocked_providers` | Gauge | `spec`, `apiInterface` | Size of the previous-epoch blocked-providers store. |
 | `smartrouter_csm_blocked_backup_providers` | Gauge | `spec`, `apiInterface` | Size of the blocked-backup-providers store. |
-| `smartrouter_csm_sticky_sessions` | Gauge | `spec`, `apiInterface` | Live sticky-session affinities. |
+| `smartrouter_csm_sticky_sessions` | Gauge | `spec`, `apiInterface` | Live sticky-session affinities held by this replica. |
 | `smartrouter_csm_reported_providers` | Gauge | `spec`, `apiInterface` | Size of the reported-providers register. |
+
+#### Cross-pod sticky sessions
+
+With `--shared-state` and a cache backend, a `lava-stickiness` id resolves to one upstream
+across every replica through a shared claim. Each resolution is counted by how it went:
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | Claim resolutions. `outcome`: `local_hit` (answered from this replica's confirmed claim), `adopted` (routed by a live claim read from the shared registry rather than one held in memory — usually a peer's, see below), `claimed` (this replica made the claim), `lost_race` (a peer's claim naming a different upstream won), `error` (the claim could not be read or written, so the request failed), `no_candidate` (this replica had no upstream to offer), `invalidated` (a claim was dropped because its upstream could not serve here). |
+
+`adopted` is how a session that crossed replicas shows up. The `Lava-Provider-Address` reply
+header reads the same whether a replica used its own claim or a peer's. `adopted` is not proof on
+its own, though. A replica that drops its local copy of a claim (`invalidated`) leaves the shared
+claim in place, so its next request reads its own claim back and counts `adopted` too. So does a
+replica after `/debug/reset-all` clears its local table, if the shared claim outlived the reset. A
+rise in `adopted` on a replica whose `invalidated` count did not move, with no reset in between, is
+a peer's claim.
+
+The same counts are readable without the metrics port at `GET /debug/sticky-claims` on the
+debug server (`--debug-address`), one row per endpoint:
+
+```json
+[{"ChainID": "ETH1", "ApiInterface": "jsonrpc", "PodID": "eth-router-7d9f8b6c5-x2kqp/3fa9c1d2",
+  "SharedSticky": true,
+  "Outcomes": {"local_hit": 1, "adopted": 1, "claimed": 0, "lost_race": 0,
+               "error": 0, "no_candidate": 0, "invalidated": 0}}]
+```
+
+`SharedSticky` is `false` on a router without `--shared-state` and a cache backend, where every
+count stays `0`, so it tells "off" from "never fired". The counts are cumulative since the
+router process started; read them before and after the requests you send.
+
+`PodID` names the process that answered: the pod name, a slash, and a suffix that changes when the
+process restarts. The debug port is reached through a Service that balances across the router's
+replicas, so two readings in a row can come from different replicas. Compare two readings only when
+their `PodID` matches. A new suffix on the same pod name means the process restarted and its
+counts began again from `0`.
 
 ---
 

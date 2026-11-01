@@ -29,7 +29,7 @@ The full method list lives in the spec file linked above.
 
 ## Upstream capabilities
 
-Some methods only work on upstreams with specific capabilities. Mark these as add-ons in your config; the router only routes matching methods to capable upstreams.
+Some methods only work on upstreams with specific capabilities. Mark these as add-ons in your config; the router only routes matching methods to capable upstreams. If no upstream declares an add-on, matching requests are served by the upstreams you have; a request that explicitly asked for the extension gets a [`Lava-Extension-Unavailable`](../../api/directives.md#response-headers) response header saying so.
 
 | Add-on | Required for |
 |---|---|

@@ -11,8 +11,9 @@ Override Smart Router's default behaviour for a single request by setting reques
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | [Pin](#pin-to-a-specific-node) the request to one named upstream. |
-| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated, **max 2**). |
+| `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream — the cache is still consulted first. |
+| `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
+| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
 | `lava-relay-timeout` | [Override the per-attempt timeout](#override-the-per-attempt-timeout) (Go duration). |
@@ -27,7 +28,18 @@ Each is detailed below. The router's [response headers](#response-headers) carry
 lava-select-provider: <upstream-name>
 ```
 
-Routes this request to one named upstream, bypassing the QoS optimizer. The named upstream serves it directly. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+Expresses a **preference** for one named upstream at node selection, bypassing the QoS optimizer. When the request reaches selection, the named upstream serves it. If it fails, [failover](../configuration/failover/index.md) policies still apply against the rest of the pool.
+
+!!! warning "The cache answers first — a pinned request may never reach the named node"
+    The response cache is consulted **before** node selection runs, and pinning does *not*
+    bypass it. A cacheable method with a warm entry returns `Lava-Provider-Address: Cached`
+    and the named node is never contacted — including when that node is unreachable.
+
+    So a pinned request is **not a node health check**. For any cacheable method — which is
+    most reads — an unreachable node is indistinguishable from a healthy one: you get
+    HTTP 200 and a real answer either way. Pair the pin with
+    [`lava-force-cache-refresh`](#force-a-cache-refresh) whenever the point of the request
+    is the *node* rather than the data.
 
 !!! warning "`Lava-Provider-Address` is a response header, not a request directive"
     To pin a request, send **`lava-select-provider`**. `Lava-Provider-Address` is only
@@ -46,6 +58,44 @@ curl -X POST http://127.0.0.1:3360 \
 
 A gRPC call pins the same way, with the header sent as call metadata. See [Over gRPC](#over-grpc).
 
+To reach the node itself — for a health check, or to compare two nodes on the same query —
+add `lava-force-cache-refresh` so the cache cannot answer on its behalf:
+
+```bash
+curl -X POST http://127.0.0.1:3360 \
+  -H 'Content-Type: application/json' \
+  -H 'lava-select-provider: my-eth-upstream-1' \
+  -H 'lava-force-cache-refresh: true' \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+An unreachable node then fails loudly rather than returning a cached answer.
+
+## Keep a session on one node
+
+```
+lava-stickiness: <your-session-id>
+```
+
+Routes every request carrying the same id to the same upstream, on every router replica. The value is any string you choose — a worker id, a batch id, a user id.
+
+Unlike `lava-select-provider`, you do not name the node: the router picks one on the first request and keeps the rest of the session on it.
+
+**When to use:** a sequence of calls that has to agree with each other — reading the chain head and then fetching that block, for example, where a node a few blocks behind would return an empty result for a block that exists.
+
+!!! warning "Send the id on **every** call in the sequence"
+    Sending it only on the later call leaves the first one unpinned, so the two can still be
+    answered by different nodes — the problem the header exists to prevent.
+
+```bash
+curl -X POST http://127.0.0.1:3360 \
+  -H 'Content-Type: application/json' \
+  -H 'lava-stickiness: ingest-batch-42' \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+Working across replicas requires a cache backend and `--shared-state`; without them the header only applies within a single replica. If the chosen node cannot serve a request, the request fails rather than being served elsewhere. See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
+
 ## Force a cache refresh
 
 ```
@@ -56,7 +106,7 @@ Bypasses the cache for this request. The relay goes upstream, the response is re
 
 The refresh triggers on the header's **presence**, not its value — `lava-force-cache-refresh: false` (or any value) still forces it. Send the header only when you mean it.
 
-**When to use:** known-stale entry, suspected reorg, post-deploy verification.
+**When to use:** known-stale entry, suspected reorg, post-deploy verification, and any request whose purpose is to reach a *specific node* rather than to get data — see [the pin caveat](#pin-to-a-specific-node).
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
@@ -71,9 +121,17 @@ curl -X POST http://127.0.0.1:3360 \
 lava-relay-timeout: 12s
 ```
 
-Sets the timeout for each upstream attempt of this request. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The value is used **verbatim** — unlike the server-side default it is *not* clamped to the `--min-relay-timeout` floor, so a client can ask for less.
+Sets the timeout for each upstream attempt of this request: how long the router waits on one node before it also tries the next. Format: any Go duration string (`500ms`, `5s`, `1m30s`). The router bounds the value:
 
-**When to use:** known-slow methods (`debug_traceTransaction` on a deep block), or known-fast methods you don't want to wait for.
+- A zero or negative value, like one that does not parse, is ignored: the request keeps the router's own timeout.
+- A value under `300ms` is raised to `300ms`. It is *not* clamped to the `--min-relay-timeout` floor, so a client can still ask for less than that floor.
+- A value above the request's own budget is held to that budget. The own budget is what the request gets with no header: `--default-processing-timeout`, doubled for methods of 50 CU or more, and six times it for hanging, stateful or 100+ CU methods; a method whose own timeout is longer still keeps it (Bitcoin's `sendrawtransaction` gets about 20 minutes). An operator can let clients go further, up to `--max-caller-relay-timeout` (default `0`: no extension).
+
+A value at or above the request's own budget turns hedging off for that request: the attempt timeout is also the hedge interval, so the two become equal. Retrying after a failed attempt still works, but a node that goes quiet holds the request for the whole budget.
+
+The response carries [`Lava-Relay-Timeout-Applied`](#response-headers) with the timeout the router actually used.
+
+**When to use:** known-fast methods you don't want to wait for (hedge sooner), or known-slow methods (`debug_traceTransaction` on a deep block) within their own budget.
 
 ## Enable debug logging for one request
 
@@ -96,12 +154,10 @@ lava-providers-block: my-eth-upstream-3,my-eth-upstream-4
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | Route this request to one named node (the [pin](#pin-to-a-specific-node) header). |
+| `lava-select-provider` | Prefer one named node for this request (the [pin](#pin-to-a-specific-node) header) — a cache hit still answers before selection runs. |
 | `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. |
 
-!!! warning "`lava-providers-block` accepts at most 2 nodes"
-    A list of **3 or more** addresses is silently ignored — *no* nodes are excluded and
-    no error is returned. Keep the exclude list to two entries.
+There is no limit on how many nodes you exclude, and spaces around the commas are ignored. The exclusion also applies to backup nodes. If the list covers every node that could serve the request, the request fails — the router never falls back to a node you excluded.
 
 **When to use:** pin away from a node you've seen misbehave, or force a comparison against a specific one. Failover still applies across whatever nodes remain eligible.
 
@@ -112,6 +168,8 @@ lava-extension: archive
 ```
 
 Forces a request onto an extension (e.g. `archive`) instead of letting the router infer it from the requested block. The value is case-insensitive. Only nodes whose config declares the matching add-on are eligible — see the per-chain [Upstream capabilities](../reference/chains/ethereum.md#upstream-capabilities).
+
+If **no** node on the router declares the add-on, the request is not refused: it is served without the extension, by an ordinary node, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension — for `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension so the operator can add a capable node.
 
 **When to use:** a historical query the router would otherwise route to a non-archive node.
 
@@ -173,18 +231,23 @@ Smart Router annotates every response with metadata about how the relay was serv
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that served the response. When the request took more than one attempt, every node the router tried, comma-separated in the order it asked them, with the node that served the response last (`Cached` when the answer came from the cache). |
+| `Lava-Provider-Address` | The node that served the response. When the request took more than one attempt, every node the router tried, comma-separated in the order it asked them, with the node that served the response last. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and *no* node was contacted — including when the request named one with `lava-select-provider`. |
 | `Lava-Retries` | Attempts beyond the first that the router sent for this request, including a [hedged](../configuration/failover/hedge.md) attempt it cancelled because another node answered first. Absent when the request took one attempt. A write's fan-out to every node is one attempt and never reports retries. |
 | `lava-hedge-triggered` | `true` when the router sent a parallel [hedged](../configuration/failover/hedge.md) attempt for this request. Absent otherwise; never `false`. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `Lava-Guid` | Unique request id — correlate with logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |
+| `lava-identified-node-error` | The body is a node error the router recognised, not a router failure. Present whether the error came from a live node or a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ` — the node answered correctly and is not penalised. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
+| `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |
+| `Lava-Relay-Timeout-Applied` | The per-attempt timeout the router used, as a Go duration, after [bounding `lava-relay-timeout`](#override-the-per-attempt-timeout). Only on a request that sent that header; it carries the router's own timeout when the value was ignored. Absent when the request failed without any reply. |
 | `lava-selection-stats` | Node-selection debug stats — only when the router runs with `--enable-selection-stats`. |
 
-When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
+When cross-validation runs, the router also returns `lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, `lava-cross-validation-disagreeing-providers`, `lava-cross-validation-pending-providers` (queried providers whose answer had not arrived when the reply was built), and — on failure — `lava-cross-validation-failure-reason` (`no-agreement`, `insufficient-responses`, `diversity-unmet`, `group-quorum-unmet`, or a structural `insufficient-capacity` / `insufficient-groups`).
+
+A failed quorum also returns `lava-cross-validation-plurality-size` and `lava-cross-validation-plurality-providers`: how many providers returned the most common response, and which ones (sorted, comma-separated). The providers list is empty on a tie, and the size is `0` when no non-empty response arrived. This names who came closest, not who was right, so `lava-cross-validation-disagreeing-providers` still lists every provider that answered. A structural `insufficient-capacity` / `insufficient-groups` failure queries no provider and returns neither header.
 
 ## Operator restrictions
 

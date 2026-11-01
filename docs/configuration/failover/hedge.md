@@ -35,6 +35,7 @@ Both increment the same retry counter. Both cap at 10 attempts per relay.
 | One unresponsive node | yes — but [retry](retry.md) does this too once it errors |
 | Tail latency on indexer-style heavy reads | yes — significant p99 improvement |
 | Write traffic (`sendRawTransaction`) | covered by **stateful fan-out** instead — write paths are sent to all eligible nodes unconditionally, independent of hedging |
+| JSON-RPC batch requests | no — batches aren't hedged by default, because a batch can carry a write. See [Batch requests](retry.md#batch-requests) |
 
 ## When to be cautious
 

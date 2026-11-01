@@ -56,10 +56,11 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 | --- | --- | --- |
 | `--set-relay-retry-limit` | `2` | Max total retry attempts across all error types (node + protocol). `0` disables retries. |
 | `--default-processing-timeout` | `30s` | Overall budget for a whole relay (all retries + hedges). |
-| `--min-relay-timeout` | `1s` | Per-attempt timeout floor. The `lava-relay-timeout` header can raise it. |
+| `--min-relay-timeout` | `1s` | Per-attempt window floor: when to try the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. |
+| `--max-caller-relay-timeout` | `0` | Longest a caller's `lava-relay-timeout` header may make the router hold one request. It only lets the header extend a request past the budget it gets with no header, and never shortens one; `0` allows no extension. An extended request does not hedge. |
 | `--max-sessions-per-provider` | `1000` | Max concurrent sessions per node. |
 | `--maximum-streams-per-connection` | `100` | Max parallel streams over a single gRPC connection. |
-| `--disable-batch-request-retry` | `true` | Don't retry JSON-RPC batch requests. |
+| `--disable-batch-request-retry` | `true` | Don't retry, fail over, or hedge JSON-RPC batch requests. A batch can carry a write. See [Batch requests](../configuration/failover/retry.md#batch-requests). |
 | `--batch-node-error-on-any` | `false` | Treat a batch as a node error if **any** sub-request fails (vs. only if **all** do). |
 | `--max-batch-request-size` | `0` | Max requests per JSON-RPC batch (`0` = unlimited). |
 
@@ -205,9 +206,9 @@ See [Metrics](metrics.md).
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--relays-health-enable` | `true` | Enable relay health checks. When `false`, `/readyz` and `/metrics/overall-health` report `503` unconditionally — keep it on under a Kubernetes readiness probe. |
-| `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. Real relays defer the probe, so this is the idle re-check cadence. |
-| `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`. A not-ready router receives no real relays, so this bounds how fast `/readyz` recovers once an upstream answers again. |
-| `--epoch-duration` | disabled | Duration of each epoch (e.g. `30m`); unset disables epochs. |
+| `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. A client relay an upstream answers with a result defers the probe, so this is the idle re-check cadence. See [When readiness changes](metrics.md#when-readiness-changes). |
+| `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`, and the longest a client relay no upstream answered waits for the next probe. A not-ready router receives no client relays, so this bounds how fast `/readyz` follows upstreams going out of reach and coming back. |
+| `--epoch-duration` | `15m` | Duration of each epoch (e.g. `30m`). Epochs always run: unset or `0` uses `15m`. Each epoch boundary re-verifies the upstreams and rebuilds the serving tier, so an upstream demoted or recovered mid-epoch can take up to this long to show in `smartrouter_endpoint_serving_tier`. |
 | `--shutdown-grace-period` | `25s` | Graceful-shutdown deadline for in-flight requests + WS clients. |
 
 ## Logging
@@ -230,7 +231,7 @@ See [Metrics](metrics.md).
 | `--debug-relays` | `false` | Add debug info to relay response metadata (pairs with the `lava-debug-relay` header). |
 | `--debug-probes` | `false` | Add debug info to probe responses. |
 | `--enable-selection-stats` | `false` | Emit the `lava-selection-stats` response header. |
-| `--debug-address` | — | Debug HTTP server (integration tests) — exposes `/debug/*`. |
+| `--debug-address` | — | Debug HTTP server (integration tests) — exposes `/debug/*`, among them [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions). |
 | `--test-mode` | `false` | Send dummy data and print all listener metadata. |
 | `--allow-insecure-provider-dialing` | `false` | Allow non-TLS upstream connections. Dev/test only. |
 | `--pprof-address` | — | pprof server address (e.g. `localhost:6060`). |
