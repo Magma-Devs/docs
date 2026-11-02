@@ -81,6 +81,8 @@ You can watch the effect on
 | `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default - the larger of the per-pod savings. |
 | `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate. `0.25` (one poll per **four** block times) cuts it eightfold. Allowed `[0.25,8]`; an out-of-range value reverts to the default. See [Polling slower than the chain](#polling-slower-than-the-chain). |
 | `--shared-state` (with `--cache-be`) | `false` | Share poll observations across router replicas through the cache, so an upstream is polled about once per interval **fleet-wide** rather than once per pod. See [Cache & shared state](#cache-shared-state). |
+| `--chain-tracker-idle-after` | `0` (off) | Idle mode. When a chain has served no client request for this long, its trackers stop polling until the next request. Minimum `10s`. Available from v1.6.0. See [Pausing an idle chain](#pausing-an-idle-chain). |
+| `--chain-tracker-idle-poll-interval` | `0` | While a chain is idle, poll each upstream once per this interval, so a dead upstream is still noticed. `0` polls nothing while idle. No effect without `--chain-tracker-idle-after`. |
 
 The tracker also skips a poll when something else has already kept the upstream's tip
 fresh: the relays it served in the last block time, or (with `--shared-state`) a poll
@@ -88,6 +90,29 @@ that another replica made. Skipped ticks show up on
 [`rpc_endpoint_tracker_gate_skips_total`](metrics.md#endpoint-scoped-rpc_endpoint_) by
 `source`. If `requests_total` falls while `gate_skips_total` rises, the relief is
 working and the tracker has not stalled.
+
+### Pausing an idle chain
+
+`--chain-tracker-idle-after` stops polling a chain nobody is using. It is off by
+default. When it is on and a chain has served no client request for that long, its
+trackers skip every poll, so the upstreams of an unused chain are not billed for it.
+
+The next client request wakes the chain. The router polls every upstream of that chain
+once, and that request waits for the first answer, up to 1 second, before it is routed.
+Later requests are not delayed. While a chain is idle, `smartrouter_chain_idle` reads
+`1`.
+
+Things to know before you turn it on:
+
+- **Pick a window longer than the gap between your requests.** Otherwise every request
+  is a wake. `5m` to `10m` is a good start.
+- **The router's latest block stands still while a chain is idle.** An alert on "the
+  tip stopped moving" fires on an idle chain unless it skips chains where
+  `smartrouter_chain_idle` is `1`.
+- **Subscriptions do not keep a chain awake.** An open `eth_subscribe` neither keeps a
+  chain active nor wakes it. Unary requests over a websocket do.
+- **A disabled upstream recovers at the next epoch or after the wake.** Re-enabling an
+  upstream needs polls, so while a chain is idle it waits.
 
 ### Polling slower than the chain
 
