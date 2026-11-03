@@ -288,6 +288,7 @@ Keep two things in mind when you read the chain-tracker counters:
 | `smartrouter_overall_health` | Gauge | - | Overall router health (1 / 0). |
 | `smartrouter_overall_health_breakdown` | Gauge | `spec`, `apiInterface` | Per-chain/interface health. |
 | `smartrouter_latest_block` | Gauge | `spec`, `apiInterface` | Latest block known to the router. |
+| `smartrouter_chain_idle` | Gauge | `spec`, `apiInterface` | `1` while the chain is idle (no client request within `--chain-tracker-idle-after`, polls paused), `0` while active. Absent when idle mode is off. See [Pausing an idle chain](cli.md#pausing-an-idle-chain). |
 | `smartrouter_protocol_version` | Gauge | `version` | Encoded protocol version. |
 
 #### Upstream rotation
