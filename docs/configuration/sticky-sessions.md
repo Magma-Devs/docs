@@ -96,7 +96,15 @@ If either is missing, each replica keeps its own private table. The header still
 
 The guarantee is **route to the session's node, or fail**. The router never quietly serves the request from a different node. A silent switch to another node is the problem this feature exists to remove, so the router does not do it, even when another node could answer.
 
-A request fails if the session's node cannot serve it, or if the cache backend that holds the session's choice is unreachable.
+A request fails in these cases:
+
+- The session's node answers with an error. The router returns that error with `Lava-Retries: 0`. It does not retry or hedge the request on another node.
+- The session's node is busy: it has used its request budget for the period, it has no free session, or it has no connection up.
+- On a call for the `latest` block, the router finds the session's node too far behind the chain tip. A call for a specific block number is not checked.
+- The request also lists the session's node in [`lava-providers-block`](../api/directives.md#steer-node-selection).
+- The cache backend that holds the session's choice is unreachable.
+
+The session keeps its node through all of these. The router picks a new node for the session only when its node leaves the pool, for example because the router blocked it as unhealthy, or when the session expires.
 
 !!! info "Requests without the header are never affected"
     This applies only to traffic that carries `lava-stickiness`. All other traffic is served as usual.
@@ -105,10 +113,10 @@ A request fails if the session's node cannot serve it, or if the cache backend t
 
 | Directive | Behaviour |
 |---|---|
-| [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) | Wins. Naming a node explicitly is the more specific instruction. |
+| [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) | Wins the choice of node. Naming a node explicitly is the more specific instruction. The request still behaves as a sticky one: that node answers, or the request fails. |
 | [Cross-validation](failover/cross-validation.md) | Wins. Cross-validation needs several nodes, so it cannot be pinned to one. |
 | [`lava-extension`](../api/directives.md#override-the-extension) | A session id used for both plain and `archive` calls gets a separate node for each. |
-| [Retry](failover/retry.md) | A retry after a real error goes to a different node on purpose. |
+| [Retry](failover/retry.md) | Never moves a sticky request. If the session's node answers with an error, the router returns that error with `Lava-Retries: 0`. |
 
 ## Trade-offs
 

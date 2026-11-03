@@ -14,6 +14,7 @@ You send them as HTTP headers, or as call metadata on a gRPC listener ([Over gRP
 | Header | Effect |
 |---|---|
 | `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream. The cache is still checked first. |
+| `lava-select-provider-strict` | With `lava-select-provider`, [require the named node](#require-the-named-node): it answers, or the request fails. |
 | `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
 | `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
@@ -31,6 +32,8 @@ lava-select-provider: <upstream-name>
 ```
 
 This header sets a **preference** for one named upstream at node selection. It skips the QoS optimizer. When the request reaches selection, the named upstream serves it. If that upstream fails, [failover](../configuration/failover/index.md) policies still apply to the rest of the pool.
+
+If no other node may answer the request, also send [`lava-select-provider-strict: true`](#require-the-named-node).
 
 !!! warning "The cache answers first - a pinned request may never reach the named node"
     The router checks the response cache **before** node selection runs, and pinning does
@@ -73,6 +76,33 @@ curl -X POST http://127.0.0.1:3360 \
 
 If the node is unreachable, the request then fails with an error instead of returning a cached answer.
 
+## Require the named node
+
+```
+lava-select-provider-strict: true
+```
+
+Send this header together with `lava-select-provider`. The named node then answers the request, or the request fails. No other node serves it:
+
+- If the node answers with an error, the router returns that error with `Lava-Retries: 0`. It does not retry the request on another node.
+- If the node is slow, the router waits for it, up to the request's time budget. It does not send a hedge to another node.
+- If the node cannot take the request, for example because it is blocked or busy, the request fails.
+- On a call for the `latest` block, the router checks that the node is not too far behind the chain tip. If it is, the request fails. A call for a specific block number is not checked.
+
+This is how [`lava-stickiness`](#keep-a-session-on-one-node) always behaves.
+
+Only the value `true` (any letter case) turns it on. Without `lava-select-provider`, the header has no effect. [Cross-validation](#request-cross-validation) still overrides it, because cross-validation needs several nodes.
+
+**When to use:** a sequence of calls on a node you choose, where an answer from another node would be wrong. For example, you read the chain head from that node and then fetch that block, or you use state that exists only on that node.
+
+```bash
+curl -X POST http://127.0.0.1:3360 \
+  -H 'Content-Type: application/json' \
+  -H 'lava-select-provider: my-eth-upstream-1' \
+  -H 'lava-select-provider-strict: true' \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
 ## Keep a session on one node
 
 ```
@@ -96,7 +126,7 @@ curl -X POST http://127.0.0.1:3360 \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
-To work across replicas, the header needs a cache backend and `--shared-state`. Without them, it only applies within a single replica. If the chosen node cannot serve a request, the request fails. No other node serves it. See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
+To work across replicas, the header needs a cache backend and `--shared-state`. Without them, it only applies within a single replica. If the chosen node cannot serve a request, or answers with an error, the request fails. No other node serves it, and the router does not retry it elsewhere. See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
 
 ## Force a cache refresh
 
