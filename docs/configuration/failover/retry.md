@@ -106,6 +106,13 @@ subscriptions, so a rate-limited node is not re-probed on a fixed schedule eithe
 
 The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry runs **on the rest of the pool**. Pinning does not turn off retry. See [Directives](../../api/directives.md).
 
+Two kinds of request are the exception. They are **never retried or hedged on another node**:
+
+- a request with [`lava-stickiness`](../sticky-sessions.md);
+- a request with `lava-select-provider` and [`lava-select-provider-strict: true`](../../api/directives.md#require-the-named-node).
+
+If the node answers with an error, the router returns that error to the caller with `Lava-Retries: 0`.
+
 ## Observability
 
 | Metric | Meaning |
