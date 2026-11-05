@@ -1,6 +1,6 @@
 ---
 title: "Kubernetes"
-description: "Smart Router runs on Kubernetes, and Magma Devs supports Kubernetes deployments — what a cluster needs from the router, and whom to talk to."
+description: "Smart Router runs on Kubernetes, and Magma Devs supports Kubernetes deployments - what a cluster needs from the router, and whom to talk to."
 ---
 
 # Kubernetes

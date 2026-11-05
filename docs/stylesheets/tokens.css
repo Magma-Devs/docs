@@ -1,0 +1,142 @@
+/* ============================================================================
+   Design tokens
+   The only file that names a raw color, size, or typeface. shell.css,
+   content.css and widgets.css build from these and nothing else.
+   ============================================================================ */
+
+:root {
+  /* Typefaces. One face for all text, mono for anything you type.
+     System faces only: no webfont request. */
+  --serif: charter, Georgia, Cambria, "Times New Roman", Times, serif;
+  --sans:  sohne, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono:  ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --prose: var(--sans);           /* paragraph face. Serif was tried and dropped. */
+
+  /* Color. Accent marks links and the current place, never a background. */
+  --accent:      #E8431C;
+  --accent-dark: #B23310;         /* link and label text: 6.2:1 on paper */
+  --gold:        #FBBE1B;
+  --ink:         #26221F;         /* headings, strong text */
+  --body:        #3A352F;         /* paragraphs */
+  --sub:         #6E6A64;         /* secondary text: 5.4:1 on paper */
+  --faint:       #9A958E;         /* placeholders and icons only, never body text */
+  --paper:       #ffffff;
+  --wash:        #F6F3EF;         /* code and footnote-level surfaces */
+  --line:        #ECE6DE;         /* hairlines */
+  --code-string: #27598C;         /* string literals in code */
+
+  /* Derived color */
+  --amber: color-mix(in srgb, var(--gold) 18%, var(--paper));     /* caution surface */
+  --tint:  color-mix(in srgb, var(--accent) 8%, transparent);     /* hover on a result row */
+  --scrim: color-mix(in srgb, var(--ink) 40%, transparent);       /* page dim under a dialog */
+  --lift:  0 12px 32px color-mix(in srgb, var(--ink) 14%, transparent);  /* floating layers only */
+
+  /* Type scale (px). Nothing between these steps. */
+  --t-12: 12.5px;
+  --t-14: 14px;
+  --t-16: 16px;
+  --t-19: 19px;
+  --t-24: 24px;
+  --t-32: 32px;
+
+  /* Spacing scale (px). Nothing between these steps. */
+  --s-4:  4px;
+  --s-8:  8px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-48: 48px;
+
+  /* Radius */
+  --r-control: 8px;
+  --r-card:    12px;
+  --r-shell:   16px;
+
+  /* Layout */
+  --w-page:    1440px;            /* header, body and footer share this width */
+  --w-nav:     272px;             /* left navigation */
+  --w-toc:     232px;             /* right table of contents */
+  --w-prose:   680px;             /* reading measure for paragraphs */
+  --w-wide:    912px;             /* tables, code and figures */
+  --w-search:  320px;             /* search field at rest */
+  --w-card:    400px;             /* floating prompt */
+  --w-menu:    200px;             /* dropdown menu */
+  --h-header:  64px;
+  --h-control: 40px;              /* text fields */
+
+  /* Motion */
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --fast: 140ms;
+}
+
+/* Material theme variables, mapped once so the theme draws itself in house
+   colors instead of being overridden rule by rule. */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:             var(--paper);
+  --md-primary-fg-color--light:      var(--paper);
+  --md-primary-fg-color--dark:       var(--paper);
+  --md-primary-bg-color:             var(--ink);
+  --md-primary-bg-color--light:      var(--sub);
+
+  --md-accent-fg-color:              var(--accent-dark);
+  --md-accent-fg-color--transparent: var(--tint);
+  --md-accent-bg-color:              var(--paper);
+
+  --md-default-fg-color:             var(--ink);
+  --md-default-fg-color--light:      var(--sub);
+  --md-default-fg-color--lighter:    var(--faint);
+  --md-default-fg-color--lightest:   var(--line);
+  --md-default-bg-color:             var(--paper);
+  --md-default-bg-color--light:      var(--paper);
+  --md-default-bg-color--lighter:    var(--wash);
+  --md-default-bg-color--lightest:   var(--wash);
+
+  --md-typeset-color:                var(--body);
+  --md-typeset-a-color:              var(--accent-dark);
+  --md-typeset-mark-color:           var(--amber);
+  --md-typeset-table-color:          var(--line);
+  --md-typeset-table-color--light:   transparent;
+
+  --md-code-fg-color:                var(--ink);
+  --md-code-bg-color:                var(--wash);
+  --md-code-hl-color:                var(--accent);
+  --md-code-hl-color--light:         var(--tint);
+  --md-code-hl-keyword-color:        var(--accent-dark);
+  --md-code-hl-special-color:        var(--accent-dark);
+  --md-code-hl-constant-color:       var(--accent-dark);
+  --md-code-hl-string-color:         var(--code-string);
+  --md-code-hl-number-color:         var(--code-string);
+  --md-code-hl-function-color:       var(--ink);
+  --md-code-hl-name-color:           var(--ink);
+  --md-code-hl-operator-color:       var(--sub);
+  --md-code-hl-punctuation-color:    var(--sub);
+  --md-code-hl-comment-color:        var(--sub);
+  --md-code-hl-generic-color:        var(--sub);
+  --md-code-hl-variable-color:       var(--ink);
+
+  --md-admonition-fg-color:          var(--body);
+  --md-admonition-bg-color:          var(--wash);
+
+  --md-footer-fg-color:              var(--ink);
+  --md-footer-fg-color--light:       var(--sub);
+  --md-footer-fg-color--lighter:     var(--sub);
+  --md-footer-bg-color:              var(--paper);
+  --md-footer-bg-color--dark:        var(--paper);
+
+  --md-shadow-z1: none;
+  --md-shadow-z2: none;
+  --md-shadow-z3: var(--lift);
+}
+
+/* Small laptops: the sidebars give width back to the article, because tables
+   need it more than the navigation does. */
+@media screen and (min-width: 76.25em) and (max-width: 89.9375em) {
+  :root { --w-nav: 240px; --w-toc: 200px; }
+}
+
+body {
+  --md-text-font-family: var(--sans);
+  --md-code-font-family: var(--mono);
+}
