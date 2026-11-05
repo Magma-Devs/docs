@@ -13,6 +13,7 @@ Each policy is independent, and several can act during the life of a single rela
 
 | Policy | Trigger | What it does |
 |---|---|---|
+| [**Primary and backup**](backup.md) | no primary can take the request | sends the attempt to a `backup-direct-rpc` node; the next request starts with the primaries again |
 | [**Retry**](retry.md) | the upstream returns a retryable error | moves to a different node; tolerates `--set-relay-retry-limit` errors (default 2) |
 | [**Hedge**](hedge.md) | the request has not returned within a tick | sends a parallel attempt to another node; the first response wins |
 | [**Timeout**](timeout.md) | per-attempt window passes, or overall budget runs out | window: sends a hedge while the first attempt keeps running; budget: ends the relay |

@@ -32,6 +32,8 @@ lava-select-provider: <upstream-name>
 
 This header sets a **preference** for one named upstream at node selection. It skips the QoS optimizer. When the request reaches selection, the named upstream serves it. If that upstream fails, [failover](../configuration/failover/index.md) policies still apply to the rest of the pool.
 
+The name must be a `direct-rpc` (primary) node. A [backup](../configuration/failover/backup.md#pinning) cannot be pinned: naming one fails the request with `Selected provider not available`. The same error ends the request, and no other node is tried, when the pinned node is blocked or unknown.
+
 !!! warning "The cache answers first - a pinned request may never reach the named node"
     The router checks the response cache **before** node selection runs, and pinning does
     *not* bypass it. For a cacheable method with a warm cache entry, the response carries
@@ -237,12 +239,12 @@ The [response headers](#response-headers) come back as response metadata with lo
 
 ## Response headers
 
-Smart Router adds metadata to every response about how the relay was served. These headers are the main signal for debugging routing and failover from the client side.
+Smart Router adds metadata to every response about how the relay was served. These headers are the main signal for debugging routing and failover from the client side. A request that failed with no answer from any node (for example, every node was silent until the budget ended) carries none of them. Its request id is in the body at `error.data.guid`. See [What the caller gets](../configuration/failover/backup.md#what-the-caller-gets-when-neither-tier-can-serve).
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that finally served the response. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node, even when the request named one with `lava-select-provider`. |
-| `Lava-Retries` | Number of retry attempts made for this relay. |
+| `Lava-Provider-Address` | The node that finally served the response. When the request was retried or hedged, it is a comma-separated list of every node asked, in the order they were asked, with the node whose answer was returned last. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node, even when the request named one with `lava-select-provider`. No header marks a [backup](../configuration/failover/backup.md). Compare the names with your `backup-direct-rpc` list. |
+| `Lava-Retries` | Number of attempts after the first, retries and hedges alike, including a hedge still running when the reply was built. Absent when `0`. Always `0` for a write, which goes to several nodes at once by design. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `lava-fast-tx-participants` | On a write only: the nodes the router sent it to, in brackets and space-separated, e.g. `[node-a node-b]`. A single name means the write was not broadcast, for example because it was [pinned](#pin-to-a-specific-node). |
 | `Lava-Guid` | Unique request id. Use it to find the request in logs and traces. |
