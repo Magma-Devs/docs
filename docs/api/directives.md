@@ -173,7 +173,7 @@ This header forces a request onto an extension (e.g. `archive`). Without it, the
 
 If **no** node on the router declares the add-on, the router does not refuse the request. An ordinary node serves it without the extension, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension. For `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension, so the operator can add a node that supports it.
 
-**When to use:** a historical query the router would otherwise route to a non-archive node.
+**When to use:** a historical query the router would otherwise route to a non-archive node. This includes any read of old data that names a block or transaction by hash, such as `eth_getTransactionReceipt`, `debug_traceTransaction` or an `eth_call` with a `{"blockHash": …}` block object. The router cannot tell from a hash how old the block is, so it never routes these to archive on its own. See [Retry](../configuration/failover/retry.md).
 
 ## Request cross-validation
 
