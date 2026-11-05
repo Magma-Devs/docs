@@ -1,11 +1,11 @@
 ---
 title: "Hyperliquid"
-description: "Run Smart Router for Hyperliquid — example config and supported methods."
+description: "Run Smart Router for Hyperliquid: example config and supported methods."
 ---
 
 # Hyperliquid
 
-Hyperliquid EVM mainnet over JSON-RPC.
+Smart Router serves Hyperliquid EVM mainnet over JSON-RPC. This page covers the supported methods, the example config, and how to connect a client.
 
 ## Endpoint
 
@@ -18,11 +18,11 @@ Hyperliquid EVM mainnet over JSON-RPC.
 
 ## Method surface
 
-Hyperliquid's EVM exposes the standard Ethereum JSON-RPC method surface (`eth_*`, `net_*`, `web3_*`). Its `eth_chainId` is `0x3e7` (999). See [Ethereum → Supported method families](ethereum.md#supported-method-families) for the shared `eth_*` families; the full method list lives in the spec file linked above.
+Hyperliquid's EVM exposes the standard Ethereum JSON-RPC method surface (`eth_*`, `net_*`, `web3_*`). Its `eth_chainId` is `0x3e7` (999). For the shared `eth_*` families, see [Ethereum → Supported method families](ethereum.md#supported-method-families). The spec file linked above has the full method list.
 
 ## Run this example
 
-The repo ships a ready-to-run config at [`config/smartrouter_examples/smartrouter_hyperliquid.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples) — a single public upstream on the official Hyperliquid EVM RPC (`rpc.hyperliquid.xyz/evm`), no API key needed. It serves no websocket leg, so run it with `--skip-websocket-verification`:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_hyperliquid.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses a single public upstream on the official Hyperliquid EVM RPC (`rpc.hyperliquid.xyz/evm`) and needs no API key. It has no websocket leg, so run it with `--skip-websocket-verification`:
 
 === "Docker Compose"
 
@@ -72,4 +72,4 @@ curl -X POST http://127.0.0.1:3360 \
     const block = await provider.getBlockNumber();
     ```
 
-Point at your own upstreams by editing the `node-urls` in the config — see [The config file](../../configuration/config-file.md).
+To use your own upstreams, edit the `node-urls` in the config. See [The config file](../../configuration/config-file.md).
