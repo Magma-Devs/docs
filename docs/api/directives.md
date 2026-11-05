@@ -73,6 +73,14 @@ curl -X POST http://127.0.0.1:3360 \
 
 If the node is unreachable, the request then fails with an error instead of returning a cached answer.
 
+!!! note "A pinned write goes to the pinned node only"
+    A write, such as `eth_sendRawTransaction`, is normally sent to every node at once, so one
+    node dropping the transaction does not lose it. A pin means "only this node" for reads and
+    writes alike: a write that carries `lava-select-provider` (or [`lava-stickiness`](#keep-a-session-on-one-node))
+    is sent to the pinned node only and gives up that broadcast. The reply's
+    [`lava-fast-tx-participants`](#response-headers) header names the nodes that received the write.
+    To keep the broadcast, send writes without a pin.
+
 ## Keep a session on one node
 
 ```
@@ -96,7 +104,7 @@ curl -X POST http://127.0.0.1:3360 \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
-To work across replicas, the header needs a cache backend and `--shared-state`. Without them, it only applies within a single replica. If the chosen node cannot serve a request, the request fails. No other node serves it. See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
+To work across replicas, the header needs a cache backend and `--shared-state`. Without them, it only applies within a single replica. If the chosen node cannot serve a request, the request fails. No other node serves it. A write in the session goes to that node only, without the usual broadcast to every node (see [A pinned write](#pin-to-a-specific-node)). See [Sticky sessions](../configuration/sticky-sessions.md) for the full behaviour and limits.
 
 ## Force a cache refresh
 
@@ -236,6 +244,7 @@ Smart Router adds metadata to every response about how the relay was served. The
 | `Lava-Provider-Address` | The node that finally served the response. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node, even when the request named one with `lava-select-provider`. |
 | `Lava-Retries` | Number of retry attempts made for this relay. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
+| `lava-fast-tx-participants` | On a write only: the nodes the router sent it to, in brackets and space-separated, e.g. `[node-a node-b]`. A single name means the write was not broadcast, for example because it was [pinned](#pin-to-a-specific-node). |
 | `Lava-Guid` | Unique request id. Use it to find the request in logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |
