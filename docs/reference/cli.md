@@ -203,7 +203,7 @@ Latency is never shared, because a peer's round-trip says nothing about this pod
 | `--ban-duration-for-websocket-rate-limit-exceeded` | no ban | Ban duration once the WS rate limit is hit. |
 | `--limit-parallel-websocket-connections-per-ip` | `0` (unlimited) | Max parallel WS connections per IP. |
 | `--limit-websocket-connection-idle-time` | `1200` | WS idle timeout (seconds; default 20 min). |
-| `--skip-websocket-verification` | `false` | Skip startup WS verification for chains that require ws/wss endpoints. |
+| `--skip-websocket-verification` | `false` | Connect to ws(s) node urls without running any spec check over them. An upstream with no ws(s) url is served over http either way, without subscriptions, and publishes [`missing-url`](metrics.md#the-websocket-as-its-own-part) on a chain with subscriptions. |
 
 ## CORS & HTTP
 
@@ -241,7 +241,9 @@ See [Metrics](metrics.md).
 | `--relays-health-enable` | `true` | Enable relay health checks. When `false`, `/readyz` and `/metrics/overall-health` always report `503`, so keep it on when you use a Kubernetes readiness probe. |
 | `--relays-health-interval` | `5m` | Interval between health checks while a chain is healthy. A client relay that an upstream answers with a result delays the probe, so this is how often an idle chain is re-checked. See [When readiness changes](metrics.md#when-readiness-changes). |
 | `--relays-health-unhealthy-interval` | `15s` | Probe interval while a chain is unhealthy, clamped to `--relays-health-interval`. It is also the longest a client relay that no upstream answered waits for the next probe. A router that is not ready gets no client relays, so this interval limits how fast `/readyz` follows upstreams going out of reach and coming back. |
-| `--epoch-duration` | `15m` | Duration of each epoch (e.g. `30m`). Epochs always run: if unset or `0`, the router uses `15m`. At each epoch boundary the router re-verifies the upstreams and rebuilds the serving tier. So an upstream that is demoted or recovers mid-epoch can take up to this long to show in `smartrouter_endpoint_serving_tier`. |
+| `--epoch-duration` | `15m` | Duration of each epoch (e.g. `30m`). Epochs always run: if unset or `0`, the router uses `15m`. At each epoch boundary the router re-verifies the upstreams and rebuilds the serving tier. Between epochs, each spec check an upstream is failing is retried on its own schedule (`--verification-retry-delay`), so an upstream can be taken out or come back before the next epoch. |
+| `--verification-retry-delay` | `30s` | How long a spec check an upstream is failing waits for its first retry. Each check has its own wait, and each retry that still finds it failing doubles it, up to `--verification-retry-max-delay`, plus up to 20% jitter. `0` uses `30s`. See [Spec verification failures](metrics.md#spec-verification-failures). |
+| `--verification-retry-max-delay` | `15m` | The longest a failing spec check waits between retries. A value below `--verification-retry-delay` acts as that delay. |
 | `--shutdown-grace-period` | `25s` | Graceful-shutdown deadline for in-flight requests and WS clients. |
 
 ## Logging
@@ -264,7 +266,7 @@ See [Metrics](metrics.md).
 | `--debug-relays` | `false` | Add debug info to relay response metadata (pairs with the `lava-debug-relay` header). |
 | `--debug-probes` | `false` | Add debug info to probe responses. |
 | `--enable-selection-stats` | `false` | Emit the `lava-selection-stats` response header. |
-| `--debug-address` | - | Debug HTTP server for integration tests. It exposes `/debug/*`, including [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions). |
+| `--debug-address` | - | Debug HTTP server for integration tests. It exposes `/debug/*`, including [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions) and [`/debug/verification`](metrics.md#verification-state-on-the-debug-server). |
 | `--test-mode` | `false` | Send dummy data and print all listener metadata. |
 | `--allow-insecure-provider-dialing` | `false` | Allow non-TLS upstream connections. Dev/test only. |
 | `--pprof-address` | - | pprof server address (e.g. `localhost:6060`). |
