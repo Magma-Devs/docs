@@ -94,18 +94,21 @@ mutable state beyond its short TTL, and anything a client marks with
 [spec](../../reference/chains/specs.md) categories decide which methods can be cached at
 all. It is not a setting on the cache.
 
-The cache lookup is skipped in exactly three cases: a stateful (write) method, a request
-carrying `lava-force-cache-refresh`, and a request running
-[cross-validation](../../configuration/failover/cross-validation.md), which needs fresh
-answers from several nodes to compare.
+The cache lookup is skipped for:
 
-!!! warning "Pinning a node does not bypass the cache"
-    [`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
-    *selection* preference, and the cache is checked before selection runs. So a pinned
-    request that hits a warm entry returns `Lava-Provider-Address: Cached` without
-    contacting the named node. That response cannot tell you whether the node is
-    reachable. Monitoring checks and any test that asserts on a specific node must also
-    send `lava-force-cache-refresh`, or use a request the cache cannot answer.
+- a stateful (write) method, and a method whose answer belongs to the node that gave it,
+  such as its mempool, its peers or its sync status;
+- a request carrying `lava-force-cache-refresh`;
+- a request running [cross-validation](../../configuration/failover/cross-validation.md),
+  which needs fresh answers from several nodes to compare;
+- a retry after a node error the cache answered, which would find the same entry again;
+- a request that chooses its node with
+  [`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node),
+  [`lava-stickiness`](../../api/directives.md#keep-a-session-on-one-node) or
+  [`lava-providers-block`](../../api/directives.md#steer-node-selection). It is answered by a
+  node it allows, never by an entry another node wrote, and the answer is still cached for
+  other requests. On v1.6.7 and earlier the cache was read first, so on those versions a
+  check of one node must also send `lava-force-cache-refresh`.
 
 ## Tuning flags
 
