@@ -104,7 +104,9 @@ node-urls:
 Smart Router does not authenticate inbound client requests, enforce API keys, or
 rate-limit per client in v1. It leaves these to the edge on purpose. Put NGINX, a
 cloud load balancer, or an API gateway in front to handle client auth, CORS, and rate
-limiting. Behind a proxy, the router does honour `X-Forwarded-For` for IP-based logic.
+limiting. Behind a proxy, the router does honour `X-Forwarded-For` for IP-based logic. The
+per-client WebSocket connection limit reads it only through trusted proxies; see
+[Forwarded client IP](../api/url.md#forwarded-client-ip).
 
 For per-request *behaviour* overrides that clients can send (pinning a node, forcing
 a cache refresh, requesting cross-validation), see [Directives](../api/directives.md).

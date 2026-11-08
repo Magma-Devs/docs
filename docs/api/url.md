@@ -96,4 +96,12 @@ limiting** are not built into the router. Put a reverse proxy in front for those
 
 ## Forwarded client IP
 
-The router honours `X-Forwarded-For`. If you put a proxy in front, set the header upstream, and the router uses it for IP-based logic (rate limiting, audit logs).
+The router honours `X-Forwarded-For`. If you put a proxy in front, set the header upstream, and the router uses it for IP-based logic such as audit logs.
+
+The per-client WebSocket connection limit (`--limit-parallel-websocket-connections-per-ip`) trusts the header only from the proxies listed in `--websocket-trusted-proxies`, by default loopback and the private ranges:
+
+- A connection from a trusted proxy is counted against the first address, read from the right of the header, that is not a trusted proxy.
+- Any other connection is counted against its own address.
+- Entries to the left of that address are the client's own claims and are never read, and neither is its `User-Agent`.
+
+If a CDN sits in front of your gateway, add its ranges, or every client behind one CDN edge shares one allowance.
