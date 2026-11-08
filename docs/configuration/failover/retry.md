@@ -88,10 +88,11 @@ skips it for the rest of this relay, and for later relays, until the hold-off ex
   (capped at 1h). Otherwise it starts at 30s and doubles on each consecutive `429` from
   the same URL, capped at 30m. Up to 20% jitter is added so a fleet held off by the same
   vendor does not come back in one burst.
-- **Account-wide caps.** When two different URLs of the same provider are held off at
-  once, the whole provider is held off on every chain. A vendor cap is usually
-  per-account, and per-URL hold-offs alone would keep overloading the account through
-  its other chains.
+- **Account-wide caps.** When two different URLs of the same provider entry are held off
+  at once, the whole entry is held off. An entry is the provider on one chain and API
+  interface. The same provider on other chains or interfaces keeps serving, and is held
+  off only when its own URLs are rate-limited. A WebSocket URL's `429` does not count
+  toward the two, because WebSocket URLs do not carry relays.
 - **Any answer clears it.** Once the node answers a request, with a success or a real
   error, its hold-off and strike count are cleared.
 - **You still get an answer.** If every candidate is held off, the router uses the one
