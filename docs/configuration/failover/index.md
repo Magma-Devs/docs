@@ -30,7 +30,7 @@ The overall timeout (`--default-processing-timeout`) covers the whole pipeline. 
 
 **JSON-RPC batch requests are not retried or failed over by default.** See [Batch requests](retry.md#batch-requests).
 
-The code that runs these policies is the relay state machine in [`protocol/relaycore/unified_relay_state_machine.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/relaycore/unified_relay_state_machine.go). The classifier that decides if an error is retryable or terminal is in [`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go). See [Error codes](../../reference/error-codes.md).
+The code that runs these policies is the relay state machine in [`protocol/relaycore/unified_relay_state_machine.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/relaycore/unified_relay_state_machine.go). The classifier that maps a node's reply to an error code is in [`protocol/common/error_classifier.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_classifier.go), and each code's retryable flag is in [`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go). See [Error codes](../../reference/error-codes.md).
 
 ## What's tunable
 

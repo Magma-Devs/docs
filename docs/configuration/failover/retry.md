@@ -11,12 +11,12 @@ For the next attempt, the pool holds only nodes that have not already failed for
 
 ## What's retryable
 
-The error classifier ([`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)) gives every failure a coded classification with a **retryable** flag. This flag is the main signal. A non-retryable classification stops retries at once for *every* terminal error: connection failures, malformed requests and chain-level rejections alike.
+The error classifier ([`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go)) gives every failure a coded classification with a **retryable** flag. This flag is the main signal. A non-retryable classification stops retries at once for *every* terminal error: connection failures, malformed requests and chain-level rejections alike.
 
 | Layer | Examples | Behaviour |
 |---|---|---|
 | **`PROTOCOL_*`** (connection / session) | network timeout, connection reset, node unavailable | mostly retryable; rotate node |
-| **`NODE_*`** (node response) | 5xx upstream, rate limited, node syncing → retryable; method not found / unimplemented → terminal | per-code; unsupported methods are zero-CU and cached |
+| **`NODE_*`** (node response) | 5xx upstream, rate limited, node syncing, data not held (a REST 404) → retryable; a node's own refusal (method not found, unimplemented, endpoint not found, access denied) → retried on another node without blaming the node; request exceeds node limit → terminal | per-code |
 | **`CHAIN_*`** (execution / state) | `eth_call` reverted, out of gas, nonce too low → terminal; block/tx not found, state pruned → retryable | per-code |
 | **`USER_*`** (bad request) | malformed JSON, invalid params, invalid address | always terminal; charges normal CU |
 
@@ -70,11 +70,12 @@ With the default `--disable-batch-request-retry true`, `--batch-node-error-on-an
 
 Some failures look retryable on the wire but do not recover when the router switches nodes. For example:
 
-- A bad request (malformed JSON, unknown method), which is always terminal.
+- A bad request (malformed JSON, invalid params), which is always terminal.
 - A consensus-level error returned by every healthy node (the chain itself rejected it).
-- A method your nodes do not support.
 
 The classifier handles these cases without using up the budget.
+
+A method that none of your nodes supports is different. A node's refusal (method not found, unimplemented, endpoint not found, access denied) is that node's claim about itself, so the router asks another node. When every node refuses, the request uses its retry budget and the caller gets the last refusal. The refusing nodes are not blamed. A refusal of a method the chain spec does not list at all stays final. See [Error codes](../../reference/error-codes.md#retry-cu-and-caching).
 
 ## Rate-limited upstreams
 
