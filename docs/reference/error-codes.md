@@ -21,8 +21,10 @@ to rotate to another node.
     metric. Use this page to read those logs and metrics, not to handle codes on the
     wire.
 
-The registry lives in
-[`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go).
+The codes, with their names and retryable flags, live in
+[`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go).
+The rules that map a node's reply to a code live in
+[`protocol/common/error_classifier.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_classifier.go).
 
 ## The four layers at a glance
 
@@ -64,7 +66,9 @@ sum by (error_name) (rate(smartrouter_errors_total{retryable="false"}[5m]))
 | `NODE_RATE_LIMITED` climbing | A node is throttling you | Add upstreams, or check your node plan; failover already spreads load. |
 | `PROTOCOL_NO_PROVIDERS` | No node was left in the pool for a relay | Every node was excluded. Check health and the [circuit breaker](../configuration/failover/circuit-breaker.md). |
 | `CHAIN_STATE_PRUNED` on historical queries | The request reached a non-archive node | Mark archive upstreams with the `archive` addon; see [config](../configuration/config-file.md). |
-| `NODE_METHOD_NOT_FOUND` | The node does not expose that method | Terminal and cached. Confirm that the chain spec exposes it. |
+| `NODE_METHOD_NOT_FOUND` from one node | That node does not expose the method | Retried on another node, and the refusing node is not penalised. If every node refuses, confirm that the chain spec exposes it. |
+| `NODE_DATA_NOT_HELD` on a REST chain | A node answered 404: it does not hold the data, has not seen it yet, or has pruned it | Retried on another node, not scored. Normal for clients polling an unmined transaction. If it comes from historical queries, mark archive upstreams. |
+| `NODE_ACCESS_DENIED` from one provider | That provider refused the router: credentials, plan or quota, WAF or IP rule, region | Retried on another node, not a fault. Fix the credentials or plan for that URL. |
 | `USER_*` spike | Clients sending bad requests | Not an infrastructure issue. Inspect the client that sends them. |
 | `CHAIN_EXECUTION_REVERTED` | Contract reverted | Expected for failing `eth_call` calls and simulations. Terminal, not retried. |
 
@@ -84,15 +88,97 @@ Connection-level failures (timeouts, refused, reset, context cancellation) are
 detected before either tier and always take precedence. Anything unmatched becomes
 `UNKNOWN_ERROR` (code `0`, retryable).
 
+### REST status codes
+
+A REST node has no error object, so the router reads the HTTP status instead: **every
+status outside 2xx is a node error**. The body still reaches the caller unchanged. The
+REST rules run specific-to-general. A body that names what went wrong is matched first,
+whatever the status; the status alone is the fallback. *Counts against the node* means
+the reply is evidence that the node is broken: it is marked unhealthy and advances the
+node's consecutive-failure count (see [`--bench-after`](cli.md)).
+
+| Reply | Code | Retried on another node? | Counts against the node? |
+| --- | --- | --- | --- |
+| Body says `endpoint not found`, `route not found` or `path not found`, any status | `NODE_ENDPOINT_NOT_FOUND` (2009) | Yes | No |
+| Body says `method not allowed`, any status | `NODE_METHOD_NOT_ALLOWED` (2010) | Yes | No |
+| Body says the block is beyond the node's head (`larger than the current largest block`, `requested block height is bigger then the chain length`, or a 400 with `unknown block`) | `CHAIN_BLOCK_NOT_FOUND` (3201) | Yes | No |
+| 500 with `is not available, lowest height` (Cosmos, pruned height) | `CHAIN_STATE_PRUNED` (3204) | Yes | No |
+| 500 with `unable to retrieve header and parent` (Substrate sidecar, unknown block) | `CHAIN_BLOCK_NOT_FOUND` (3201) | Yes | No |
+| 500 with `transaction not found` (MultiversX) | `CHAIN_TX_NOT_FOUND` (3202) | Yes | No |
+| 500 with `decoding bech32 failed` (Cosmos, malformed address) | `USER_INVALID_PARAMS` (4003) | No | No |
+| **404** | `NODE_DATA_NOT_HELD` (2017) | **Yes** | No |
+| **401, 402, 403, 407, 426, 451** | `NODE_ACCESS_DENIED` (2018) | **Yes** | No |
+| 405 | `NODE_METHOD_NOT_ALLOWED` (2010) | Yes | No |
+| 501 | `NODE_UNIMPLEMENTED` (2008) | Yes | No |
+| 410 | `CHAIN_STATE_PRUNED` (3204) | Yes | No |
+| 429 | `NODE_RATE_LIMITED` (2005) | Yes, and the node is held off | No |
+| 408, 503 | `NODE_SERVICE_UNAVAILABLE` (2006) | Yes | Yes |
+| 500, any other body | `NODE_INTERNAL_ERROR` (2003) | Yes | Yes |
+| 502 | `NODE_BAD_GATEWAY` (2015) | Yes | Yes |
+| 504, 522, 524 | `NODE_GATEWAY_TIMEOUT` (2014) | Yes | Yes |
+| 520, 521, 523, 525, 526, 527, 530 | `NODE_SERVER_ERROR` (2004) | Yes | Yes |
+| 409 | `CHAIN_TX_ALREADY_KNOWN` (3007) | No | No |
+| 400, 406, 411, 412, 414, 415, 416, 417, 428, 431 | `USER_INVALID_REQUEST` (4002) | No | No |
+| 422 | `USER_INVALID_PARAMS` (4003) | No | No |
+| 413 | `USER_REQUEST_TOO_LARGE` (4006) | No | No |
+| Any other status, including 3xx | `UNKNOWN_ERROR` (0) | Yes | No, but it lowers the node's availability score |
+
+**A REST 404 is retried.** A plain 404 means "not here": the node does not hold the
+data, has not seen it yet, or a gateway in front of it does not route the path. Another
+node may answer, so the router tries one, as it does for a JSON-RPC block-not-found or
+transaction-not-found. The node that answered 404 is not scored. The reply then
+carries a `Lava-Retries` header counting the extra attempt (see
+[Response headers](../api/directives.md#response-headers)). A 404 whose body names a
+missing endpoint, route or path is a route refusal instead, `NODE_ENDPOINT_NOT_FOUND`.
+Since v1.6.0 that is also retried on another node, under the
+[node-refusal rule](#retry-cu-and-caching). Before v1.6.0 it was terminal.
+
+**A REST 401, 402, 403, 407, 426 or 451 is retried.** These are the endpoint refusing
+the router itself: its credentials, its plan or quota, a WAF or IP rule, a proxy that
+wants credentials, a protocol it will not speak, or a region it will not serve. Each
+provider has its own credentials and rules, so another provider can serve the same
+request. The router tries one and does not blame the refusing node. On JSON-RPC and
+gRPC a 401 named in the error message stays `NODE_UNAUTHORIZED`, which since v1.6.0 is
+retried the same way.
+
+A 500 is read as the caller's answer only when its body is one of the forms listed
+above. Any other 500 stays `NODE_INTERNAL_ERROR` and counts against the node, so a
+broken node that answers 500 with an empty or HTML body is still taken out of rotation.
+
+These retries are for reads. A write goes to several nodes at once and is not sent
+again, unless every node it went to was rate limited (a 429 or a rate-limit error). A
+rate-limited node turns a write away before running it, so sending it again cannot run
+it twice. The first node that accepts it answers the caller, whatever the others replied.
+
 ### Retry, CU, and caching
 
 `retryable` is the main signal. A `retryable: No` classification stops retries on
-**every** terminal error, not only on unsupported methods. Two sub-categories have
-extra behaviour:
+**every** terminal error. Whether the node is *blamed* for the error is a separate
+question, read from the code's sub-category. Four groups have their own behaviour:
 
-- **Unsupported method** (`NODE_METHOD_NOT_FOUND`, `NODE_UNIMPLEMENTED`,
-  `NODE_ENDPOINT_NOT_FOUND`, `NODE_METHOD_NOT_ALLOWED`) → zero retries, **zero CU**,
-  response is cached, no node scoring. The node is not called again for it.
+- **Node refusals** (`NODE_METHOD_NOT_FOUND`, `NODE_METHOD_NOT_SUPPORTED`,
+  `NODE_UNIMPLEMENTED`, `NODE_ENDPOINT_NOT_FOUND`, `NODE_METHOD_NOT_ALLOWED`,
+  `NODE_UNAUTHORIZED`, `NODE_ACCESS_DENIED`) are a node's claim about itself: the
+  methods it serves, the routes it knows, the credentials it was given. Another node
+  may answer, so the router **retries on another node**. The refusing node is neither
+  marked unhealthy nor scored. A refusal that every node shares costs up to the retry
+  limit in upstream calls, and the caller gets the first refusal. If a node returns a
+  non-retryable error instead, such as a revert, the caller gets that error. A
+  refusal of a method the chain spec does not list is final at the first node, because
+  every node is expected to refuse it. `NODE_LIMIT_EXCEEDED` is the exception and stays
+  terminal, because the limit is usually one that every node shares. Before v1.6.0,
+  codes 2001, 2008, 2009, 2010 and 2016 were terminal, and the first four also cost
+  zero CU and had their response cached. No code carries that zero-CU carve-out any
+  more.
+- **Data not held** (`NODE_DATA_NOT_HELD`, `NODE_RESOURCE_NOT_FOUND`,
+  `NODE_RESOURCE_UNAVAILABLE`, the `CHAIN_*` state and data codes 3201–3206, and the
+  Solana, Starknet and NEAR codes 3303, 3309, 3311, 3331, 3332, 3360 and 3361) is a
+  node answering truthfully that it does not have the data. Retried, so another node
+  in the same pool can answer. A retry does not add `archive`; see
+  [Retry](../configuration/failover/retry.md#whats-retryable). The
+  node that answered is not scored: a client polling for an unmined transaction gets
+  not-found from every node, and scoring it would mark the whole fleet down for a
+  question none of them could answer.
 - **Rate limit** (`NODE_RATE_LIMITED`) → back off without marking the endpoint
   unhealthy (it is busy, not broken).
 - **User-input errors** (`USER_*`) are non-retryable but charge **normal CU**. The
@@ -111,7 +197,7 @@ chains.
 | 1001 | `PROTOCOL_CONNECTION_TIMEOUT` | Network operation timed out connecting to node | Yes |
 | 1002 | `PROTOCOL_CONNECTION_REFUSED` | Node connection refused | Yes |
 | 1003 | `PROTOCOL_DNS_FAILURE` | DNS resolution failed | Yes |
-| 1004 | `PROTOCOL_TLS_MISMATCH` | HTTP/HTTPS protocol mismatch | No |
+| 1004 | `PROTOCOL_TLS_MISMATCH` | HTTP/HTTPS protocol mismatch on one endpoint; another is tried, and each mismatch counts toward benching the misconfigured one (see [`--bench-after`](cli.md)) | Yes |
 | 1005 | `PROTOCOL_CONNECTION_RESET` | Connection reset by peer | Yes |
 | 1006 | `PROTOCOL_CONNECTION_CLOSED` | Connection closed (EOF) | Yes |
 | 1007 | `PROTOCOL_CONTEXT_DEADLINE` | Context deadline expired before the relay completed | Yes |
@@ -157,26 +243,35 @@ matcher looks for.
 
 | Code | Name | Description | Retryable | Standard code |
 | --- | --- | --- | --- | --- |
-| 2001 | `NODE_METHOD_NOT_FOUND` | Method does not exist on this node (unknown to the API surface) | No | JSON-RPC -32601 |
+| 2001 | `NODE_METHOD_NOT_FOUND` | Node reports the method is not on its surface; another node may serve it | Yes | JSON-RPC -32601 |
 | 2002 | `NODE_METHOD_NOT_SUPPORTED` | Method exists but is disabled on this node; retryable on a different node | Yes | JSON-RPC -32004 |
 | 2003 | `NODE_INTERNAL_ERROR` | Internal node error | Yes | JSON-RPC -32603 |
 | 2004 | `NODE_SERVER_ERROR` | Generic server error | Yes | JSON-RPC -32000 |
 | 2005 | `NODE_RATE_LIMITED` | Rate limited by node | Yes | HTTP 429 |
 | 2006 | `NODE_SERVICE_UNAVAILABLE` | Node temporarily unavailable | Yes | HTTP 503 |
 | 2007 | `NODE_SYNCING` | Node is syncing/catching up | Yes | message match |
-| 2008 | `NODE_UNIMPLEMENTED` | gRPC method unimplemented | No | gRPC 12 |
-| 2009 | `NODE_ENDPOINT_NOT_FOUND` | REST endpoint not found | No | HTTP 404 |
-| 2010 | `NODE_METHOD_NOT_ALLOWED` | REST method not allowed | No | HTTP 405 |
+| 2008 | `NODE_UNIMPLEMENTED` | Method not implemented on this node; another node may serve it | Yes | gRPC 12, HTTP 501 |
+| 2009 | `NODE_ENDPOINT_NOT_FOUND` | This node's front end does not route the path; another node may serve it | Yes | REST body says `endpoint not found`, `route not found` or `path not found`; a 404 named in a JSON-RPC or gRPC error message. A REST HTTP 404 is 2017 |
+| 2010 | `NODE_METHOD_NOT_ALLOWED` | HTTP method not allowed by this node; another node may serve it | Yes | HTTP 405, or body says `method not allowed` |
 | 2011 | `NODE_LIMIT_EXCEEDED` | Request exceeds node limit (e.g. `eth_getLogs` range) | No | JSON-RPC -32005 |
 | 2012 | `NODE_RESOURCE_NOT_FOUND` | Resource not found at node level | Yes | JSON-RPC -32001 |
 | 2013 | `NODE_RESOURCE_UNAVAILABLE` | Resource exists but unavailable | Yes | JSON-RPC -32002 |
 | 2014 | `NODE_GATEWAY_TIMEOUT` | Gateway timeout from node | Yes | HTTP 504 |
 | 2015 | `NODE_BAD_GATEWAY` | Bad gateway from node | Yes | HTTP 502 |
-| 2016 | `NODE_UNAUTHORIZED` | Upstream rejected router credentials (HTTP 401) | No | HTTP 401 |
+| 2016 | `NODE_UNAUTHORIZED` | Upstream rejected the router's credentials on JSON-RPC or gRPC; another node's credentials may work | Yes | HTTP 401 on JSON-RPC and gRPC. A REST HTTP 401 is 2018 |
+| 2017 | `NODE_DATA_NOT_HELD` | Node does not hold the requested data: pruned, not seen yet, or never existed | Yes | REST HTTP 404; gRPC 5 (`NOT_FOUND`), gRPC 11 (`OUT_OF_RANGE`) |
+| 2018 | `NODE_ACCESS_DENIED` | Endpoint refused the router itself: credentials, plan or quota, WAF or IP rule, proxy auth, protocol, region; another node may serve it | Yes | REST HTTP 401, 402, 403, 407, 426, 451 |
+| 2019 | `NODE_ABORTED` | Node aborted the operation. Sent by Sui for a submitted transaction that its validators rejected or dropped; whether to submit again is the client's call | No | gRPC 10 (`ABORTED`) |
 | 2101 | `NODE_BITCOIN_WARMUP` | Node still warming up (Bitcoin -28) | Yes | - |
 | 2102 | `NODE_BITCOIN_INITIAL_DOWNLOAD` | Node in initial block download (Bitcoin -10) | Yes | - |
 | 2103 | `NODE_BITCOIN_NOT_CONNECTED` | Node has no peers (Bitcoin -9) | Yes | - |
 | 2150 | `NODE_SOLANA_UNHEALTHY` | Solana node behind/unhealthy (-32005) | Yes | - |
+
+Codes 2001, 2002, 2008, 2009, 2010, 2016 and 2018 are **node refusals**, and 2012,
+2013 and 2017 are **data not held**. Both groups are retried on another node without
+blaming the node that answered; see [Retry, CU, and caching](#retry-cu-and-caching).
+The refusals 2001, 2008, 2009, 2010 and 2016 were terminal before v1.6.0. On REST, the
+status-to-code map is in [REST status codes](#rest-status-codes).
 
 ---
 
@@ -234,7 +329,7 @@ exist only where retryability differs from the generic pattern.
 
 Chain-specific Tier-2 ranges also exist for **Solana** (3300–3319), **Starknet**
 (3320–3339), **Bitcoin/UTXO** (3340–3359), and **NEAR** (3360–3379). See the
-[registry source](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)
+[registry source](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go)
 for the full list. Most are non-retryable. The retryable exceptions are the Solana
 `CHAIN_SOLANA_LEDGER_JUMP`, `CHAIN_SOLANA_BLOCK_STATUS_UNAVAILABLE`, and
 `CHAIN_SOLANA_MIN_CONTEXT_SLOT_NOT_REACHED`; the Starknet `CHAIN_STARKNET_BLOCK_NOT_FOUND`,
