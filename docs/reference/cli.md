@@ -83,7 +83,7 @@ You can watch the effect on
 | --- | --- | --- |
 | `--enable-fork-detection` | `false` | Turn on block-hash polling (reorg detection on upstreams). Off by default - the larger of the per-pod savings. |
 | `--chain-tracker-poll-divisor` | `2` | The tracker polls every `avgBlockTime ÷ divisor`. `1` halves the polling rate. `0.25` (one poll per **four** block times) cuts it eightfold. Allowed `[0.25,8]`; an out-of-range value reverts to the default. See [Polling slower than the chain](#polling-slower-than-the-chain). |
-| `--shared-state` (with `--cache-be`) | `false` | Share poll observations across router replicas through the cache, so an upstream is polled about once per interval **fleet-wide** rather than once per pod. See [Cache & shared state](#cache-shared-state). |
+| `--shared-state` (with a cache backend) | `false` | Share poll observations across router replicas through the cache, so an upstream is polled about once per interval **fleet-wide** rather than once per pod. See [Cache & shared state](#cache-shared-state). |
 | `--chain-tracker-idle-after` | `0` (off) | Idle mode. When a chain has served no client request for this long, its trackers stop polling until the next request. Minimum `10s`. Available from v1.6.0. See [Pausing an idle chain](#pausing-an-idle-chain). |
 | `--chain-tracker-idle-poll-interval` | `0` | While a chain is idle, poll each upstream once per this interval, so a dead upstream is still noticed. `0` polls nothing while idle. No effect without `--chain-tracker-idle-after`. |
 
@@ -166,7 +166,7 @@ divisor back toward `0.5` or `1`.
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--cache-be` | - | Address of the cache server (e.g. `127.0.0.1:20100`). In Compose the cache address usually comes from `cache-be:` in the config instead. |
-| `--shared-state` | `false` | Share state across router replicas through the cache backend (`cache-be` or `resp-cache`): the consumer-consistency "seen block", per-endpoint chain-tracker poll observations (so the fleet polls each upstream about once per interval instead of once per replica), and cross-pod sticky sessions. Poll sharing also requires `--cache-be`; see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
+| `--shared-state` | `false` | Share state across router replicas through the cache backend (`cache-be` or `resp-cache`): the consumer-consistency "seen block", per-endpoint chain-tracker poll observations (so the fleet polls each upstream about once per interval instead of once per replica), and cross-pod sticky sessions. On the RESP backend, poll observations reach only routers on the same `key-prefix`; see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
 | `--resp-cache-addresses` | - | Comma-separated address(es) of a [RESP-compatible backend](../deployment/cache/redis.md) (Redis/Valkey). Enables the RESP backend, which takes precedence over `cache-be`. Standalone: the node address; sentinel: the sentinel addresses; cluster: the configuration endpoint. |
 | `--resp-cache-topology` | `standalone` | `standalone`, `sentinel`, or `cluster`. |
 | `--secondary-cache-be` | - | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), queried when the primary produces no hit. |

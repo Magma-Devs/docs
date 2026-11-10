@@ -269,13 +269,13 @@ Keeping `cache-be:` in place next to `resp-cache:` is intended: it is the rollba
 
 ## Caveats
 
-- **The fleet chain-tracker gate isn't carried over.** The per-endpoint gate lets pods
-  reuse each other's successful upstream polls. It is a sidecar RPC backed by a dedicated
-  store on the cache server, not a cache-engine behaviour. So it does not pass through the
-  key/value interface this backend implements. A router on the RESP backend logs a warning
-  once per listen endpoint and **polls locally**. Everything else the sidecar caches works
-  the same: relay entries, chain tip, shared-state seen-block, block-hash→height. If you
-  need the peer gate, stay on the sidecar.
+- **The fleet chain-tracker gate is scoped to the key prefix.** The per-endpoint gate lets
+  pods reuse each other's successful upstream polls, and it works on this backend as it
+  does on the sidecar, with one difference in reach. Here the poll observations sit under
+  `key-prefix` like every other key, so only routers on the same prefix reuse each other's
+  polls. The sidecar shares them with every router that reaches it, whatever its prefix.
+  Routers on different prefixes each poll for themselves: more upstream polls, never a
+  different answer.
 - **Sentinel credential rotation** applies per connection attempt, not in place. See
   [Credential rotation](#credential-rotation).
 - **`read-addresses` selects an endpoint, not a replica role.** See

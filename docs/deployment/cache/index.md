@@ -140,9 +140,8 @@ then also share three things through the cache:
 - **sticky sessions**: a `lava-stickiness` id resolves to the same upstream on every
   replica. Without the flag, stickiness stays local to each pod.
 
-The seen-block state and sticky sessions work through either backend. The chain-tracker
-gate is a sidecar RPC, so it needs `cache-be:`. A router on the
-[RESP backend](redis.md#caveats) polls locally and logs a warning.
+All three work through either backend. On the [RESP backend](redis.md#caveats), routers
+share poll observations only with routers on the same `key-prefix`.
 
 See the [CLI reference](../../reference/cli.md#cache-shared-state) for the safety floors.
 To confirm it is working, check

@@ -250,12 +250,12 @@ and split into **endpoint-scoped** (`rpc_endpoint_*`) and **router-scoped**
 On a multi-replica deployment with `--shared-state`, the fleet-wide
 `sum(rate(rpc_endpoint_tracker_requests_total{kind="latest_block"}[5m]))` for an upstream
 should settle near a single replica's worth, and `source="peer"` skips should be non-zero on
-every replica. If `peer` stays at zero with the flag on, there are three possible causes: the
-router is on the [RESP backend](../deployment/cache/redis.md#caveats), which has no peer gate
-at all; the replicas are not reaching the same cache; or the cache is reached but the calls
-fail, for example because the sidecar is older than the router.
-`rpc_endpoint_tracker_gate_errors_total` separates the last cause from the other two. A
-failing store raises it; a fleet with nothing to share leaves it flat.
+every replica. If `peer` stays at zero with the flag on, there are two possible causes. The
+replicas may not share a keyspace: they reach different caches, or, on the
+[RESP backend](../deployment/cache/redis.md#caveats), they run on different `key-prefix`
+values. Or the cache is reached but the calls fail, for example because the sidecar is older
+than the router. `rpc_endpoint_tracker_gate_errors_total` separates the two. A failing store
+raises it; a fleet with nothing to share leaves it flat.
 
 Keep two things in mind when you read the chain-tracker counters:
 
