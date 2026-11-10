@@ -169,14 +169,17 @@ divisor back toward `0.5` or `1`.
 | `--shared-state` | `false` | Share state across router replicas through the cache backend (`cache-be` or `resp-cache`): the consumer-consistency "seen block", per-endpoint chain-tracker poll observations (so the fleet polls each upstream about once per interval instead of once per replica), and cross-pod sticky sessions. On the RESP backend, poll observations reach only routers on the same `key-prefix`; see the [RESP backend caveats](../deployment/cache/redis.md#caveats). |
 | `--resp-cache-addresses` | - | Comma-separated address(es) of a [RESP-compatible backend](../deployment/cache/redis.md) (Redis/Valkey). Enables the RESP backend, which takes precedence over `cache-be`. Standalone: the node address; sentinel: the sentinel addresses; cluster: the configuration endpoint. |
 | `--resp-cache-topology` | `standalone` | `standalone`, `sentinel`, or `cluster`. |
+| `--resp-cache-key-prefix` | `sr` | The keyspace this router takes on the RESP backend: letters, digits, `.`, `_` and `-`. Outranks `resp-cache.key-prefix` in the config. |
+| `--cache-be-key-prefix` | - | The keyspace this router takes on the `cache-be` server, with the same characters. Empty is the one keyspace every router without a prefix shares. The cache server must know the setting: an older one ignores the prefix and isolates nothing, and the router warns once per connection. |
+| `--cache-timeout` | `50ms` | Time budget for each cache lookup, on either backend. A lookup that runs over it is a miss. It must exceed the network round trip to the cache, so raise it for a remote backend (e.g. `400ms`). |
 | `--secondary-cache-be` | - | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md), queried when the primary produces no hit. |
 | `--secondary-cache-timeout` | `50ms` | Time budget for each secondary cache lookup. A lookup that runs over it is treated as a miss. |
 | `--secondary-cache-mode` | `read-only` | Secondary cache access mode. Only `read-only` is supported. |
 
 !!! note "The RESP backend's full surface is config-file only"
-    You set TLS, credentials, credential rotation, the read/write split, and key prefixing
-    in the `resp-cache:` YAML block. Only addresses and topology have flags. See
-    [Redis / Valkey backend](../deployment/cache/redis.md#configuration-reference).
+    You set TLS, credentials, credential rotation, the read/write split, and lifetimes in
+    the `resp-cache:` YAML block. Only addresses, topology and the key prefix have flags.
+    See [Redis / Valkey backend](../deployment/cache/redis.md#configuration-reference).
 
 With `--shared-state`, every replica publishes each successful poll of an upstream to
 the cache. Before it polls, a replica checks whether **another** replica polled that
