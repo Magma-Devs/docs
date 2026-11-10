@@ -11,7 +11,7 @@ For the next attempt, the pool holds only nodes that have not already failed for
 
 ## What's retryable
 
-The error classifier ([`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go)) gives every failure a coded classification with a **retryable** flag. This flag is the main signal. A non-retryable classification stops retries at once for *every* terminal error: connection failures, malformed requests and chain-level rejections alike.
+The error classifier ([`protocol/common/error_classifier.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_classifier.go)) gives every failure a coded classification, and each code carries a **retryable** flag ([`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go)). This flag is the main signal. A non-retryable classification stops retries at once for *every* terminal error: connection failures, malformed requests and chain-level rejections alike.
 
 | Layer | Examples | Behaviour |
 |---|---|---|
@@ -75,7 +75,7 @@ Some failures look retryable on the wire but do not recover when the router swit
 
 The classifier handles these cases without using up the budget.
 
-A method that none of your nodes supports is different. A node's refusal (method not found, unimplemented, endpoint not found, access denied) is that node's claim about itself, so the router asks another node. When every node refuses, the request uses its retry budget and the caller gets the last refusal. The refusing nodes are not blamed. A refusal of a method the chain spec does not list at all stays final. See [Error codes](../../reference/error-codes.md#retry-cu-and-caching).
+A method that none of your nodes supports is different. A node's refusal (method not found, unimplemented, endpoint not found, access denied) is that node's claim about itself, so the router asks another node. When every node refuses, the request uses its retry budget and the caller gets the first refusal. If a node returns a non-retryable error instead, such as a revert, the caller gets that error. The refusing nodes are not blamed. A refusal of a method the chain spec does not list at all stays final. See [Error codes](../../reference/error-codes.md#retry-cu-and-caching).
 
 ## Rate-limited upstreams
 

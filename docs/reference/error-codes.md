@@ -145,8 +145,10 @@ A 500 is read as the caller's answer only when its body is one of the forms list
 above. Any other 500 stays `NODE_INTERNAL_ERROR` and counts against the node, so a
 broken node that answers 500 with an empty or HTML body is still taken out of rotation.
 
-These retries are for reads. A write goes to several nodes at once and is never sent
-again. The first node that accepts it answers the caller, whatever the others replied.
+These retries are for reads. A write goes to several nodes at once and is not sent
+again, unless every node it went to was rate limited (a 429 or a rate-limit error). A
+rate-limited node turns a write away before running it, so sending it again cannot run
+it twice. The first node that accepts it answers the caller, whatever the others replied.
 
 ### Retry, CU, and caching
 
@@ -160,7 +162,8 @@ question, read from the code's sub-category. Four groups have their own behaviou
   methods it serves, the routes it knows, the credentials it was given. Another node
   may answer, so the router **retries on another node**. The refusing node is neither
   marked unhealthy nor scored. A refusal that every node shares costs up to the retry
-  limit in upstream calls, and the caller gets the answer that ended the request. A
+  limit in upstream calls, and the caller gets the first refusal. If a node returns a
+  non-retryable error instead, such as a revert, the caller gets that error. A
   refusal of a method the chain spec does not list is final at the first node, because
   every node is expected to refuse it. `NODE_LIMIT_EXCEEDED` is the exception and stays
   terminal, because the limit is usually one that every node shares. Before v1.6.0,
@@ -169,8 +172,10 @@ question, read from the code's sub-category. Four groups have their own behaviou
   more.
 - **Data not held** (`NODE_DATA_NOT_HELD`, `NODE_RESOURCE_NOT_FOUND`,
   `NODE_RESOURCE_UNAVAILABLE`, the `CHAIN_*` state and data codes 3201–3206, and the
-  Solana, Starknet and NEAR not-found codes) is a node answering truthfully that it does
-  not have the data. Retried, so a pruned node falls through to an archive node. The
+  Solana, Starknet and NEAR codes 3303, 3309, 3311, 3331, 3332, 3360 and 3361) is a
+  node answering truthfully that it does not have the data. Retried, so another node
+  in the same pool can answer. A retry does not add `archive`; see
+  [Retry](../configuration/failover/retry.md#whats-retryable). The
   node that answered is not scored: a client polling for an unmined transaction gets
   not-found from every node, and scoring it would mark the whole fleet down for a
   question none of them could answer.
@@ -192,7 +197,7 @@ chains.
 | 1001 | `PROTOCOL_CONNECTION_TIMEOUT` | Network operation timed out connecting to node | Yes |
 | 1002 | `PROTOCOL_CONNECTION_REFUSED` | Node connection refused | Yes |
 | 1003 | `PROTOCOL_DNS_FAILURE` | DNS resolution failed | Yes |
-| 1004 | `PROTOCOL_TLS_MISMATCH` | HTTP/HTTPS protocol mismatch on one endpoint; another is tried, and the misconfigured one is benched | Yes |
+| 1004 | `PROTOCOL_TLS_MISMATCH` | HTTP/HTTPS protocol mismatch on one endpoint; another is tried, and each mismatch counts toward benching the misconfigured one (see [`--bench-after`](cli.md)) | Yes |
 | 1005 | `PROTOCOL_CONNECTION_RESET` | Connection reset by peer | Yes |
 | 1006 | `PROTOCOL_CONNECTION_CLOSED` | Connection closed (EOF) | Yes |
 | 1007 | `PROTOCOL_CONTEXT_DEADLINE` | Context deadline expired before the relay completed | Yes |
