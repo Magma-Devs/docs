@@ -313,51 +313,84 @@ counted by the two totals, so the count of upstreams at `1` can exceed their sum
 
 At startup and at each epoch, the router runs the chain spec's checks against every upstream:
 the chain id, how much history the node keeps, each add-on, and so on. A failed check costs only
-what it covers. A failed `archive` or `debug` check switches off that add-on or extension. A
-failed basic check, such as the chain id, takes out the node url, and the whole upstream when it
-has no url left. These two series show what is switched off, and why.
+what the spec says it covers. These two series show what is switched off, and why.
+
+Each check in the spec has a severity, which says what its failure costs:
+
+| Severity | What a failed check costs |
+| --- | --- |
+| `Fail` | The node url, and the whole upstream when it has no url left. |
+| `PartialFail` | Only the add-on or extension the check covers (`archive`, `debug`, ...). The upstream keeps serving everything else. |
+| `Warning` | Nothing. The router publishes and logs the failure so you see it. |
+
+A check whose spec sets no severity takes the default for where it sits: `Fail` for a basic
+check (one with no add-on or extension, such as the chain id), and `PartialFail` for an add-on
+or extension check. An add-on check the spec marks `Fail` makes the add-on mandatory: its
+failure takes out the node url. `PartialFail` on a basic check has nothing smaller to switch
+off, so it acts as `Fail`. A severity name the router does not know reads as the default, and
+the router logs a warning that names it.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_provider_verification_failed` | Gauge | `spec`, `apiInterface`, `provider`, `tier`, `scope`, `service`, `check`, `severity` | One series per check an upstream is failing, while the router keeps something switched off for it. The value is the unix time, in seconds, the failure started. The series is removed when the check passes again. |
-| `smartrouter_provider_verification_check_failures_total` | Counter | as `smartrouter_provider_verification_failed` | Failed check runs, one per run, including a first failure the router forgives (see below). A run the upstream answered with a rate limit decided nothing and is not counted. |
+| `smartrouter_provider_verification_failed` | Gauge | `spec`, `apiInterface`, `provider`, `tier`, `scope`, `service`, `check`, `severity` | One series per check an upstream is failing, while the router keeps something switched off for it or the check is a `Warning`. The value is the unix time, in seconds, the failure started. The series is removed when the check passes again. |
+| `smartrouter_provider_verification_check_failures_total` | Counter | as `smartrouter_provider_verification_failed` | Failed check runs, one per run, including a first failure the router forgives (see below). A retry counts only the checks it ran. A run the upstream answered with a rate limit decided nothing and is not counted, and neither is `missing-url`, which runs nothing. |
 
 | Label | Values |
 | --- | --- |
 | `provider` | The upstream's configured name. No series carries a node url. |
 | `tier` | `static` for a primary upstream, `backup` for a backup. |
-| `scope` | What the failure switched off. `provider`: the whole upstream is out of rotation, because it failed at startup or a later re-check took it out. `service`: the upstream still serves, but without the add-on or extension in `service`. `url`: the upstream still serves, but one of its node urls was refused: the whole url when `service` is empty, else only for `service`, which another url of the upstream still serves. |
-| `service` | The add-on or extension that was switched off (`archive`, `debug`, ...). Empty for `scope="provider"` and for a url refused whole. |
-| `severity` | `Fail` when the failure took a node url or the whole upstream out. `PartialFail` when it switched off only `service`. |
+| `scope` | What the failure switched off. `provider`: the whole upstream is out of rotation, because it failed at startup or a later re-check took it out. `service`: the upstream still serves, but without the add-on or extension in `service`. `url`: the upstream still serves, but one of its node urls was refused: the whole url when `service` is empty, else only for `service`, which another url of the upstream still serves. `none`: a `Warning` check is failing, and nothing was switched off. |
+| `service` | The add-on or extension that was switched off (`archive`, `debug`, ...), or `websocket` for the upstream's subscriptions (see [The websocket](#the-websocket-as-its-own-part) below). For `scope="none"`, the add-on or extension the failing check covers. Empty for `scope="provider"`, for an http(s) url refused whole, and for a basic check. |
+| `severity` | The check's severity, as above. `Fail` when the failure took a node url or the whole upstream out, `PartialFail` when it switched off only `service`, `Warning` when it switched off nothing. |
 | `check` | The spec check that failed, by the name the spec gives it (`chain-id`, `pruning`, ...). These are the names [`skip-verifications`](../configuration/config-file.md#node-urls-per-url-options) takes. Or one of the names in the next table. |
 
 | `check` | Meaning |
 | --- | --- |
 | `connect` | The router could not connect to the node url. |
-| `config` | The configured urls cannot work as given: there is no http(s) url, or there is no websocket url on a chain with subscriptions while websocket verification is on. |
+| `config` | The configured urls cannot work as given: there is no http(s) url, or none that serves the chain's root path. |
 | `latest-block` | A check needs the url's latest block, and reading it failed. |
-| `unsupported-addon` | The node url names an add-on the chain's spec does not define. The router refuses that url. |
+| `unsupported-addon` | The node url names an add-on the chain's spec does not define. The router ignores that name, and the url serves the rest. The series carries the name as `service`. Only a url that serves its add-ons alone (`standalone-addons`) and names no add-on the spec defines is refused whole. |
+| `missing-url` | Always `service="websocket"`, `scope="service"`, `PartialFail`: the upstream has no ws(s) url on a chain with subscriptions. It serves everything else over http. Nothing ran and no retry is scheduled, because only a config change can fix it. The gauge shows it, the counter never does. |
 | `not-run` | The check never started, because the upstream's checks ran out of time first. It says nothing about the check itself. |
 | `rate-limited` | The upstream has been out since startup, and so far it has only answered with rate limits. The gauge shows it, the counter never does. |
 | `unknown` | The upstream is out of rotation, and the router has no check on record for it. |
 
+**Retries.** A failed check is retried without waiting for the next epoch:
+
+- The first retry comes [`--verification-retry-delay`](cli.md#lifecycle-health) (default `30s`)
+  after the run that found the check failing. Each retry that still finds it failing doubles
+  the wait, up to [`--verification-retry-max-delay`](cli.md#lifecycle-health) (default `15m`).
+  Each wait is stretched by up to 20% at random, so routers that lost the same node do not
+  retry it at the same moment. A retry never comes before the upstream's
+  [rate-limit hold-off](#rate-limit-hold-off) ends.
+- Each failing check has its own schedule. A retry runs only the checks that are due, on each
+  node url that has them, and keeps every other result from the run before. With `debug` and
+  `archive` both failing, each is retried on its own schedule, and the checks that pass, such
+  as the chain id, are not run again before the next epoch. A failure no single check owns, such
+  as a url the router could not connect to, is retried with every check of the upstream.
+- The epoch re-check still runs every check, and counts as a retry for each check it finds
+  failing. So at the longest wait, a failing check runs about once an epoch.
+- While a chain has nothing serving, every upstream out of rotation is retried with all its
+  checks, from 2 seconds, doubling up to 3 minutes.
+- A `Warning` check and an add-on name the spec does not define are checked again at each
+  epoch only. A missing websocket url is not retried at all.
+
 When a series appears and when it clears:
 
 - **At startup**, a failure is published as soon as the check fails.
-- **At each epoch** ([`--epoch-duration`](cli.md#lifecycle-health), default `15m`), the router
-  checks every upstream again. An add-on or extension is switched off at the first failed
-  re-check. A node url or an upstream that was serving is taken out only after it fails two
-  re-checks in a row. The counter shows both runs. The gauge shows the failure from the second
-  run on.
-- **An upstream that failed at startup** is retried every 3 minutes. While its chain has
-  nothing else serving, the retry starts at 2 seconds and doubles up to 3 minutes. Every other
-  failure waits for the next epoch.
-- **A series clears** at the first re-check that passes, so it can stay up to one epoch after
-  the node recovered.
+- **An add-on or extension** is switched off at its first failed run. **A node url or an
+  upstream that was serving** is taken out only after the check that failed fails two runs in
+  a row: the first, then that check's own retry, about 30 seconds later, or the epoch if it
+  comes first. A retry of another check does not count. The counter shows both runs. The gauge
+  shows the failure from the second run on.
+- **A series clears** at the first retry or epoch that finds the check passing: 30 seconds
+  after the failure at the earliest, and at most `--verification-retry-max-delay` into a long
+  outage.
 - **An upstream that moves to another check** in the same `scope` and `service` keeps its start
   time. A node that first refused connections and then returned the wrong chain id has one
   failure, not two.
-- **A check the spec marks `Warning`** publishes no series. It is only logged.
+- **A `Warning` check** publishes a `scope="none"` series while it fails. Each one has its own
+  start time.
 
 `smartrouter_endpoint_serving_tier` drops only when a whole tier is gone, so one upstream that
 fails its checks while others serve does not move it. These series are the per-upstream view.
@@ -367,7 +400,7 @@ They name the upstream, not the url: to see which node url failed, run
 ```promql
 # Switched off for more than 30 minutes, per upstream and what it lost
 time() - min by (spec, apiInterface, provider, tier, scope, service) (
-  smartrouter_provider_verification_failed) > 1800
+  smartrouter_provider_verification_failed{scope!="none"}) > 1800
 
 # Failed check runs in the last hour, per upstream and check (forgiven first failures included)
 sum by (spec, apiInterface, provider, check) (
@@ -376,8 +409,64 @@ sum by (spec, apiInterface, provider, check) (
 
 The first query takes the earliest start across checks, so a failure that moves to another
 check keeps its start and does not reset an alert. The value already holds the start time, so
-an alert on it needs no `for`. Keep the threshold above one epoch: a recovered upstream keeps
-its series until the next re-check passes.
+an alert on it needs no `for`. Keep the threshold above `--verification-retry-max-delay`
+(15 minutes by default): a recovered upstream keeps its series until its next retry passes.
+`scope!="none"` leaves out `Warning` checks, which switch nothing off.
+
+##### The websocket as its own part
+
+A ws(s) node url carries only subscriptions, so the router treats the websocket as one of the
+upstream's parts, `service="websocket"`, like an add-on:
+
+- A refused ws(s) url is published as `service="websocket"`, `PartialFail`. It is
+  `scope="service"` when the upstream has no ws(s) url left, so it serves no subscriptions, and
+  `scope="url"` while another of its ws(s) urls still serves them. The upstream keeps serving
+  everything else over http.
+- An upstream with no ws(s) url on a chain with subscriptions serves everything else over http,
+  and publishes `check="missing-url"`.
+- [`--skip-websocket-verification`](cli.md#websocket) stops the router from running checks over
+  ws(s) urls: it only connects to them, and refuses one it cannot connect to (`check="connect"`).
+  The flag does not hide `missing-url`, because it does not give an upstream a ws(s) url it
+  lacks.
+
+##### Verification logs
+
+Each change is logged once, not on every retry:
+
+- `verification check failing` when a check starts failing, at `error` level, or `warning` for a
+  `Warning` check. It carries `chain`, `apiInterface`, `tier`, `provider`, `scope`, `service`,
+  `check`, `severity` and `since` (when the failure started), and `previousCheck` when the
+  failure moved from another check in the same `scope` and `service`.
+- `verification check passes again` at `info` level, with the same fields and `failedFor`.
+
+No line carries a node url.
+
+##### Verification state on the debug server
+
+You can also read what every upstream is failing without the metrics port, at
+`GET /debug/verification` on the debug server (`--debug-address`). It returns, per chain, each
+configured upstream with what it is failing and when each failing check is retried next:
+
+```json
+{"chains": [{"chain": "ETH1", "apiInterface": "jsonrpc",
+   "providers": [{"provider": "node-a", "tier": "static", "inPairing": true,
+     "failing": [{"scope": "service", "service": "archive", "check": "pruning",
+                  "severity": "PartialFail", "since": "2026-11-08T10:00:00Z"}],
+     "retries": [{"check": "pruning", "extension": "archive", "attempts": 2,
+                  "pendingSince": "2026-11-08T10:00:00Z",
+                  "nextRetryAt": "2026-11-08T10:01:30Z"}]}]}],
+ "retryDelay": "30s", "retryMaxDelay": "15m0s"}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `retryDelay`, `retryMaxDelay` | The retry delays in force (`--verification-retry-delay`, `--verification-retry-max-delay`). |
+| `inPairing` | Whether the upstream is in rotation. `false` for an upstream with a `scope="provider"` failure. |
+| `failing` | The series `smartrouter_provider_verification_failed` publishes for the upstream. `since` is the gauge's value, as a time. |
+| `retries` | One entry per check on the retry schedule, the next one due first. `check`, `addon` and `extension` name the spec check and the add-on and extension it covers. `wholePass` is `true` instead for a failure no single check owns, such as a url the router could not connect to: its next retry runs every check of the upstream. `attempts` is how many runs in a row found it failing, `pendingSince` when it started failing, and `nextRetryAt` when the next retry is due. |
+
+Times are RFC 3339. An upstream with nothing failing and nothing to retry has two empty lists.
+No field carries a node url.
 
 #### WebSocket
 
