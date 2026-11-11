@@ -394,8 +394,8 @@ stay accurate, but the breakdown no longer names every shape.
 When an upstream answers `429`, the router stops sending it requests for a while instead
 of retrying into the limit. See [Rate-limited upstreams](../configuration/failover/retry.md#rate-limited-upstreams)
 for the behaviour. The hold-off registry emits these two series itself, so they cover
-every path that talks to an upstream (relays, spec re-verification, recovery probes,
-WebSocket subscriptions). A rate-limited relay is released with no QoS sample in either
+every path that talks to an upstream (relays, spec re-verification, WebSocket
+subscriptions). A rate-limited relay is released with no QoS sample in either
 direction, so a vendor cap does not show up in `rpc_endpoint_selection_score`. This pair
 is the direct signal that an upstream is refusing you because of load.
 

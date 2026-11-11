@@ -100,8 +100,8 @@ skips it for the rest of this relay, and for later relays, until the hold-off ex
   and never forwards `Retry-After`. A `lava-select-provider` pin and existing sticky
   sessions bypass the hold-off, because an explicit request takes priority.
 
-The same hold-off also covers spec re-verification, recovery probes and WebSocket
-subscriptions, so a rate-limited node is not re-probed on a fixed schedule either.
+The same hold-off also covers spec re-verification and WebSocket subscriptions, so a
+rate-limited node is not re-probed on a fixed schedule either.
 
 ## Pinning to one node
 
