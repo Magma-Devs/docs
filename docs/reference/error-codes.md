@@ -127,7 +127,7 @@ node's consecutive-failure count (see [`--bench-after`](cli.md)).
 data, has not seen it yet, or a gateway in front of it does not route the path. Another
 node may answer, so the router tries one, as it does for a JSON-RPC block-not-found or
 transaction-not-found. The node that answered 404 is not scored. The reply then
-carries a `Lava-Retries` header counting the extra attempt (see
+carries a `Router-Retries` header counting the extra attempt (see
 [Response headers](../api/directives.md#response-headers)). A 404 whose body names a
 missing endpoint, route or path is a route refusal instead, `NODE_ENDPOINT_NOT_FOUND`.
 Since v1.6.0 that is also retried on another node, under the
@@ -378,7 +378,7 @@ it would end that broadcast early. A node that already had the transaction throu
 peer gossip could answer `tefPAST_SEQ` before the node that applied it answered
 `tesSUCCESS`. The caller would then be told that a validated payment had failed.
 
-These replies carry `lava-identified-node-error: true` (see
+These replies carry `router-identified-node-error: true` (see
 [Response headers](../api/directives.md#response-headers)). A ledger verdict is
 non-retryable and is **not** charged against the answering node's availability,
 because the node reported the truth. An API error about the node's own state, such
