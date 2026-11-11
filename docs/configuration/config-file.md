@@ -113,12 +113,12 @@ direct-rpc:
 
 | Field | Description |
 | --- | --- |
-| `url` | Connection URL. Schemes: `http(s)://`, `ws(s)://`, `grpc(s)://`. A `jsonrpc` backend on an ETH1-derived spec needs a paired `wss://` url. A `graphql` backend's url is the full GraphQL endpoint, path included (e.g. `https://graphql.mainnet.sui.io/graphql`): the router POSTs to it as-is. |
+| `url` | Connection URL. Schemes: `http(s)://`, `ws(s)://`, `grpc(s)://`. A chain whose spec has subscriptions, such as Ethereum or Solana, needs a paired `ws://` or `wss://` url, unless the router runs with `--skip-websocket-verification`. A `graphql` backend's url is the full GraphQL endpoint, path included (e.g. `https://graphql.mainnet.sui.io/graphql`): the router POSTs to it as-is. |
 | `timeout` | Per-URL request timeout, e.g. `10s`. Defaults to the spec value. |
 | `addons` | Add-ons this URL serves, e.g. `["archive", "debug"]`. The router only routes matching methods here. |
 | `methods` | Restrict this URL to a specific method list. When set, only those methods route here. |
 | `internal-path` | Path override when proxying through a gateway. |
-| `ip-forwarding` | Forward the client IP via `X-Forwarded-For` to the upstream. |
+| `ip-forwarding` | Forward the client IP via `X-Forwarded-For` to the upstream. No effect on gRPC. |
 | `skip-verifications` | Skip chain-tracker startup checks for this URL, e.g. `["pruning", "tx-indexing"]`. |
 | `auth-config` | Per-URL authentication. See [Authentication](authentication.md). |
 | `grpc-config` | gRPC descriptor settings (below). |
@@ -167,14 +167,15 @@ upstream may not compress at all.
 
 ### `grpc-config` - gRPC descriptors
 
-These settings apply only to `grpc` interfaces.
+These settings apply only to `grpc` interfaces. See [gRPC](../interfaces/grpc.md#reflection-and-descriptors)
+for what the router uses descriptors for.
 
 | Field | Default | Description |
 | --- | --- | --- |
-| `descriptor-source` | `reflection` | `reflection` (server reflection), `file` (a compiled descriptor set), or `hybrid` (reflection, then file). |
-| `descriptor-set-path` | - | Path to a protobuf `FileDescriptorSet`. Required for `file` / `hybrid`. |
-| `reflection-timeout` | `5s` | Timeout for reflection queries. |
-| `allow-insecure` | `false` | Allow non-TLS `grpc://`. For dev/test only. |
+| `descriptor-source` | `reflection` | `reflection` (server reflection), `file` (a compiled descriptor set), or `hybrid` (the descriptor set first, then reflection for anything the set lacks). |
+| `descriptor-set-path` | - | Path to a binary protobuf `FileDescriptorSet`. It is read once, so a change needs a restart. Required for `file`. With `hybrid` and no path, only reflection is used. |
+| `reflection-timeout` | `5s` | Timeout for one descriptor lookup. Must be between `100ms` and `30s`. |
+| `allow-insecure` | `false` | Allow a `grpc://` URL. A `grpc://` URL needs it even with `auth-config.use-tls`. For dev/test only. |
 
 ## Cross-validation
 

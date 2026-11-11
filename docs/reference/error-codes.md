@@ -13,15 +13,20 @@ router uses it for logging, metrics, and retry decisions. Each code has a name, 
 and a **retryable** flag. The failover state machine reads this flag to decide whether
 to rotate to another node.
 
-!!! info "These codes are internal - clients never see them"
-    Smart Router is a transparent hop. Your client always receives the **original**
-    error from the upstream node, unchanged: the same JSON-RPC / HTTP / gRPC error you
-    would get from the node directly. Lava error codes appear only in the router's
-    **logs** and in the [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
-    metric. Use this page to read those logs and metrics, not to handle codes on the
-    wire. On GraphQL the router also writes a few replies itself: a request it refuses,
-    a write whose outcome is unknown, and a request no node answered. See
-    [Replies the router writes](../interfaces/graphql.md#replies-the-router-writes).
+!!! info "A node's error reaches your client unchanged"
+    Smart Router is a transparent hop. When a node answers with an error, your client
+    receives that **original** error: the same JSON-RPC / HTTP / gRPC error you would get
+    from the node directly. On gRPC only the status code and message pass. Lava error
+    codes appear in the router's **logs** and in the
+    [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
+    metric. Use this page to read those logs and metrics. The router writes a reply
+    itself only in a few cases: a request it refuses, a write whose outcome is unknown,
+    and a request no node answered. On JSON-RPC and Tendermint RPC, that last reply
+    carries the code as `router_error_code` and `router_error_name`. These pages list
+    the replies the router writes: [JSON-RPC](../interfaces/jsonrpc.md#replies-the-router-writes),
+    [gRPC](../interfaces/grpc.md#replies-the-router-writes),
+    [Tendermint RPC](../interfaces/tendermintrpc.md#replies-the-router-writes),
+    [GraphQL](../interfaces/graphql.md#replies-the-router-writes).
 
 The codes, with their names and retryable flags, live in
 [`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go).

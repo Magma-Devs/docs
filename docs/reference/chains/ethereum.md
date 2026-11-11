@@ -13,7 +13,7 @@ Smart Router serves Ethereum mainnet over JSON-RPC. This page covers the support
 |---|---|
 | Default port | `3360` (override per `endpoints[]` entry) |
 | Calling convention | `POST /` with a JSON-RPC body |
-| Interfaces | `jsonrpc` |
+| Interfaces | [`jsonrpc`](../../interfaces/jsonrpc.md) |
 | Spec | [`specs/ethereum.json`](https://github.com/Magma-Devs/smart-router/blob/main/specs/ethereum.json) |
 
 ## Supported method families

@@ -53,7 +53,10 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 ## Interfaces
 
 - [Interfaces](https://docs.magmadevs.com/interfaces/): Which interfaces Smart Router serves, where each one puts node errors, how writes and subscriptions work, and which chains use it.
+- [JSON-RPC](https://docs.magmadevs.com/interfaces/jsonrpc/): How the router serves JSON-RPC (Ethereum, Solana, Bitcoin, Hyperliquid): which node errors it retries, batches, writes, WebSocket subscriptions and their limits, and the replies the router writes itself.
 - [REST](https://docs.magmadevs.com/interfaces/rest/): How the router reads HTTP statuses from a REST node: which are retried, which count against the node, and which go back to the caller.
+- [gRPC](https://docs.magmadevs.com/interfaces/grpc/): How the router serves gRPC (Cosmos): reflection and grpc-config, which metadata passes, how it reads a node's status, writes, server-streaming subscriptions, and the statuses the router sends itself.
+- [Tendermint RPC](https://docs.magmadevs.com/interfaces/tendermintrpc/): How the router serves CometBFT RPC (Cosmos): JSON-RPC, URI-style GET turned into JSON-RPC, the result.response.code rule, broadcasts, subscriptions by query, and the replies the router writes itself.
 - [GraphQL](https://docs.magmadevs.com/interfaces/graphql/): How the router serves GraphQL (Sui): which requests it refuses, how it reads node errors inside an HTTP 200, write outcomes and OUTCOME_UNKNOWN, and the replies the router writes itself.
 
 ## Supported chains

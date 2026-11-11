@@ -15,7 +15,7 @@ go back to the caller.
 | What comes in | What the router does |
 | --- | --- |
 | Any HTTP method on any path, for example `GET /cosmos/base/tendermint/v1beta1/blocks/latest` | Sends the same method, path and query string to a node. Methods that carry a body send the body too. |
-| A write: a request the chain's spec marks as a write, for example `POST /cosmos/tx/v1beta1/txs` | Sends it to every eligible node at once. The first node that accepts it answers the caller. |
+| A write: a request the chain's spec marks as a write, for example `POST /cosmos/tx/v1beta1/txs` | Sends it to several nodes at once (see [Writes on every interface](index.md#writes-on-every-interface)). The first node that accepts it answers the caller. |
 | A WebSocket upgrade | Not served. A REST listener has no WebSocket route, so a REST chain has no subscriptions. |
 
 You set the interface per listener with `api-interface: "rest"` in the
