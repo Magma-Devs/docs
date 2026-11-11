@@ -99,7 +99,7 @@ Starting points. Tune the thresholds to your traffic.
 | Cache cold | hit-ratio recipe `< 0.2 for 30m` | The cache is misconfigured or bypassed. This is a cost and latency risk. |
 | RESP cache backend unreachable | `smartrouter_resp_cache_connected == 0 for 5m` | Redis/Valkey is down or rejecting auth. Relays still succeed through the upstreams, so nothing else alerts, but you pay for every read. |
 | Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data. This is a high-signal correctness alert. |
-| Vendor-wide rate limit | `increase(smartrouter_rate_limit_holdoffs_total{event="escalated"}[1h]) > 0` | Two of a provider's URLs were held off at once, so the router stopped calling that provider on every chain. You are over an account-wide cap, not a per-endpoint one. |
+| Vendor-wide rate limit | `increase(smartrouter_rate_limit_holdoffs_total{event="escalated"}[1h]) > 0` | Two of a provider's URLs on one chain and API interface were held off at once, so the router stopped calling that provider there. You are likely over an account-wide cap, not a per-endpoint one. The same provider on other chains is held off only when its own URLs are rate-limited too. The `provider` label is the plain provider name, summed over chains and interfaces. |
 | Batch shapes merging | `increase(smartrouter_batch_signature_overflow_total[1h]) > 0` | Clients send more batch shapes than the breakdown can name, so shapes are merging into `batch:other`. |
 
 ## Exposition
@@ -401,7 +401,7 @@ is the direct signal that an upstream is refusing you because of load.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_rate_limit_holdoffs_total` | Counter | `provider`, `event` | Hold-off registry events. `event` is the closed set `recorded` (a `429` held an endpoint off), `escalated` (the hold-off widened to the whole provider; counted once on the transition, not per refresh), `cleared` (an answer removed a standing penalty; not counted when there was nothing to clear). |
+| `smartrouter_rate_limit_holdoffs_total` | Counter | `provider`, `event` | Hold-off registry events. `event` is the closed set `recorded` (a `429` held an endpoint off), `escalated` (the hold-off widened to the whole provider entry, meaning the provider on one chain and API interface; counted once on the transition, not per refresh), `cleared` (an answer removed a standing penalty; not counted when there was nothing to clear). |
 | `smartrouter_rate_limit_holdoff_seconds` | Histogram | `provider` | Applied hold-off duration per `recorded` event, in **seconds** (buckets `15, 30, 60, 120, 300, 600, 1800, 3600`, not the shared millisecond latency buckets). Shows how long upstreams' `Retry-After` values are compared with the exponential default. |
 
 `provider` is the configured provider name on the relay, probe, and re-verification
