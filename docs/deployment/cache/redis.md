@@ -94,7 +94,7 @@ infrastructure. Lower latency is a side effect.
 | `tls.cert-file` / `tls.key-file` | *(unset)* | Client keypair for mTLS (both or neither). |
 | `tls.server-name` | *(unset)* | Overrides the verification / SNI name. |
 | `tls.insecure-skip-verify` | `false` | Skips server verification. Testing only. |
-| `dial-timeout` | `500ms` | Limits a new connection's dial and TLS handshake. The caller's own deadline also applies, and whichever is sooner wins. Kept sub-second on purpose, so a black-holed backend cannot make cold lookups wait long. |
+| `dial-timeout` | `500ms` | Limits a new connection's dial and TLS handshake. The caller's own deadline also applies, and whichever is sooner wins. Kept sub-second on purpose, so a black-holed backend cannot make cold lookups wait long. Under `topology: sentinel` it also sets how long a Sentinel has to answer. See [Topologies → Sentinel](#topologies). |
 | `read-timeout` / `write-timeout` | client defaults | Per-operation network limits. |
 | `pool-size` | client default (10 × `GOMAXPROCS`) | Connection pool size, per client (the read client has its own). |
 | `expiration.finalized` | `1h` | Lifetime of a finalised answer. The sidecar's `--expiration`. |
@@ -145,6 +145,27 @@ from the sidecar to this backend, set the block to keep the same tuning.
 
     The common misconfiguration is to supply only the data-node credential. A hardened
     sentinel set then fails *discovery*, before any data node is reached.
+
+    The router asks one sentinel, the one it is attached to, for the primary each time it
+    opens a connection. That sentinel has two fifths of `dial-timeout` (200 ms at the
+    default) to complete a connection, and the same again to answer each request. A
+    sentinel that misses either limit, because its node is gone or its process hangs, is
+    left within the same connection attempt. The router asks every sentinel it knows of,
+    attaches to the first one that answers, and connects to the primary that one names. The
+    cache operation that needed the connection fails, and the next one succeeds. None of
+    this depends on `pool-size`.
+
+    A healthy sentinel that is far away is held to the same limit: one that always takes
+    longer than two fifths of `dial-timeout` to connect or to answer is never used. With
+    sentinels in another region, set `dial-timeout` to at least 2.5 times the slowest
+    sentinel's connection time.
+
+    When the primary changes, the attached sentinel announces it, and the router drops its
+    connections to the old primary. When that sentinel is lost together with the primary,
+    no announcement arrives. Each idle connection to the lost primary then fails the
+    operation that picks it up, after that operation's timeout. While the health probe is
+    the only traffic (a 3 s timeout, one probe a second), that is about 4 s for each idle
+    connection.
 
 === "Cluster"
 
@@ -258,6 +279,23 @@ A router started with `--debug-relays` adds a `Lava-Cache-Backend` header to res
 served from the cache. The header names the node that served the hit: the current master
 under sentinel, or the shard that was used under cluster. It is behind the debug flag
 because it exposes internal infrastructure addresses.
+
+### Client log lines
+
+The client library's own lines go through the router's logger, in the router's log
+format. A change of primary or of sentinel is logged at info, every time:
+
+| Message | Attributes |
+| --- | --- |
+| `resp-cache client follows a new primary` | `master`, `address` |
+| `resp-cache client attached to a sentinel` | `sentinel`, `primary` |
+| `resp-cache client discovered a sentinel` | `sentinel`, `master` |
+
+Every other line from the library is logged at warn as
+`resp-cache client reported a failure`, with the library's text in `detail`. Each kind of
+failure is printed at most once in 10 s, and the next line of that kind carries
+`suppressed`, the number of lines dropped in between. The library has one logger for the
+whole process, so these lines do not name the store they are about.
 
 ## Flush semantics
 
