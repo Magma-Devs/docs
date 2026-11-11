@@ -1,6 +1,6 @@
 site_name: Smart Router
 site_description: Centralised RPC routing gateway with QoS-based selection, caching, and failover policies.
-# Public docs host — drives <link rel="canonical"> and the og:url / sitemap base.
+# Public docs host - drives <link rel="canonical"> and the og:url / sitemap base.
 # Keep this on docs.magmadevs.com (not the github.io copy) so search engines treat
 # the public host as authoritative.
 site_url: https://docs.magmadevs.com/
@@ -61,7 +61,7 @@ plugins:
 
 # Build hooks. llms_full.py concatenates every page into site/llms-full.txt
 # (the LLM-ingestion corpus) in nav order at post-build, and emits a per-page
-# Markdown twin next to each page (URL minus trailing slash + .md) — always in
+# Markdown twin next to each page (URL minus trailing slash + .md) - always in
 # sync with content, no manual upkeep. The curated index is docs/llms.txt.
 # asset_fingerprint.py appends `?v=<content hash>` to every local entry of
 # extra_css / extra_javascript below, so a changed file is a new URL and the
@@ -74,11 +74,11 @@ hooks:
   - hooks/llms_full.py
   - hooks/asset_fingerprint.py
 
-# Community / support links — rendered as icons in the footer on every page.
+# Community / support links - rendered as icons in the footer on every page.
 extra:
   # No "Made with Material for MkDocs" line in the footer.
   generator: false
-  # Google Analytics 4 — Material injects gtag.js on every page automatically.
+  # Google Analytics 4 - Material injects gtag.js on every page automatically.
   analytics:
     provider: google
     property: G-GQQEQ7XVPL
@@ -98,12 +98,12 @@ extra:
           data: 0
           note: >-
             Thanks - <a href="https://github.com/Magma-Devs/docs/issues/new" target="_blank" rel="noopener">tell us what was missing</a>.
-  # LinkedIn Insight Tag partner id — consumed by
+  # LinkedIn Insight Tag partner id - consumed by
   # overrides/partials/integrations/linkedin.html and fired under the same
   # consent gate as GA (see the analytics dispatcher override). Unset → no tag.
   linkedin_partner_id: "9287986"
   # Cookie-consent banner. Both GA and the LinkedIn Insight Tag are gated on
-  # the `analytics` category — neither fires until the visitor accepts.
+  # the `analytics` category - neither fires until the visitor accepts.
   consent:
     title: Cookie consent
     description: >-
@@ -190,6 +190,10 @@ nav:
           - Integrity: configuration/failover/integrity.md
           - Circuit breaker: configuration/failover/circuit-breaker.md
       - CLI flags: reference/cli.md
+  - Interfaces:
+      - interfaces/index.md
+      - REST: interfaces/rest.md
+      - GraphQL: interfaces/graphql.md
   - Supported chains:
       - reference/chains/index.md
       - Chain specs: reference/chains/specs.md

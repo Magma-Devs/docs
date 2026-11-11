@@ -72,7 +72,7 @@ Each entry opens one listening socket for one chain + interface.
 | --- | --- | --- |
 | `network-address` | yes | `host:port` to listen on, e.g. `0.0.0.0:3360`. |
 | `chain-id` | yes | Spec chain id (`ETH1`, `SOLANA`, `COSMOSHUB`, …). Must resolve from `--use-static-spec`. |
-| `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, `tendermintrpc`, or `graphql`. The chain spec must support it. A `graphql` listener accepts HTTP `POST` only (any path; other methods get `405`) and serves no subscriptions. |
+| `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, `tendermintrpc`, or `graphql`. The chain spec must support it. A `graphql` listener accepts HTTP `POST` only (any path; other methods get `405`) and serves no subscriptions; see [GraphQL interface](../interfaces/graphql.md). |
 | `tls-enabled` | no | Serve this listener over TLS using a self-signed certificate. Default `false`. |
 | `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/lava/health`. |
 

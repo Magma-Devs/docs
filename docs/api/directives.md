@@ -247,6 +247,8 @@ Smart Router adds metadata to every response about how the relay was served. The
 | `Lava-Retries` | Number of attempts after the first, retries and hedges alike, including a hedge still running when the reply was built. Absent when `0`. Always `0` for a write, which goes to several nodes at once by design. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `lava-fast-tx-participants` | On a write only: the nodes the router sent it to, in brackets and space-separated, e.g. `[node-a node-b]`. A single name means the write was not broadcast, for example because it was [pinned](#pin-to-a-specific-node). |
+| `Lava-Write-Outcome` | On a GraphQL write only: `accepted`, `rejected`, `unknown` (it may have run) or `not_sent`. See [Writes](../interfaces/graphql.md#writes). |
+| `Lava-Tx-Hash` | On a GraphQL write only: the transaction digest, when the router can compute it from the request. On `unknown`, look it up before signing again. |
 | `Lava-Guid` | Unique request id. Use it to find the request in logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |

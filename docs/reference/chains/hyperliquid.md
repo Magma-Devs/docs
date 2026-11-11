@@ -13,6 +13,7 @@ Smart Router serves Hyperliquid EVM mainnet over JSON-RPC. This page covers the 
 |---|---|
 | Default port | `3360` (override per `endpoints[]` entry) |
 | Calling convention | `POST /` with a JSON-RPC body |
+| Interfaces | `jsonrpc` |
 | `chain-id` | `HYPERLIQUID` |
 | Spec | [`specs/hyperliquid.json`](https://github.com/Magma-Devs/smart-router/blob/main/specs/hyperliquid.json) |
 

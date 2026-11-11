@@ -22,6 +22,7 @@ The default Cosmos setup runs three listeners, one per API interface:
 | | |
 |---|---|
 | `chain-id` | `COSMOSHUB` |
+| Interfaces | [`rest`](../../interfaces/rest.md), `grpc`, `tendermintrpc` |
 | Spec | [`specs/cosmoshub.json`](https://github.com/Magma-Devs/smart-router/blob/main/specs/cosmoshub.json) (imports `COSMOSSDK50` + `COSMOSWASM`, which pull in `COSMOSSDK` → `IBC` + `TENDERMINT`) |
 
 ## Supported method families

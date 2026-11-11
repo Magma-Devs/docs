@@ -13,6 +13,7 @@ Smart Router serves Solana mainnet over JSON-RPC. This page covers the supported
 |---|---|
 | Default port | `3360` (override per `endpoints[]` entry) |
 | Calling convention | `POST /` with a JSON-RPC body |
+| Interfaces | `jsonrpc` |
 | `chain-id` | `SOLANA` |
 | Spec | [`specs/solana.json`](https://github.com/Magma-Devs/smart-router/blob/main/specs/solana.json) |
 
