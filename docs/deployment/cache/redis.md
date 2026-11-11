@@ -80,7 +80,7 @@ infrastructure. Lower latency is a side effect.
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `topology` | `standalone` | `standalone`, `sentinel`, or `cluster`. |
-| `addresses` | - (required) | Standalone: the node address. Sentinel: the **sentinel** addresses. Cluster: the **configuration endpoint**, used as a discovery seed. Never a node list: the client discovers the topology itself. |
+| `addresses` | - (required) | Standalone: the node address, exactly one: a longer list stops the router at startup. Sentinel: the **sentinel** addresses. Cluster: the **configuration endpoint**, used as a discovery seed. Never a node list: the client discovers the topology itself. |
 | `read-addresses` | *(unset)* | Optional separate endpoint(s) for **reads**. Writes stay on `addresses`. Selects an *endpoint*, not a replica role. See [Multi-region reads](#multi-region-reads-readwrite-split). |
 | `master-name` | - | Sentinel only (required there): the monitored master set name. |
 | `username` / `password` | *(unset)* | Static data-node credentials (AUTH / ACL). |
@@ -89,18 +89,27 @@ infrastructure. Lower latency is a side effect.
 | `sentinel-username` / `sentinel-password` / `sentinel-password-file` | *(unset)* | **Sentinel control-plane** credentials. Sentinels authenticate separately from the data nodes, and hardened deployments fail discovery without these. Only valid with `topology: sentinel`. Read once at startup (rotating them needs a restart). |
 | `db` | `0` | Logical database (standalone/sentinel only; rejected for cluster). |
 | `key-prefix` | `sr` | Namespace for every key. Restricted to `[A-Za-z0-9._-]+`, because flush uses it as a `SCAN MATCH` glob. Give each deployment that shares a backend its own prefix. |
-| `tls.enabled` | `false` | TLS to the backend. |
+| `tls.enabled` | `false` | TLS to the backend. It must be `true` whenever another `tls.*` key is set: a `tls` block without it stops the router at startup, rather than send credentials in plain text. |
 | `tls.ca-file` | *(system pool)* | PEM CA bundle for server verification. |
 | `tls.cert-file` / `tls.key-file` | *(unset)* | Client keypair for mTLS (both or neither). |
 | `tls.server-name` | *(unset)* | Overrides the verification / SNI name. |
 | `tls.insecure-skip-verify` | `false` | Skips server verification. Testing only. |
 | `dial-timeout` | `500ms` | Limits a new connection's dial and TLS handshake. The caller's own deadline also applies, and whichever is sooner wins. Kept sub-second on purpose, so a black-holed backend cannot make cold lookups wait long. |
 | `read-timeout` / `write-timeout` | client defaults | Per-operation network limits. |
-| `pool-size` | client default | Connection pool size, per client (the read client has its own). |
+| `pool-size` | client default (10 × `GOMAXPROCS`) | Connection pool size, per client (the read client has its own). |
+| `expiration.finalized` | `1h` | Lifetime of a finalised answer. The sidecar's `--expiration`. |
+| `expiration.finalized-multiplier` | `1` | Multiplier on `expiration.finalized`. The sidecar's `--expiration-multiplier`. |
+| `expiration.non-finalized` | `500ms` | Floor of a recent ("latest") answer's lifetime. The lifetime is an eighth of the chain's block time, and never shorter than this floor. The sidecar's `--expiration-non-finalized`. |
+| `expiration.non-finalized-multiplier` | `1` | Multiplier on `expiration.non-finalized`. The sidecar's `--expiration-non-finalized-multiplier`. |
+| `expiration.node-errors` | `250ms` | Lifetime of a cached node error on a finalised block. The sidecar's `--expiration-finalized-node-errors`. |
+| `expiration.blocks-hashes-to-heights` | `48h` | Lifetime of a block-hash→height mapping. The sidecar's `--expiration-blocks-hashes-to-heights`. The router writes no such mappings, so this setting has no effect. |
 
-TTLs come from the cache engine itself, with the same policy the
-[sidecar](index.md#tuning-flags) applies: finalised entries ~1h, non-finalised entries
-scaled to the chain's block time, and short-lived node errors.
+The cache engine applies the same lifetimes as the [sidecar](index.md#tuning-flags), and
+the `expiration` block sets them the way the sidecar's flags do. Every duration needs a
+unit (`1h`, `3600s`, `250ms`): a bare number is read as nanoseconds, and a lifetime below
+one millisecond stops the router at startup. Without the block, the defaults above apply.
+A router does not take its lifetimes from the sidecar's flags, so when you move a router
+from the sidecar to this backend, set the block to keep the same tuning.
 
 !!! note "No environment expansion"
     Values in this block are read literally. A `${VAR}` written here is the string
@@ -229,8 +238,11 @@ automatic. Alert on the dedicated series below, not on request errors:
 
 | Series | What it tells you |
 | --- | --- |
-| `smartrouter_resp_cache_connected` | `0` after a failed health probe (PING, 10s cadence). Changes in reachability are also logged. An authentication rejection is reported as an authentication rejection, not as "unreachable". The credential itself is never logged. |
-| `smartrouter_resp_cache_failed_total{op,kind}` | Backend-level operation failures. Clean misses are never counted here. `kind` separates `error` (unreachable, protocol error) from `timeout` (budget exceeded), so saturation looks different from an outage. |
+| `smartrouter_resp_cache_connected` | `0` after a failed health probe (PING, 10s cadence) against any endpoint. Changes in reachability are also logged, naming the failing endpoint. An authentication rejection is reported as an authentication rejection, not as "unreachable". The credential itself is never logged. |
+| `smartrouter_resp_cache_endpoint_connected{role}` | The same, per endpoint (`write` or `read`). With the read/write split, alert on this one: it says which half is down. |
+| `smartrouter_resp_cache_failed_total{op,kind}` | Backend-level operation failures. Clean misses are never counted here. `kind` separates `error` (unreachable, protocol error) from `timeout` (budget exceeded), so saturation looks different from an outage. Under `sentinel` and `cluster`, a read from an unreachable endpoint counts as `timeout`, so alert on the `connected` gauges there. |
+| `smartrouter_resp_cache_breaker_open{role}` | `1` while the breaker for writes or for lookups is open. While it is open, the router skips that side's operations without contacting the backend, and probes every second until the backend answers within budget. |
+| `smartrouter_resp_cache_skipped_total{op}` | Operations an open breaker skipped. |
 | `smartrouter_resp_cache_connection_errors_total` | Failed background health probes. |
 | `smartrouter_resp_cache_pool_*_conns` | Pool gauges: total, idle, stale. |
 
@@ -269,13 +281,13 @@ Keeping `cache-be:` in place next to `resp-cache:` is intended: it is the rollba
 
 ## Caveats
 
-- **The fleet chain-tracker gate isn't carried over.** The per-endpoint gate lets pods
-  reuse each other's successful upstream polls. It is a sidecar RPC backed by a dedicated
-  store on the cache server, not a cache-engine behaviour. So it does not pass through the
-  key/value interface this backend implements. A router on the RESP backend logs a warning
-  once per listen endpoint and **polls locally**. Everything else the sidecar caches works
-  the same: relay entries, chain tip, shared-state seen-block, block-hash→height. If you
-  need the peer gate, stay on the sidecar.
+- **The fleet chain-tracker gate is scoped to the key prefix.** The per-endpoint gate lets
+  pods reuse each other's successful upstream polls, and it works on this backend as it
+  does on the sidecar, with one difference in reach. Here the poll observations sit under
+  `key-prefix` like every other key, so only routers on the same prefix reuse each other's
+  polls. The sidecar shares them with every router that reaches it, whatever its prefix.
+  Routers on different prefixes each poll for themselves: more upstream polls, never a
+  different answer.
 - **Sentinel credential rotation** applies per connection attempt, not in place. See
   [Credential rotation](#credential-rotation).
 - **`read-addresses` selects an endpoint, not a replica role.** See
