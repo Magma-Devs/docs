@@ -16,7 +16,7 @@ to rotate to another node.
 !!! info "These codes are internal - clients never see them"
     Smart Router is a transparent hop. Your client always receives the **original**
     error from the upstream node, unchanged: the same JSON-RPC / HTTP / gRPC error you
-    would get from the node directly. Lava error codes appear only in the router's
+    would get from the node directly. Router error codes appear only in the router's
     **logs** and in the [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
     metric. Use this page to read those logs and metrics, not to handle codes on the
     wire.
@@ -193,7 +193,7 @@ question, read from the code's sub-category. Four groups have their own behaviou
 
 ## Layer A - Protocol errors (`PROTOCOL_*`, 1000–1999)
 
-Category: **Internal**. The Lava protocol itself raises these errors, not nodes or
+Category: **Internal**. The router itself raises these errors, not nodes or
 chains.
 
 | Code | Name | Description | Retryable |
@@ -213,7 +213,7 @@ chains.
 | 1013 | `PROTOCOL_PROVIDER_ABORTED` | Node aborted (gRPC ABORTED) | Yes |
 | 1014 | `PROTOCOL_PROVIDER_DATA_LOSS` | Node data loss (gRPC DATA_LOSS) | Yes |
 | 1015 | `PROTOCOL_INSUFFICIENT_PROVIDERS` | Insufficient providers available for addon or cross-validation | No |
-| 1020 | `PROTOCOL_RATE_LIMITED` | Lava-side rate limit exceeded | No |
+| 1020 | `PROTOCOL_RATE_LIMITED` | Router-side rate limit exceeded | No |
 | 1021 | `PROTOCOL_MAX_CU_EXCEEDED` | Maximum compute units exceeded for session | No |
 | 1022 | `PROTOCOL_BATCH_SIZE_EXCEEDED` | Batch request size exceeded limit | No |
 | 1023 | `PROTOCOL_CU_MISMATCH` | CU accounting inconsistency or security violation | No |
@@ -346,7 +346,7 @@ block/chunk garbage-collection codes (`CHAIN_NEAR_UNKNOWN_BLOCK`, `CHAIN_NEAR_UN
 ## Layer D - User errors (`USER_*`, 4000–4999)
 
 Category: **External**. These are malformed or invalid client requests. They are
-classified by the nature of the error, whether Lava catches it before forwarding or the
+classified by the nature of the error, whether the router catches it before forwarding or the
 node returns it. All are non-retryable, and all charge **normal CU** (responses are not
 cached).
 
