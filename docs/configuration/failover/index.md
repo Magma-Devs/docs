@@ -26,7 +26,7 @@ To catch *wrong* data by comparing answers across nodes, see [Cross-validation](
 
 ![Failover pipeline: an integrity check skips a node that is behind the chain head, selection picks Node A, Node A returns a retryable error, the router retries on Node B, and the answer goes back to your app](../../assets/diagrams/failsafe-flow.svg)
 
-The overall timeout (`--default-processing-timeout`) covers the whole pipeline. If it fires, the router returns the most useful result it has. The per-attempt window (`--min-relay-timeout` floor or `lava-relay-timeout` header) sets when the next node is tried. It does not cancel the attempt that is already in flight.
+The overall timeout (`--default-processing-timeout`) covers the whole pipeline. If it fires, the router returns the most useful result it has. The per-attempt window (`--min-relay-timeout` floor or `smartrouter-relay-timeout` header) sets when the next node is tried. It does not cancel the attempt that is already in flight.
 
 **JSON-RPC batch requests are not retried or failed over by default.** See [Batch requests](retry.md#batch-requests).
 
@@ -39,10 +39,14 @@ Smart Router's failover settings fall into three groups:
 | Group | Examples | Where tuned |
 |---|---|---|
 | CLI flags | `--set-relay-retry-limit`, `--default-processing-timeout`, `--min-relay-timeout` | startup args |
-| Per-request headers | `lava-relay-timeout`, `lava-select-provider` | HTTP headers or gRPC call metadata. See [Request headers](../../api/directives.md) |
+| Per-request headers | `smartrouter-relay-timeout`, `smartrouter-select-provider` | HTTP headers or gRPC call metadata. See [Request headers](../../api/directives.md) |
 | Chain-derived defaults | integrity lag threshold, hedge tick | computed from the chain spec; you cannot currently set them in YAML |
 
 If a setting cannot be tuned, the policy's page says so.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## Observability
 

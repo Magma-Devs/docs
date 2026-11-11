@@ -49,7 +49,11 @@ weights. See the [CLI reference](../../reference/cli.md#rpc-node-selection-qos).
 
 ## Per-request override
 
-To send a single request to a specific node, set the `lava-select-provider` header. The optimizer is skipped for that request, but failover policies still apply. See [Directives](../../api/directives.md).
+To send a single request to a specific node, set the `smartrouter-select-provider` header. The optimizer is skipped for that request, but failover policies still apply. See [Directives](../../api/directives.md).
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## Related
 

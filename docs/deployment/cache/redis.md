@@ -242,10 +242,14 @@ The shared `smartrouter_cache_*` hit/miss series keep working as before. For the
 reference, see
 [Metrics → RESP cache backend](../../reference/metrics.md#resp-cache-backend).
 
-A router started with `--debug-relays` adds a `Lava-Cache-Backend` header to responses
+A router started with `--debug-relays` adds a `Smart-Router-Cache-Backend` header to responses
 served from the cache. The header names the node that served the hit: the current master
 under sentinel, or the shard that was used under cluster. It is behind the debug flag
 because it exposes internal infrastructure addresses.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## Flush semantics
 
@@ -291,7 +295,7 @@ Keeping `cache-be:` in place next to `resp-cache:` is intended: it is the rollba
 | Sentinel discovery fails with credentials that work on the data nodes | Sentinels authenticate separately. Set `sentinel-password` / `sentinel-password-file`. |
 | Only `key-prefix:chaintip:*` keys appear | A `latest`-style query was relayed. Those entries have a sub-second TTL and expire before you can look. Request a finalised block to see an entry that lasts. |
 | Reads still land on the primary under sentinel/cluster | Expected: `read-addresses` re-discovers and resolves to the master. Use a managed reader endpoint in `standalone` shape. |
-| `Lava-Cache-Backend` header missing | Either the response wasn't a cache hit (check `Lava-Provider-Address`), or the router isn't running with `--debug-relays`. |
+| `Smart-Router-Cache-Backend` header missing | Either the response wasn't a cache hit (check `Smart-Router-Provider-Address`), or the router isn't running with `--debug-relays`. |
 
 ## See also
 

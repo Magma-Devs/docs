@@ -90,22 +90,26 @@ with different ids shares one entry. The cache stores:
 
 What is **not** cached: writes (`eth_sendRawTransaction` and similar), pending/`latest`
 mutable state beyond its short TTL, and anything a client marks with
-[`lava-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh). Each chain's
+[`smartrouter-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh). Each chain's
 [spec](../../reference/chains/specs.md) categories decide which methods can be cached at
 all. It is not a setting on the cache.
 
 The cache lookup is skipped in exactly three cases: a stateful (write) method, a request
-carrying `lava-force-cache-refresh`, and a request running
+carrying `smartrouter-force-cache-refresh`, and a request running
 [cross-validation](../../configuration/failover/cross-validation.md), which needs fresh
 answers from several nodes to compare.
 
 !!! warning "Pinning a node does not bypass the cache"
-    [`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
+    [`smartrouter-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
     *selection* preference, and the cache is checked before selection runs. So a pinned
-    request that hits a warm entry returns `Lava-Provider-Address: Cached` without
+    request that hits a warm entry returns `Smart-Router-Provider-Address: Cached` without
     contacting the named node. That response cannot tell you whether the node is
     reachable. Monitoring checks and any test that asserts on a specific node must also
-    send `lava-force-cache-refresh`, or use a request the cache cannot answer.
+    send `smartrouter-force-cache-refresh`, or use a request the cache cannot answer.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## Tuning flags
 
@@ -137,7 +141,7 @@ then also share three things through the cache:
   makes and reuses fresh ones from the others. Every upstream is then polled about once
   per interval across the fleet, instead of once per replica. This is what stops the
   router's own polling load from growing with the replica count;
-- **sticky sessions**: a `lava-stickiness` id resolves to the same upstream on every
+- **sticky sessions**: a `smartrouter-stickiness` id resolves to the same upstream on every
   replica. Without the flag, stickiness stays local to each pod.
 
 The seen-block state and sticky sessions work through either backend. The chain-tracker

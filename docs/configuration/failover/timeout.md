@@ -12,7 +12,7 @@ Two timeouts apply to every relay: an **overall budget** for the whole request, 
 | Timeout | Default | Set by |
 |---|---|---|
 | Overall (whole relay) | `30s` | `--default-processing-timeout` CLI flag |
-| Per-attempt window | `1s` floor | `--min-relay-timeout` CLI flag, or `lava-relay-timeout` header |
+| Per-attempt window | `1s` floor | `--min-relay-timeout` CLI flag, or `smartrouter-relay-timeout` header |
 
 If both are set:
 
@@ -34,7 +34,7 @@ If a write (for example `eth_sendRawTransaction`) ends before any node answers, 
 Clients can override the per-attempt timeout for a specific request:
 
 ```
-lava-relay-timeout: 12s
+smartrouter-relay-timeout: 12s
 ```
 
 Format: any Go duration (`500ms`, `5s`, `1m30s`). The router limits the override:
@@ -50,16 +50,20 @@ The request's own budget is the overall timeout it gets with no header. It is `-
 
 A value at or above the request's own budget turns [hedging](hedge.md) off for that request, because the per-attempt timeout is also the hedge interval. [Retry](retry.md) after a failed attempt still works, but a node that stops answering holds the request for the whole budget.
 
-The response carries `Lava-Relay-Timeout-Applied` with the per-attempt timeout actually used.
+The response carries `Smart-Router-Relay-Timeout-Applied` with the per-attempt timeout actually used.
 
 See [Directives](../../api/directives.md).
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## When to tune
 
 | Symptom | Adjust |
 |---|---|
 | p99 latency dominated by one slow attempt | lower `--min-relay-timeout` (hedge sooner) |
-| Heavy methods (`debug_*`) hedged on every call | raise `lava-relay-timeout` per request (up to the method's own budget), not the global floor. To go beyond that budget, set `--max-caller-relay-timeout` |
+| Heavy methods (`debug_*`) hedged on every call | raise `smartrouter-relay-timeout` per request (up to the method's own budget), not the global floor. To go beyond that budget, set `--max-caller-relay-timeout` |
 | Whole-relay timeouts in logs | raise `--default-processing-timeout`, or find out why retries do not succeed |
 | Many clients hit timeouts on the first attempt | raise `--min-relay-timeout` |
 
@@ -67,8 +71,8 @@ See [Directives](../../api/directives.md).
 
 - **Setting the window ≥ overall.** The router does not crash. It raises the overall budget to match the window, so the window never passes before the request ends, and no hedge is ever sent.
 - **Setting the window below upstream RTT.** Healthy nodes still answer, but every request gets hedged, so you pay for extra upstream calls on each one. If `smartrouter_hedge_total` tracks your request rate on healthy upstreams, raise the floor.
-- **Header override below the floor.** The header is *not* clamped to `--min-relay-timeout`, only to `300ms`. If a client sends `lava-relay-timeout: 100ms`, the attempt gets `300ms` even when `--min-relay-timeout` is `1s`. The flag only sets the server-derived default, not an explicit override.
-- **Header override above the budget.** A client that asks for more than the request's own budget gets that budget, unless the operator set `--max-caller-relay-timeout`. Check `Lava-Relay-Timeout-Applied` on the response to see what was used.
+- **Header override below the floor.** The header is *not* clamped to `--min-relay-timeout`, only to `300ms`. If a client sends `smartrouter-relay-timeout: 100ms`, the attempt gets `300ms` even when `--min-relay-timeout` is `1s`. The flag only sets the server-derived default, not an explicit override.
+- **Header override above the budget.** A client that asks for more than the request's own budget gets that budget, unless the operator set `--max-caller-relay-timeout`. Check `Smart-Router-Relay-Timeout-Applied` on the response to see what was used.
 
 ## Observability
 

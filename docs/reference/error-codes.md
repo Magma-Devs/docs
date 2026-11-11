@@ -16,7 +16,7 @@ to rotate to another node.
 !!! info "These codes are internal - clients never see them"
     Smart Router is a transparent hop. Your client always receives the **original**
     error from the upstream node, unchanged: the same JSON-RPC / HTTP / gRPC error you
-    would get from the node directly. Lava error codes appear only in the router's
+    would get from the node directly. Router error codes appear only in the router's
     **logs** and in the [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
     metric. Use this page to read those logs and metrics, not to handle codes on the
     wire.
@@ -127,7 +127,7 @@ node's consecutive-failure count (see [`--bench-after`](cli.md)).
 data, has not seen it yet, or a gateway in front of it does not route the path. Another
 node may answer, so the router tries one, as it does for a JSON-RPC block-not-found or
 transaction-not-found. The node that answered 404 is not scored. The reply then
-carries a `Lava-Retries` header counting the extra attempt (see
+carries a `Smart-Router-Retries` header counting the extra attempt (see
 [Response headers](../api/directives.md#response-headers)). A 404 whose body names a
 missing endpoint, route or path is a route refusal instead, `NODE_ENDPOINT_NOT_FOUND`.
 Since v1.6.0 that is also retried on another node, under the
@@ -149,6 +149,10 @@ These retries are for reads. A write goes to several nodes at once and is not se
 again, unless every node it went to was rate limited (a 429 or a rate-limit error). A
 rate-limited node turns a write away before running it, so sending it again cannot run
 it twice. The first node that accepts it answers the caller, whatever the others replied.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../api/directives.md#header-names-in-earlier-releases).
 
 ### Retry, CU, and caching
 
@@ -189,7 +193,7 @@ question, read from the code's sub-category. Four groups have their own behaviou
 
 ## Layer A - Protocol errors (`PROTOCOL_*`, 1000–1999)
 
-Category: **Internal**. The Lava protocol itself raises these errors, not nodes or
+Category: **Internal**. The router itself raises these errors, not nodes or
 chains.
 
 | Code | Name | Description | Retryable |
@@ -209,7 +213,7 @@ chains.
 | 1013 | `PROTOCOL_PROVIDER_ABORTED` | Node aborted (gRPC ABORTED) | Yes |
 | 1014 | `PROTOCOL_PROVIDER_DATA_LOSS` | Node data loss (gRPC DATA_LOSS) | Yes |
 | 1015 | `PROTOCOL_INSUFFICIENT_PROVIDERS` | Insufficient providers available for addon or cross-validation | No |
-| 1020 | `PROTOCOL_RATE_LIMITED` | Lava-side rate limit exceeded | No |
+| 1020 | `PROTOCOL_RATE_LIMITED` | Router-side rate limit exceeded | No |
 | 1021 | `PROTOCOL_MAX_CU_EXCEEDED` | Maximum compute units exceeded for session | No |
 | 1022 | `PROTOCOL_BATCH_SIZE_EXCEEDED` | Batch request size exceeded limit | No |
 | 1023 | `PROTOCOL_CU_MISMATCH` | CU accounting inconsistency or security violation | No |
@@ -342,7 +346,7 @@ block/chunk garbage-collection codes (`CHAIN_NEAR_UNKNOWN_BLOCK`, `CHAIN_NEAR_UN
 ## Layer D - User errors (`USER_*`, 4000–4999)
 
 Category: **External**. These are malformed or invalid client requests. They are
-classified by the nature of the error, whether Lava catches it before forwarding or the
+classified by the nature of the error, whether the router catches it before forwarding or the
 node returns it. All are non-retryable, and all charge **normal CU** (responses are not
 cached).
 
@@ -378,7 +382,7 @@ it would end that broadcast early. A node that already had the transaction throu
 peer gossip could answer `tefPAST_SEQ` before the node that applied it answered
 `tesSUCCESS`. The caller would then be told that a validated payment had failed.
 
-These replies carry `lava-identified-node-error: true` (see
+These replies carry `smartrouter-identified-node-error: true` (see
 [Response headers](../api/directives.md#response-headers)). A ledger verdict is
 non-retryable and is **not** charged against the answering node's availability,
 because the node reported the truth. An API error about the node's own state, such
