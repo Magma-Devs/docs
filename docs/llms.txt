@@ -4,7 +4,7 @@
 
 Smart Router sits between your application and a fleet of RPC providers (Alchemy, Infura, QuickNode, Helius, self-hosted nodes, and others). It picks a healthy, performant provider per request, retries the bad one, hedges the slow one, validates responses across providers, and caches what it can - so no single provider's uptime or data integrity becomes a point of failure. Think of it as Cloudflare for blockchain RPC.
 
-These docs are for the open-source core (PolyForm Noncommercial license); managed Pro and Enterprise tiers are described on the main site. Smart Router speaks JSON-RPC, REST, gRPC, and Tendermint RPC; the default local endpoint is `http://127.0.0.1:3360`. Chains are described by JSON specs: {{ chains.total }} chains ({{ chains.mainnet }} with a mainnet, {{ chains.testnet }} with a testnet) across EVM, Cosmos/Tendermint, Solana, and more.
+These docs are for the open-source core (PolyForm Noncommercial license); managed Pro and Enterprise tiers are described on the main site. Smart Router speaks JSON-RPC, REST, gRPC, Tendermint RPC, and GraphQL; the default local endpoint is `http://127.0.0.1:3360`. Chains are described by JSON specs: {{ chains.total }} chains ({{ chains.mainnet }} with a mainnet, {{ chains.testnet }} with a testnet) across EVM, Cosmos/Tendermint, Solana, and more.
 
 ## Instructions for AI agents
 
@@ -50,6 +50,15 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 - [Integrity](https://docs.magmadevs.com/configuration/failover/integrity/): Validate response integrity before returning it to the client.
 - [Circuit breaker](https://docs.magmadevs.com/configuration/failover/circuit-breaker/): Stop routing to unhealthy providers until they recover.
 
+## Interfaces
+
+- [Interfaces](https://docs.magmadevs.com/interfaces/): Which interfaces Smart Router serves, where each one puts node errors, how writes and subscriptions work, and which chains use it.
+- [JSON-RPC](https://docs.magmadevs.com/interfaces/jsonrpc/): How the router serves JSON-RPC (Ethereum, Solana, Bitcoin, Hyperliquid): which node errors it retries, batches, writes, WebSocket subscriptions and their limits, and the replies the router writes itself.
+- [REST](https://docs.magmadevs.com/interfaces/rest/): How the router reads HTTP statuses from a REST node: which are retried, which count against the node, and which go back to the caller.
+- [gRPC](https://docs.magmadevs.com/interfaces/grpc/): How the router serves gRPC (Cosmos): reflection and grpc-config, which metadata passes, how it reads a node's status, writes, server-streaming subscriptions, and the statuses the router sends itself.
+- [Tendermint RPC](https://docs.magmadevs.com/interfaces/tendermintrpc/): How the router serves CometBFT RPC (Cosmos): JSON-RPC, URI-style GET turned into JSON-RPC, the result.response.code rule, broadcasts, subscriptions by query, and the replies the router writes itself.
+- [GraphQL](https://docs.magmadevs.com/interfaces/graphql/): How the router serves GraphQL (Sui): which requests it refuses, how it reads node errors inside an HTTP 200, write outcomes and OUTCOME_UNKNOWN, and the replies the router writes itself.
+
 ## Supported chains
 
 - [Supported chains](https://docs.magmadevs.com/reference/chains/): Chain-agnostic JSON specs for {{ chains.total }} chains ({{ chains.mainnet }} with a mainnet, {{ chains.testnet }} with a testnet) across EVM, Cosmos/Tendermint, Solana, and more.
@@ -83,6 +92,6 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 ## Optional
 
 - [Blog](https://www.magmadevs.com/blog): Engineering deep dives and RPC security analysis.
-- [Case studies](https://www.magmadevs.com/case-studies): Kraken, Fireblocks, and Hypernative.
+- [Case studies](https://www.magmadevs.com/case-studies): Customer case studies on the main site.
 - [Community on Telegram](https://t.me/magmadevs): Support and discussion.
 - [X / Twitter (@magmadevs)](https://x.com/magmadevs): Updates and announcements.
