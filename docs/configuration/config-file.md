@@ -211,7 +211,7 @@ resp-cache:
 | `key-prefix` | `sr` | The keyspace this router takes in the store: letters, digits, `.`, `_` and `-`. Routers on one prefix serve each other's cached answers and share one chain tip, so give two routers one prefix only when they read the same nodes. `--resp-cache-key-prefix` overrides it. |
 | `tls.enabled` | `false` | TLS to the store. It must be `true` whenever another `tls.*` key is set. |
 | `tls.ca-file`, `tls.cert-file`, `tls.key-file`, `tls.server-name`, `tls.insecure-skip-verify` | *(unset)* | The CA bundle, the client keypair for mTLS, the verification name, and skipping verification (testing only). See the [configuration reference](../deployment/cache/redis.md#configuration-reference). |
-| `dial-timeout` | `500ms` | Limit on opening a connection, TLS handshake included. |
+| `dial-timeout` | `500ms` | Limit on opening a connection, TLS handshake included. Under `sentinel` it also sets how long a Sentinel has to answer: see [Sentinels and `dial-timeout`](#sentinels-and-dial-timeout). |
 | `read-timeout` / `write-timeout` | client defaults | Per-operation network limits. |
 | `pool-size` | client default (10 × `GOMAXPROCS`) | Connections the router keeps open to the store. A `read-addresses` client has a pool of its own. |
 | `expiration.finalized` | `1h` | Lifetime of a finalised answer. |
@@ -229,6 +229,26 @@ this block is not expanded.
 The `expiration` keys set the same lifetimes as the sidecar's `--expiration*` flags, but a
 router does not read the sidecar's flags. To keep a sidecar's tuning on a store, set the
 same values here.
+
+### Sentinels and `dial-timeout`
+
+Under `topology: sentinel`, a Sentinel has two fifths of `dial-timeout` to complete a
+connection, TLS handshake included, and the same again to answer each request. At the
+default `500ms`, that is 200 ms. A Sentinel that misses either limit, because its node is
+gone or its process hangs, is treated as silent. The router then asks every Sentinel it
+knows of, uses the first one that answers, and connects to the primary that Sentinel
+names. The cache operation that needed the connection fails, and the next one succeeds.
+
+A healthy Sentinel that is far away is held to the same limit. If it always takes longer
+than two fifths of `dial-timeout` to connect or to answer, the router never uses it. With
+Sentinels in another region, set `dial-timeout` to at least 2.5 times the slowest
+Sentinel's connection time:
+
+```yaml
+resp-cache:
+  topology: sentinel
+  dial-timeout: 1s   # each Sentinel gets 400 ms to connect and 400 ms to answer
+```
 
 ## Cross-validation
 
