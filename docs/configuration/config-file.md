@@ -55,7 +55,7 @@ serve. A node with no matching listener is never used.
 | `direct-rpc` | yes | The upstream node pool. |
 | `backup-direct-rpc` | no | Emergency-fallback nodes. The router uses them only for a request that no primary can take. Same shape as `direct-rpc`. Names must not repeat a `direct-rpc` name. See [Primary and backup nodes](failover/backup.md). |
 | `cache-be` | no | Address of the [cache](../deployment/cache/index.md) sidecar, e.g. `cache:20100`. Omit it to disable caching. |
-| `resp-cache` | no | Block that configures a [Redis / Valkey cache backend](../deployment/cache/redis.md) instead of the sidecar. When both are set, it takes precedence over `cache-be`. |
+| `resp-cache` | no | Block that configures a [Redis / Valkey cache backend](../deployment/cache/redis.md) instead of the sidecar. When both are set, it takes precedence over `cache-be`. See [`resp-cache`](#resp-cache-redis-valkey-cache). |
 | `secondary-cache-be` | no | Address of an optional read-only [secondary cache](../deployment/cache/secondary.md). The router checks it when the primary cache misses. `secondary-cache-timeout` and `secondary-cache-mode` tune it. |
 | `metrics-listen-address` | no | Prometheus `/metrics` address, e.g. `0.0.0.0:7779`. `disabled` turns metrics off. `--metrics-listen-address` overrides it. |
 | `cross-validation` | no | Per-method operator policies for [cross-validation](#cross-validation) (mandate, cap, or forbid). |
@@ -175,6 +175,60 @@ These settings apply only to `grpc` interfaces.
 | `descriptor-set-path` | - | Path to a protobuf `FileDescriptorSet`. Required for `file` / `hybrid`. |
 | `reflection-timeout` | `5s` | Timeout for reflection queries. |
 | `allow-insecure` | `false` | Allow non-TLS `grpc://`. For dev/test only. |
+
+## `resp-cache` - Redis / Valkey cache
+
+This optional block points the router's cache at a RESP-compatible store (Redis, Valkey, or
+a managed service such as ElastiCache) instead of the `cache-be` sidecar. When both are
+set, the store serves. The [Redis / Valkey backend](../deployment/cache/redis.md) page
+explains the topologies, credential rotation, the read/write split and how the router
+behaves when the store fails.
+
+```yaml
+resp-cache:
+  topology: sentinel
+  addresses: ["sentinel-1:26379", "sentinel-2:26379", "sentinel-3:26379"]
+  master-name: "mymaster"
+  key-prefix: "eth-mainnet"
+  password-file: /etc/smartrouter/resp-cache.pw
+  sentinel-password-file: /etc/smartrouter/resp-sentinel.pw
+  pool-size: 20
+  expiration:
+    finalized-multiplier: 1.5
+```
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `topology` | `standalone` | `standalone`, `sentinel` or `cluster`. |
+| `addresses` | - (required) | Standalone: the store's address, exactly one. Sentinel: the **Sentinel** addresses. Cluster: the configuration endpoint, which the router uses to discover the nodes. `--resp-cache-addresses` overrides it. |
+| `read-addresses` | *(unset)* | Separate endpoint(s) for reads. Writes stay on `addresses`. See [Multi-region reads](../deployment/cache/redis.md#multi-region-reads-readwrite-split). |
+| `master-name` | - | The name the Sentinels monitor the primary under. Required with `topology: sentinel`, and refused with any other topology. |
+| `username` / `password` | *(unset)* | Static credentials for the store. |
+| `password-file` | *(unset)* | A file that holds the password, or `username:password`. Under `standalone` and `cluster`, the router reads it every `credential-refresh-interval` and re-authenticates live connections when it changes. Under `sentinel`, it reads the file for each new connection. Cannot be used together with `password`. The first `:` separates a username, so the password cannot contain one. |
+| `credential-refresh-interval` | `10s` | How often the router reads `password-file` under `standalone` and `cluster`. |
+| `sentinel-username` / `sentinel-password` / `sentinel-password-file` | *(unset)* | The Sentinels' own credentials, separate from the store's. Valid only with `topology: sentinel`. Read once, at start: a changed file applies when the router restarts. |
+| `db` | `0` | Logical database. Not valid with `topology: cluster`. |
+| `key-prefix` | `sr` | The keyspace this router takes in the store: letters, digits, `.`, `_` and `-`. Routers on one prefix serve each other's cached answers and share one chain tip, so give two routers one prefix only when they read the same nodes. `--resp-cache-key-prefix` overrides it. |
+| `tls.enabled` | `false` | TLS to the store. It must be `true` whenever another `tls.*` key is set. |
+| `tls.ca-file`, `tls.cert-file`, `tls.key-file`, `tls.server-name`, `tls.insecure-skip-verify` | *(unset)* | The CA bundle, the client keypair for mTLS, the verification name, and skipping verification (testing only). See the [configuration reference](../deployment/cache/redis.md#configuration-reference). |
+| `dial-timeout` | `500ms` | Limit on opening a connection, TLS handshake included. |
+| `read-timeout` / `write-timeout` | client defaults | Per-operation network limits. |
+| `pool-size` | client default (10 × `GOMAXPROCS`) | Connections the router keeps open to the store. A `read-addresses` client has a pool of its own. |
+| `expiration.finalized` | `1h` | Lifetime of a finalised answer. |
+| `expiration.finalized-multiplier` | `1` | Multiplier on `expiration.finalized`. `1.5` keeps a finalised answer for 90 minutes. |
+| `expiration.non-finalized` | `500ms` | Floor of a recent ("latest") answer's lifetime. The lifetime is an eighth of the chain's block time, and never shorter than this floor. |
+| `expiration.non-finalized-multiplier` | `1` | Multiplier on `expiration.non-finalized`. |
+| `expiration.node-errors` | `250ms` | Lifetime of a cached node error on a finalised block. |
+| `expiration.blocks-hashes-to-heights` | `48h` | Lifetime of a block-hash→height mapping. The router writes no such mappings, so this setting has no effect. |
+
+The router refuses to start on a key the block does not define, on any `resp-cache` key
+set without `addresses`, and on a combination the table rules out. Every `expiration`
+duration needs a unit (`1h`, `3600s`, `250ms`). Values are read literally: a `${VAR}` in
+this block is not expanded.
+
+The `expiration` keys set the same lifetimes as the sidecar's `--expiration*` flags, but a
+router does not read the sidecar's flags. To keep a sidecar's tuning on a store, set the
+same values here.
 
 ## Cross-validation
 
