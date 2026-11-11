@@ -478,16 +478,26 @@ tell a backend error or timeout from a clean miss. These series can.
 
 | Metric | Type | Labels | Description |
 | --- | --- | --- | --- |
-| `smartrouter_resp_cache_failed_total` | Counter | `op`, `kind` | Backend-level operation failures (never clean misses). `op` = `get` \| `set`; `kind` = `error` (unreachable / protocol error) \| `timeout` (budget exceeded, so saturation looks different from an outage). |
-| `smartrouter_resp_cache_connection_errors_total` | Counter | - | Failed background health probes (PING, every 10s). |
-| `smartrouter_resp_cache_connected` | Gauge | - | `1` while the last health probe succeeded, `0` after a failure. Reachability *transitions* are also logged; nothing is logged in steady state. |
+| `smartrouter_resp_cache_failed_total` | Counter | `op`, `kind` | Backend-level operation failures (never clean misses). `op` = `get` \| `set` \| `sticky_get` \| `sticky_set` \| `observation_get` \| `observation_set` (the last two are the fleet tracker gate's fetch and publish); `kind` = `error` (unreachable / protocol error) \| `timeout` (budget exceeded, so saturation looks different from an outage). Under `sentinel` and `cluster`, a read from an unreachable endpoint counts as `timeout`, so alert on the `connected` gauges there. |
+| `smartrouter_resp_cache_connection_errors_total` | Counter | - | Failed background health probes (PING, every 10s): one per probe in which any endpoint failed. |
+| `smartrouter_resp_cache_connected` | Gauge | - | `1` while the last health probe succeeded against every endpoint, `0` after any endpoint failed. Reachability *transitions* are also logged, naming the failing endpoint; nothing is logged in steady state. |
+| `smartrouter_resp_cache_endpoint_connected` | Gauge | `role` | The same, per endpoint. `role` = `write` \| `read` (`read` exists only with the read/write split configured). It tells you which half of a split cache is down. |
+| `smartrouter_resp_cache_endpoint_connection_errors_total` | Counter | `role` | Failed health probes, per endpoint. |
+| `smartrouter_resp_cache_breaker_open` | Gauge | `role` | `1` while that side's breaker is open: `write` (writes are skipped) or `read` (lookups are skipped). Three failures in a row, or one failed probe of the side's endpoint, open it. While it is open, the probe runs every second, and the first probe that answers within the side's budget closes it, once it has been open for at least one probe interval. Without a read/write split, one breaker stands behind both roles. |
+| `smartrouter_resp_cache_skipped_total` | Counter | `op` | Operations an open breaker answered without contacting the backend, with the same `op` values as `failed_total`. They are not counted in `failed_total`. |
 | `smartrouter_resp_cache_pool_total_conns` | Gauge | - | Connections held by the client pool(s). With the read/write split configured, this is write and read summed. |
 | `smartrouter_resp_cache_pool_idle_conns` | Gauge | - | Idle pool connections. |
 | `smartrouter_resp_cache_pool_stale_conns` | Gauge | - | Stale connections removed from the pool. |
 
 A failing backend never fails relays. Lookups fall back to misses within the caller's
 budget, and requests go on to the upstreams. Alert on `smartrouter_resp_cache_connected == 0` or
-a `smartrouter_resp_cache_failed_total` rate, not on request errors.
+a `smartrouter_resp_cache_failed_total` rate, not on request errors. With the read/write
+split configured, alert on `smartrouter_resp_cache_endpoint_connected == 0` and put `role` in
+the alert text, so it names the endpoint to check.
+
+`smartrouter_resp_cache_connected` can read `1` while
+`smartrouter_resp_cache_breaker_open{role="read"}` reads `1`: the store answers its probe, but
+too slowly to serve lookups within `--cache-timeout`.
 
 #### CSM state-store sizes (diagnostics)
 

@@ -238,8 +238,11 @@ automatic. Alert on the dedicated series below, not on request errors:
 
 | Series | What it tells you |
 | --- | --- |
-| `smartrouter_resp_cache_connected` | `0` after a failed health probe (PING, 10s cadence). Changes in reachability are also logged. An authentication rejection is reported as an authentication rejection, not as "unreachable". The credential itself is never logged. |
-| `smartrouter_resp_cache_failed_total{op,kind}` | Backend-level operation failures. Clean misses are never counted here. `kind` separates `error` (unreachable, protocol error) from `timeout` (budget exceeded), so saturation looks different from an outage. |
+| `smartrouter_resp_cache_connected` | `0` after a failed health probe (PING, 10s cadence) against any endpoint. Changes in reachability are also logged, naming the failing endpoint. An authentication rejection is reported as an authentication rejection, not as "unreachable". The credential itself is never logged. |
+| `smartrouter_resp_cache_endpoint_connected{role}` | The same, per endpoint (`write` or `read`). With the read/write split, alert on this one: it says which half is down. |
+| `smartrouter_resp_cache_failed_total{op,kind}` | Backend-level operation failures. Clean misses are never counted here. `kind` separates `error` (unreachable, protocol error) from `timeout` (budget exceeded), so saturation looks different from an outage. Under `sentinel` and `cluster`, a read from an unreachable endpoint counts as `timeout`, so alert on the `connected` gauges there. |
+| `smartrouter_resp_cache_breaker_open{role}` | `1` while the breaker for writes or for lookups is open. While it is open, the router skips that side's operations without contacting the backend, and probes every second until the backend answers within budget. |
+| `smartrouter_resp_cache_skipped_total{op}` | Operations an open breaker skipped. |
 | `smartrouter_resp_cache_connection_errors_total` | Failed background health probes. |
 | `smartrouter_resp_cache_pool_*_conns` | Pool gauges: total, idle, stale. |
 
