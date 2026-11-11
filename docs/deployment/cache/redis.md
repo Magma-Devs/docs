@@ -280,6 +280,23 @@ served from the cache. The header names the node that served the hit: the curren
 under sentinel, or the shard that was used under cluster. It is behind the debug flag
 because it exposes internal infrastructure addresses.
 
+### Client log lines
+
+The client library's own lines go through the router's logger, in the router's log
+format. A change of primary or of sentinel is logged at info, every time:
+
+| Message | Attributes |
+| --- | --- |
+| `resp-cache client follows a new primary` | `master`, `address` |
+| `resp-cache client attached to a sentinel` | `sentinel`, `primary` |
+| `resp-cache client discovered a sentinel` | `sentinel`, `master` |
+
+Every other line from the library is logged at warn as
+`resp-cache client reported a failure`, with the library's text in `detail`. Each kind of
+failure is printed at most once in 10 s, and the next line of that kind carries
+`suppressed`, the number of lines dropped in between. The library has one logger for the
+whole process, so these lines do not name the store they are about.
+
 ## Flush semantics
 
 The router's `/debug/reset-all` flush is **prefix-scoped**: a `SCAN` over `key-prefix:*`
