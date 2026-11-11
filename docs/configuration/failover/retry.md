@@ -24,7 +24,11 @@ The full code tables and per-code retryability are in [Error codes](../../refere
 
 A retry re-sends the **same request** to a different node. It does not change what the request asks for. No extension such as `archive` is added on retry, so the retry pool is the same pool the first attempt used, minus the nodes that already failed. Each request starts with its own retry budget. Nothing is remembered between requests.
 
-The router decides archive routing once, before the first attempt, from the block the request names. If the router cannot read the block from a request, it does not route that request to archive automatically. This covers methods that name a block or transaction by hash (such as `eth_getTransactionReceipt` or `debug_traceTransaction`), and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects such as `{"blockHash": …}` or `{"blockNumber": …}`. To send one of those to an archive node, set the [`lava-extension: archive`](../../api/directives.md#override-the-extension) directive.
+The router decides archive routing once, before the first attempt, from the block the request names. If the router cannot read the block from a request, it does not route that request to archive automatically. This covers methods that name a block or transaction by hash (such as `eth_getTransactionReceipt` or `debug_traceTransaction`), and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects such as `{"blockHash": …}` or `{"blockNumber": …}`. To send one of those to an archive node, set the [`smartrouter-extension: archive`](../../api/directives.md#override-the-extension) directive.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## Limits
 
@@ -33,7 +37,7 @@ The router decides archive routing once, before the first attempt, from the bloc
 | Error-retry limit | `--set-relay-retry-limit` (default `2`) | Errors tolerated before the relay gives up. `0` turns retries off completely. This is the setting you tune. |
 | Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries`. It is an upper bound on *total* attempts, including ticker-driven [hedges](hedge.md). It is separate from the error-retry limit and is not available as a flag. |
 | Overall budget | `--default-processing-timeout` (default `30s`) | Ends retries even if attempts remain. |
-| Per-attempt window | `--min-relay-timeout` floor, or `lava-relay-timeout` header | When the window passes, the next node is tried in parallel, and the attempt in flight keeps running. See [Timeout](timeout.md). |
+| Per-attempt window | `--min-relay-timeout` floor, or `smartrouter-relay-timeout` header | When the window passes, the next node is tried in parallel, and the attempt in flight keeps running. See [Timeout](timeout.md). |
 
 The cap you control is `--set-relay-retry-limit`. The error-retry path stops after
 that many errors (default 2). The hardcoded `10` is only the ceiling that the
@@ -97,7 +101,7 @@ skips it for the rest of this relay, and for later relays, until the hold-off ex
   error, its hold-off and strike count are cleared.
 - **You still get an answer.** If every candidate is held off, the router uses the one
   whose hold-off expires soonest. The router never creates its own `429` for the client,
-  and never forwards `Retry-After`. A `lava-select-provider` pin and existing sticky
+  and never forwards `Retry-After`. A `smartrouter-select-provider` pin and existing sticky
   sessions bypass the hold-off, because an explicit request takes priority.
 
 The same hold-off also covers spec re-verification, recovery probes and WebSocket
@@ -105,7 +109,7 @@ subscriptions, so a rate-limited node is not re-probed on a fixed schedule eithe
 
 ## Pinning to one node
 
-The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry runs **on the rest of the pool**. Pinning does not turn off retry. See [Directives](../../api/directives.md).
+The `smartrouter-select-provider` header pins the request to a specific upstream. If that upstream fails, retry runs **on the rest of the pool**. Pinning does not turn off retry. See [Directives](../../api/directives.md).
 
 ## Observability
 

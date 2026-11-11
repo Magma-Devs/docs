@@ -40,13 +40,17 @@ For each attempt, the router first picks from the primaries. A primary drops out
 | blocked, because every one of its URLs was switched off after repeated failures | **Yes** |
 | missing the add-on or extension the request needs (for example `debug` or `archive`) | **Yes**, on the first attempt. See [Methods only a backup serves](#methods-only-a-backup-serves) |
 | behind the chain tip, for a request at `latest` | **Yes** |
-| excluded by the caller with `lava-providers-block` | **Yes** |
+| excluded by the caller with `smartrouter-providers-block` | **Yes** |
 | not connected, or at its session limit | **Yes** |
 | **rate-limited (held off after a `429`)** | **No.** A held-off primary is skipped only while another primary is ready. When every primary is held off, the one whose hold-off ends soonest is used. See [Rate-limited upstreams](retry.md#rate-limited-upstreams) |
 | **slow** | **Not directly.** After the [per-attempt window](timeout.md) the router asks the next primary while the slow attempt keeps running. A backup is asked only once every primary is busy on the request |
-| named by `lava-select-provider` | **No.** A pinned request never goes to a backup. See [Pinning](#pinning) |
+| named by `smartrouter-select-provider` | **No.** A pinned request never goes to a backup. See [Pinning](#pinning) |
 
 A URL is switched off after `--bench-after` consecutive failures (default `50`). A provider is blocked when all of its URLs are switched off. Only failures that are the node's fault count: a rate limit, an unsupported method or a caller mistake does not.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ### Errors: the retry limit can end a request before any backup
 
@@ -76,7 +80,7 @@ t = 3 × W   backup 1    answers
 
 For `N` primaries and a window `W`, a backup answers about `N × W` after the start, **if that is still inside the request's budget**. The default window floor is `1s` (`--min-relay-timeout`; heavier methods get a longer window) and the default budget is `30s` (`--default-processing-timeout`). With those defaults, for a typical read, three quiet primaries reach a backup after about 3 seconds. If you raise the window, for example to `10s`, three quiet primaries use up the 30-second budget and the request ends with no backup asked.
 
-Keep `N × W` below the budget. A caller can also shorten the window for one request with [`lava-relay-timeout`](timeout.md#the-header-override).
+Keep `N × W` below the budget. A caller can also shorten the window for one request with [`smartrouter-relay-timeout`](timeout.md#the-header-override).
 
 ### Writes and batches
 
@@ -118,48 +122,48 @@ The router's list of supported add-ons is built from both tiers. When no primary
 |---|---|
 | an add-on method only the backup declares, for example `debug_traceTransaction` | the backup, on the first attempt |
 | a read of an old block, deeper than the spec's archive rule (the router adds `archive` itself) | the backup, on the first attempt |
-| a request with [`lava-extension: archive`](../../api/directives.md#override-the-extension) | the backup, on the first attempt |
+| a request with [`smartrouter-extension: archive`](../../api/directives.md#override-the-extension) | the backup, on the first attempt |
 | an ordinary request | the primaries |
 
 Once an attempt has gone to an archive node, the request is never downgraded. If the archive backup fails, the retry goes to another archive node, or the request ends with the archive node's error. A switched-off archive backup is lent to the request as a [last chance](#what-the-caller-gets-when-neither-tier-can-serve) rather than skipped.
 
 !!! warning "When the archive backup is not in rotation"
-    The router decides that `archive` is offered from the config file, before it checks the nodes. If the only node tagged `archive` is out of rotation, because it was unreachable at startup or failed its archive check, an archive request is answered by an ordinary primary. A deep-block read gets the pruned node's error or an empty result. A request with `lava-extension: archive` currently gets that answer **without** `Lava-Extension-Unavailable`. This is a known issue and will be fixed to set the header. Until then, run `smartrouter health --include-backup` after each deploy to confirm the archive backup passed its checks.
+    The router decides that `archive` is offered from the config file, before it checks the nodes. If the only node tagged `archive` is out of rotation, because it was unreachable at startup or failed its archive check, an archive request is answered by an ordinary primary. A deep-block read gets the pruned node's error or an empty result. A request with `smartrouter-extension: archive` currently gets that answer **without** `Smart-Router-Extension-Unavailable`. This is a known issue and will be fixed to set the header. Until then, run `smartrouter health --include-backup` after each deploy to confirm the archive backup passed its checks.
 
 Things to know about this setup:
 
-- **The router adds `archive` only when it can read the block.** Methods that name a block or transaction by hash, such as `eth_getTransactionReceipt` or `debug_traceTransaction`, and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects are not routed to archive automatically. Send `lava-extension: archive` for those.
+- **The router adds `archive` only when it can read the block.** Methods that name a block or transaction by hash, such as `eth_getTransactionReceipt` or `debug_traceTransaction`, and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects are not routed to archive automatically. Send `smartrouter-extension: archive` for those.
 - **An archive backup still takes ordinary failover traffic.** When every primary is out, a plain request can be served by any backup, including the archive one. For an add-on collection such as `debug` you can prevent that with `standalone-addons: true` on the URL: that URL then serves only its add-ons. `standalone-addons` has no effect on `archive`, because `archive` is an extension of the normal API rather than a separate set of methods.
 - **Check that the backup passed its checks.** Backups are verified at startup the same way primaries are, add-on by add-on. A backup that fails its `archive` or `debug` check does not serve that add-on. Run `smartrouter health <config> --include-backup` (without `--include-backup`, `health` checks primaries only).
-- **When no node in either tier declares an add-on**, a request for it fails with `No Providers For Addon` and no node is contacted. When no node declares the `archive` extension, the request is served by an ordinary node, and a caller who asked for it with `lava-extension` gets `Lava-Extension-Unavailable: archive` on the reply.
+- **When no node in either tier declares an add-on**, a request for it fails with `No Providers For Addon` and no node is contacted. When no node declares the `archive` extension, the request is served by an ordinary node, and a caller who asked for it with `smartrouter-extension` gets `Smart-Router-Extension-Unavailable: archive` on the reply.
 
 ## What the caller gets when neither tier can serve
 
-The reply depends on whether any node produced an answer. If one did, the router returns it with the usual [response headers](../../api/directives.md#response-headers). If none did, the reply is a router error with **no `Lava-*` headers**. The request id is then only in the body, at `error.data.guid`.
+The reply depends on whether any node produced an answer. If one did, the router returns it with the usual [response headers](../../api/directives.md#response-headers). If none did, the reply is a router error with **no `Smart-Router-*` headers**. The request id is then only in the body, at `error.data.guid`.
 
 These are JSON-RPC replies. REST and gRPC carry the same outcome in their own error format.
 
 | Situation | HTTP status | Body |
 |---|---|---|
-| every node answered with a node error inside HTTP 200 | `200` | the node's error, unchanged. `lava-identified-node-error: true` |
+| every node answered with a node error inside HTTP 200 | `200` | the node's error, unchanged. `smartrouter-identified-node-error: true` |
 | every node returned HTTP 5xx | the node's status | the node's body when it is a JSON-RPC error; otherwise a router error with `data.upstream_status` and `data.upstream_body` |
 | every node refused or dropped the connection | `502` | `no answer from upstream: …` |
 | every node was rate-limited (`429`) | `503` | a router error. The node's `Retry-After` is not forwarded |
-| no node answered before the budget ended | `500` | `context deadline exceeded`, no `Lava-*` headers |
+| no node answered before the budget ended | `500` | `context deadline exceeded`, no `Smart-Router-*` headers |
 | a write that no node answered | `500` | `transaction status unclear: …`. The write may already be on chain, so check before you resend it |
-| no node could be selected at all | `500` | `No pairings available.`, no `Lava-*` headers |
-| an add-on no node declares | `500` | `No Providers For Addon`, no `Lava-*` headers |
-| an extension no node declares (`lava-extension: archive`) | `200` | an ordinary node's answer, with `Lava-Extension-Unavailable` |
+| no node could be selected at all | `500` | `No pairings available.`, no `Smart-Router-*` headers |
+| an add-on no node declares | `500` | `No Providers For Addon`, no `Smart-Router-*` headers |
+| an extension no node declares (`smartrouter-extension: archive`) | `200` | an ordinary node's answer, with `Smart-Router-Extension-Unavailable` |
 
 Before it gives up on blocked nodes, the router lends one switched-off URL to the request as a last chance: blocked primaries first, then blocked backups. So when everything is blocked, the caller usually gets that node's own answer or error rather than `No pairings available.`.
 
-**No header says that a backup served a reply.** `Lava-Provider-Address` names the node, so to see a backup you have to know which names are backups. When the request was retried, the header lists every node asked, in order, and the node whose answer was returned is last. See [Observability](#observability).
+**No header says that a backup served a reply.** `Smart-Router-Provider-Address` names the node, so to see a backup you have to know which names are backups. When the request was retried, the header lists every node asked, in order, and the node whose answer was returned is last. See [Observability](#observability).
 
 ## How failover works with other features
 
 ### Pinning
 
-[`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) names a **primary**. A backup cannot be pinned: naming one fails the request with `Selected provider not available`. A pin also never falls through to the backups. If the pinned primary is blocked or unknown, the request fails without trying any other node. If the pinned primary was asked and returned an error, the retry goes through normal selection, which can reach a backup.
+[`smartrouter-select-provider`](../../api/directives.md#pin-to-a-specific-node) names a **primary**. A backup cannot be pinned: naming one fails the request with `Selected provider not available`. A pin also never falls through to the backups. If the pinned primary is blocked or unknown, the request fails without trying any other node. If the pinned primary was asked and returned an error, the retry goes through normal selection, which can reach a backup.
 
 ### Sticky sessions
 
@@ -185,7 +189,7 @@ Subscriptions fail over differently from requests:
 
 ### Cache and read-your-writes
 
-- The [cache](../../deployment/cache/index.md) is checked before any node is picked. A cached answer is served even when every node in both tiers is down (`Lava-Provider-Address: Cached`). Answers from a backup are cached exactly like answers from a primary.
+- The [cache](../../deployment/cache/index.md) is checked before any node is picked. A cached answer is served even when every node in both tiers is down (`Smart-Router-Provider-Address: Cached`). Answers from a backup are cached exactly like answers from a primary.
 - **Read-your-writes** (`--read-your-writes-window`, default `30s`): for a short time after a write, a read that names the written transaction or its sender prefers the node that accepted the write, **including a backup**. It is a preference for the first attempt only, and it applies within one router pod.
 
 ## Recipes
@@ -203,15 +207,15 @@ Put your own nodes under `direct-rpc` and the paid provider under `backup-direct
 
 Declare `archive` (and `debug`, `trace`) only on the backup's URL, as in [Methods only a backup serves](#methods-only-a-backup-serves). Do **not** set `archive` on a primary that is pruned. Then:
 
-- Deep-block reads and `lava-extension: archive` requests go to the backup, and nothing else does while your primaries are healthy.
-- Send `lava-extension: archive` for by-hash methods and EIP-1898 block objects.
+- Deep-block reads and `smartrouter-extension: archive` requests go to the backup, and nothing else does while your primaries are healthy.
+- Send `smartrouter-extension: archive` for by-hash methods and EIP-1898 block objects.
 - Run `smartrouter health <config> --include-backup` after a deploy, and confirm the backup passed its `archive` check.
 
 ## Observability
 
 | Signal | What it tells you |
 |---|---|
-| `Lava-Provider-Address` on a reply | the node that answered. Compare it with your backup names |
+| `Smart-Router-Provider-Address` on a reply | the node that answered. Compare it with your backup names |
 | `rpc_endpoint_total_relays_serviced{endpoint_id="<backup name>"}` | requests each backup served |
 | `smartrouter_csm_blocked_providers` | how many primaries are blocked. When it reaches your primary count, the backups carry the traffic |
 | `smartrouter_endpoint_serving_tier` | `2` primaries registered, `1` only backups registered, `0` none. It follows registration at startup and at each epoch, **not** runtime failover: it stays `2` while blocked primaries leave all traffic to the backups |

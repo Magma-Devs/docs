@@ -504,7 +504,7 @@ to `0` after a reset.
 
 #### Cross-pod sticky sessions
 
-With `--shared-state` and a cache backend, a `lava-stickiness` id resolves to the same
+With `--shared-state` and a cache backend, a `smartrouter-stickiness` id resolves to the same
 upstream on every replica, through a shared claim. Each resolution is counted by its
 outcome:
 
@@ -512,13 +512,17 @@ outcome:
 | --- | --- | --- | --- |
 | `smartrouter_csm_sticky_claims_total` | Counter | `spec`, `apiInterface`, `outcome` | Claim resolutions. `outcome`: `local_hit` (answered from this replica's confirmed claim), `adopted` (routed by a live claim read from the shared registry rather than one held in memory; usually a peer's, see below), `claimed` (this replica made the claim), `lost_race` (a peer's claim naming a different upstream won), `error` (the claim could not be read or written, so the request failed), `no_candidate` (this replica had no upstream to offer), `invalidated` (a claim was dropped because its upstream could not serve here). |
 
-A session that crossed replicas shows up as `adopted`. The `Lava-Provider-Address` reply
+A session that crossed replicas shows up as `adopted`. The `Smart-Router-Provider-Address` reply
 header looks the same whether a replica used its own claim or a peer's. But `adopted` alone
 does not prove a crossing. A replica that drops its local copy of a claim (`invalidated`)
 leaves the shared claim in place, so its next request reads its own claim back and also
 counts `adopted`. The same happens after `/debug/reset-all` clears a replica's local table, if
 the shared claim outlived the reset. A rise in `adopted` on a replica whose `invalidated`
 count did not change, with no reset in between, is a peer's claim.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../api/directives.md#header-names-in-earlier-releases).
 
 You can also read the same counts without the metrics port, at `GET /debug/sticky-claims` on
 the debug server (`--debug-address`). It returns one row per endpoint:

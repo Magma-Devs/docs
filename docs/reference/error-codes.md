@@ -127,7 +127,7 @@ node's consecutive-failure count (see [`--bench-after`](cli.md)).
 data, has not seen it yet, or a gateway in front of it does not route the path. Another
 node may answer, so the router tries one, as it does for a JSON-RPC block-not-found or
 transaction-not-found. The node that answered 404 is not scored. The reply then
-carries a `Lava-Retries` header counting the extra attempt (see
+carries a `Smart-Router-Retries` header counting the extra attempt (see
 [Response headers](../api/directives.md#response-headers)). A 404 whose body names a
 missing endpoint, route or path is a route refusal instead, `NODE_ENDPOINT_NOT_FOUND`.
 Since v1.6.0 that is also retried on another node, under the
@@ -149,6 +149,10 @@ These retries are for reads. A write goes to several nodes at once and is not se
 again, unless every node it went to was rate limited (a 429 or a rate-limit error). A
 rate-limited node turns a write away before running it, so sending it again cannot run
 it twice. The first node that accepts it answers the caller, whatever the others replied.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../api/directives.md#header-names-in-earlier-releases).
 
 ### Retry, CU, and caching
 
@@ -378,7 +382,7 @@ it would end that broadcast early. A node that already had the transaction throu
 peer gossip could answer `tefPAST_SEQ` before the node that applied it answered
 `tesSUCCESS`. The caller would then be told that a validated payment had failed.
 
-These replies carry `lava-identified-node-error: true` (see
+These replies carry `smartrouter-identified-node-error: true` (see
 [Response headers](../api/directives.md#response-headers)). A ledger verdict is
 non-retryable and is **not** charged against the answering node's availability,
 because the node reported the truth. An API error about the node's own state, such

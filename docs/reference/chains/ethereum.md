@@ -29,7 +29,7 @@ The spec file linked above has the full method list.
 
 ## Upstream capabilities
 
-Some methods only work on upstreams with specific capabilities. Mark these capabilities as add-ons in your config. The router then routes matching methods only to capable upstreams. If no upstream declares an add-on, the upstreams you have serve the matching requests. If a request explicitly asked for the extension, it gets a [`Lava-Extension-Unavailable`](../../api/directives.md#response-headers) response header that says so.
+Some methods only work on upstreams with specific capabilities. Mark these capabilities as add-ons in your config. The router then routes matching methods only to capable upstreams. If no upstream declares an add-on, the upstreams you have serve the matching requests. If a request explicitly asked for the extension, it gets a [`Smart-Router-Extension-Unavailable`](../../api/directives.md#response-headers) response header that says so.
 
 | Add-on | Required for |
 |---|---|
@@ -37,6 +37,10 @@ Some methods only work on upstreams with specific capabilities. Mark these capab
 | `trace` | `trace_*` methods (`trace_call`, `trace_block`, …) |
 | `archive` | deep `eth_getLogs` and historical state (also extends the `debug` / `trace` collections for old blocks) |
 | `bundler` | ERC-4337 user-operation methods |
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../../api/directives.md#header-names-in-earlier-releases).
 
 ## Connect a client
 

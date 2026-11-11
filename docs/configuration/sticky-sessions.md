@@ -37,7 +37,7 @@ eth_getBlockByNumber(21000000) -> node-A                 -> the block
 ## Usage
 
 ```
-lava-stickiness: <your-session-id>
+smartrouter-stickiness: <your-session-id>
 ```
 
 The value is any string you choose, such as a worker id, a batch id or a user id. Requests with the same value go to the same upstream.
@@ -48,12 +48,12 @@ SESSION="ingest-batch-42"
 
 HEAD=$(curl -sX POST http://127.0.0.1:3360 \
   -H 'Content-Type: application/json' \
-  -H "lava-stickiness: $SESSION" \
+  -H "smartrouter-stickiness: $SESSION" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' | jq -r .result)
 
 curl -X POST http://127.0.0.1:3360 \
   -H 'Content-Type: application/json' \
-  -H "lava-stickiness: $SESSION" \
+  -H "smartrouter-stickiness: $SESSION" \
   -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"$HEAD\",false],\"id\":2}"
 ```
 
@@ -61,6 +61,10 @@ curl -X POST http://127.0.0.1:3360 \
     A common mistake is to send it only on the second call. The first call then goes to any
     node, so the head can come from a node that the pinned request never reaches. The original
     problem comes back, even though the header seems to be in use.
+
+!!! note "Header names in earlier releases"
+    Router releases before the header rename use `lava-*` / `Lava-*` names for these
+    headers. See [Header names in earlier releases](../api/directives.md#header-names-in-earlier-releases).
 
 ## How it works
 
@@ -79,7 +83,7 @@ A session's choice lasts about two router epochs (30 minutes at the default `--e
 | Node-side state tied to one node, such as an `eth_newFilter` id or a subscription handle | **Yes** |
 | Read-your-own-write after `eth_sendRawTransaction` | **Yes**. The write itself then goes to the session's node only, not to every node: a sticky write gives up the broadcast. Send the write without the header if you want the broadcast, and the follow-up reads with it |
 | Independent single reads with no relationship to each other | No. Pinning gives up the optimizer's choice with no benefit |
-| A specific node you already know by name | No. Use [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) |
+| A specific node you already know by name | No. Use [`smartrouter-select-provider`](../api/directives.md#pin-to-a-specific-node) |
 
 ## Configuration
 
@@ -99,15 +103,15 @@ The guarantee is **route to the session's node, or fail**. The router never quie
 A request fails if the session's node cannot serve it, or if the cache backend that holds the session's choice is unreachable.
 
 !!! info "Requests without the header are never affected"
-    This applies only to traffic that carries `lava-stickiness`. All other traffic is served as usual.
+    This applies only to traffic that carries `smartrouter-stickiness`. All other traffic is served as usual.
 
 ## Interaction with other directives
 
 | Directive | Behaviour |
 |---|---|
-| [`lava-select-provider`](../api/directives.md#pin-to-a-specific-node) | Wins. Naming a node explicitly is the more specific instruction. |
+| [`smartrouter-select-provider`](../api/directives.md#pin-to-a-specific-node) | Wins. Naming a node explicitly is the more specific instruction. |
 | [Cross-validation](failover/cross-validation.md) | Wins. Cross-validation needs several nodes, so it cannot be pinned to one. |
-| [`lava-extension`](../api/directives.md#override-the-extension) | A session id used for both plain and `archive` calls gets a separate node for each. |
+| [`smartrouter-extension`](../api/directives.md#override-the-extension) | A session id used for both plain and `archive` calls gets a separate node for each. |
 | [Retry](failover/retry.md) | A retry after a real error goes to a different node on purpose. |
 
 ## Trade-offs
