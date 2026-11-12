@@ -185,7 +185,7 @@ Subscriptions fail over differently from requests:
 
 ### Cache and read-your-writes
 
-- The [cache](../../deployment/cache/index.md) is checked before any node is picked. A cached answer is served even when every node in both tiers is down (`Lava-Provider-Address: Cached`). Answers from a backup are cached exactly like answers from a primary.
+- The [cache](../../deployment/cache/index.md) is checked before any node is picked. A cached answer is served even when every node in both tiers is down (`Lava-Provider-Address: Cached`). Answers from a backup are cached exactly like answers from a primary. A request that names, keeps or excludes a node (`lava-select-provider`, `lava-stickiness`, `lava-providers-block`) is never answered from the cache.
 - **Read-your-writes** (`--read-your-writes-window`, default `30s`): for a short time after a write, a read that names the written transaction or its sender prefers the node that accepted the write, **including a backup**. It is a preference for the first attempt only, and it applies within one router pod.
 
 ## Recipes

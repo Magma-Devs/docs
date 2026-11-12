@@ -13,9 +13,9 @@ You send them as HTTP headers, or as call metadata on a gRPC listener ([Over gRP
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | [Prefer](#pin-to-a-specific-node) one named upstream. The cache is still checked first. |
-| `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
-| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
+| `lava-select-provider` | [Pin](#pin-to-a-specific-node) the request to one named upstream. The cache is not read. |
+| `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. The cache is not read. |
+| `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). The cache is not read. |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
 | `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
 | `lava-relay-timeout` | [Override the per-attempt timeout](#override-the-per-attempt-timeout) (Go duration). |
@@ -30,20 +30,21 @@ Each header has its own section below. The router sends metadata back in [respon
 lava-select-provider: <upstream-name>
 ```
 
-This header sets a **preference** for one named upstream at node selection. It skips the QoS optimizer. When the request reaches selection, the named upstream serves it. If that upstream fails, [failover](../configuration/failover/index.md) policies still apply to the rest of the pool.
+This header sends the request to one named upstream, skipping the QoS optimizer. If that upstream fails, [failover](../configuration/failover/index.md) policies still apply to the rest of the pool.
 
 The name must be a `direct-rpc` (primary) node. A [backup](../configuration/failover/backup.md#pinning) cannot be pinned: naming one fails the request with `Selected provider not available`. The same error ends the request, and no other node is tried, when the pinned node is blocked or unknown.
 
-!!! warning "The cache answers first - a pinned request may never reach the named node"
-    The router checks the response cache **before** node selection runs, and pinning does
-    *not* bypass it. For a cacheable method with a warm cache entry, the response carries
-    `Lava-Provider-Address: Cached` and the router never contacts the named node. This is
-    true even when that node is unreachable.
+!!! note "A pinned request is never answered from the cache"
+    The router does not read the response cache for a request that carries
+    `lava-select-provider`, so the named node answers it, or the request fails over as
+    described above. The node's answer is still written to the cache, where it serves
+    requests without a pin. The same holds for [`lava-stickiness`](#keep-a-session-on-one-node)
+    and [`lava-providers-block`](#steer-node-selection).
 
-    So a pinned request is **not a node health check**. For any cacheable method (and most
-    reads are cacheable), you cannot tell an unreachable node from a healthy one: you get
-    HTTP 200 and a real answer in both cases. When the point of the request is the *node*
-    and not the data, pair the pin with [`lava-force-cache-refresh`](#force-a-cache-refresh).
+    On v1.6.7 and earlier, the cache was read first: a pinned request with a warm entry got
+    `Lava-Provider-Address: Cached` and never reached the named node, even when that node
+    was unreachable. On those versions, also send [`lava-force-cache-refresh`](#force-a-cache-refresh)
+    when the point of the request is the node and not the data.
 
 !!! warning "`Lava-Provider-Address` is a response header, not a request directive"
     To pin a request, send **`lava-select-provider`**. The router only sends
@@ -62,18 +63,7 @@ curl -X POST http://127.0.0.1:3360 \
 
 To pin a gRPC call, send the same header as call metadata. See [Over gRPC](#over-grpc).
 
-To reach the node itself, also send `lava-force-cache-refresh`, so the cache cannot answer
-in the node's place. Do this for a health check, or to compare two nodes on the same query:
-
-```bash
-curl -X POST http://127.0.0.1:3360 \
-  -H 'Content-Type: application/json' \
-  -H 'lava-select-provider: my-eth-upstream-1' \
-  -H 'lava-force-cache-refresh: true' \
-  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
-```
-
-If the node is unreachable, the request then fails with an error instead of returning a cached answer.
+Because the named node always answers, a pinned request also checks that node. Use it for a health check, or to compare two nodes on the same query. If the node is unreachable, the request fails with an error instead of returning a cached answer.
 
 !!! note "A pinned write goes to the pinned node only"
     A write, such as `eth_sendRawTransaction`, is normally sent to every node at once, so one
@@ -118,7 +108,7 @@ This header bypasses the cache for this request. The relay goes upstream, and th
 
 The header's **presence** triggers the refresh, not its value. `lava-force-cache-refresh: false` (or any other value) still forces it. Send the header only when you want a refresh.
 
-**When to use:** a known-stale entry, a suspected reorg, a check after a deploy, and any request whose purpose is to reach a *specific node* and not to get data (see [the pin caveat](#pin-to-a-specific-node)).
+**When to use:** a known-stale entry, a suspected reorg, or a check after a deploy. A request that names, keeps or excludes a node already skips the cache, on versions after v1.6.7 (see [the pin note](#pin-to-a-specific-node)).
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
@@ -166,8 +156,8 @@ lava-providers-block: my-eth-upstream-3,my-eth-upstream-4
 
 | Header | Effect |
 |---|---|
-| `lava-select-provider` | Prefer one named node for this request (the [pin](#pin-to-a-specific-node) header). A cache hit still answers before selection runs. |
-| `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. |
+| `lava-select-provider` | Pin one named node for this request (the [pin](#pin-to-a-specific-node) header). The cache is not read. |
+| `lava-providers-block` | Comma-separated nodes to **exclude** from selection for this request. Selection picks from the rest of the pool. The cache is not read, so an answer an excluded node gave earlier is never returned from it. |
 
 You can exclude any number of nodes. The router ignores spaces around the commas. The exclusion also applies to backup nodes. If the list covers every node that could serve the request, the request fails. The router never falls back to a node you excluded.
 
@@ -243,7 +233,7 @@ Smart Router adds metadata to every response about how the relay was served. The
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that finally served the response. When the request was retried or hedged, it is a comma-separated list of every node asked, in the order they were asked, with the node whose answer was returned last. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node, even when the request named one with `lava-select-provider`. No header marks a [backup](../configuration/failover/backup.md). Compare the names with your `backup-direct-rpc` list. |
+| `Lava-Provider-Address` | The node that finally served the response. When the request was retried or hedged, it is a comma-separated list of every node asked, in the order they were asked, with the node whose answer was returned last. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node. A request that carries `lava-select-provider`, `lava-stickiness` or `lava-providers-block` is never answered from the cache, so it never reads `Cached`. No header marks a [backup](../configuration/failover/backup.md). Compare the names with your `backup-direct-rpc` list. |
 | `Lava-Retries` | Number of attempts after the first, retries and hedges alike, including a hedge still running when the reply was built. Absent when `0`. Always `0` for a write, which goes to several nodes at once by design. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `lava-fast-tx-participants` | On a write only: the nodes the router sent it to, in brackets and space-separated, e.g. `[node-a node-b]`. A single name means the write was not broadcast, for example because it was [pinned](#pin-to-a-specific-node). |

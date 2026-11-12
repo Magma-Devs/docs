@@ -109,6 +109,7 @@ A request fails if the session's node cannot serve it, or if the cache backend t
 | [Cross-validation](failover/cross-validation.md) | Wins. Cross-validation needs several nodes, so it cannot be pinned to one. |
 | [`lava-extension`](../api/directives.md#override-the-extension) | A session id used for both plain and `archive` calls gets a separate node for each. |
 | [Retry](failover/retry.md) | A retry after a real error goes to a different node on purpose. |
+| The [cache](../deployment/cache/index.md) | Not read. A request with a session id is answered by the session's node, never from the cache, where another node's answer may sit. Its answer is still written to the cache for requests without the header. |
 
 ## Trade-offs
 
