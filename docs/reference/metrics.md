@@ -31,6 +31,7 @@ If you only graph a few things, graph these:
 | Are requests failing? | `smartrouter_total_errored`, `smartrouter_errors_total` (by `error_category` / `retryable`) |
 | How fast is it? | `smartrouter_end_to_end_latency_milliseconds` (histogram → p50/p95/p99) |
 | Is an upstream out of rotation, or degrading? | `smartrouter_csm_provider_blocked` (1 = the router sends it no traffic), `rpc_endpoint_end_to_end_latency_milliseconds`, `rpc_endpoint_latest_block` |
+| Did an upstream fail a spec check, and what did it lose? | `smartrouter_provider_verification_failed` (by `scope` / `check`), `smartrouter_provider_verification_check_failures_total` - see [Spec verification failures](#spec-verification-failures) |
 | How much load does the router itself put on your node? | `rpc_endpoint_tracker_requests_total` (by `kind`) - the router's own polling, separate from the relays you sent it; `rpc_endpoint_tracker_gate_skips_total` (by `source`) - the polls it chose not to send |
 | How often does the router retry or hedge? | `smartrouter_retries_total`, `smartrouter_hedge_total` |
 | Is an upstream rate-limiting you? | `smartrouter_rate_limit_holdoffs_total` (by `provider` / `event`), `smartrouter_rate_limit_holdoff_seconds` |
@@ -96,6 +97,7 @@ Starting points. Tune the thresholds to your traffic.
 | High error ratio | error-ratio recipe `> 0.05 for 5m` | Something broke upstream or in config. |
 | Latency regression | p99 recipe `> 2000 for 10m` | Tail latency degraded. |
 | Upstream out of rotation | `max_over_time(smartrouter_csm_provider_blocked[5m]) == 1` | The router blocked a configured upstream, or none of its urls can take a request right now. Use the window rather than `for`: when every upstream of a chain is out, the router releases them all so it has something to serve from, and the instant value can read `0` in the middle of an outage. |
+| Upstream failing a spec check | `time() - min by (spec, apiInterface, provider, tier) (smartrouter_provider_verification_failed{scope="provider"}) > 1800` | A configured upstream has been out for 30 minutes because it fails a spec check (the gauge's `check` label says which). You have fewer upstreams than you configured. The series holds the time the failure started, so no `for` is needed. See [Spec verification failures](#spec-verification-failures). |
 | Cache cold | hit-ratio recipe `< 0.2 for 30m` | The cache is misconfigured or bypassed. This is a cost and latency risk. |
 | RESP cache backend unreachable | `smartrouter_resp_cache_connected == 0 for 5m` | Redis/Valkey is down or rejecting auth. Relays still succeed through the upstreams, so nothing else alerts, but you pay for every read. |
 | Post-finality divergence | `increase(smartrouter_cross_validation_mismatch_total{finality="finalized"}[15m]) > 0` | A node disagreed on *finalized* data. This is a high-signal correctness alert. |
@@ -306,6 +308,76 @@ its latest block stays behind the chain. One url back in rotation brings the ups
 
 An upstream whose urls alone take it out reads `1` on the per-upstream gauge without being
 counted by the two totals, so the count of upstreams at `1` can exceed their sum.
+
+#### Spec verification failures
+
+At startup and at each epoch, the router runs the chain spec's checks against every upstream:
+the chain id, how much history the node keeps, each add-on, and so on. A failed check costs only
+what it covers. A failed `archive` or `debug` check switches off that add-on or extension. A
+failed basic check, such as the chain id, takes out the node url, and the whole upstream when it
+has no url left. These two series show what is switched off, and why.
+
+| Metric | Type | Labels | Description |
+| --- | --- | --- | --- |
+| `smartrouter_provider_verification_failed` | Gauge | `spec`, `apiInterface`, `provider`, `tier`, `scope`, `service`, `check`, `severity` | One series per check an upstream is failing, while the router keeps something switched off for it. The value is the unix time, in seconds, the failure started. The series is removed when the check passes again. |
+| `smartrouter_provider_verification_check_failures_total` | Counter | as `smartrouter_provider_verification_failed` | Failed check runs, one per run, including a first failure the router forgives (see below). A run the upstream answered with a rate limit decided nothing and is not counted. |
+
+| Label | Values |
+| --- | --- |
+| `provider` | The upstream's configured name. No series carries a node url. |
+| `tier` | `static` for a primary upstream, `backup` for a backup. |
+| `scope` | What the failure switched off. `provider`: the whole upstream is out of rotation, because it failed at startup or a later re-check took it out. `service`: the upstream still serves, but without the add-on or extension in `service`. `url`: the upstream still serves, but one of its node urls was refused: the whole url when `service` is empty, else only for `service`, which another url of the upstream still serves. |
+| `service` | The add-on or extension that was switched off (`archive`, `debug`, ...). Empty for `scope="provider"` and for a url refused whole. |
+| `severity` | `Fail` when the failure took a node url or the whole upstream out. `PartialFail` when it switched off only `service`. |
+| `check` | The spec check that failed, by the name the spec gives it (`chain-id`, `pruning`, ...). These are the names [`skip-verifications`](../configuration/config-file.md#node-urls-per-url-options) takes. Or one of the names in the next table. |
+
+| `check` | Meaning |
+| --- | --- |
+| `connect` | The router could not connect to the node url. |
+| `config` | The configured urls cannot work as given: there is no http(s) url, or there is no websocket url on a chain with subscriptions while websocket verification is on. |
+| `latest-block` | A check needs the url's latest block, and reading it failed. |
+| `unsupported-addon` | The node url names an add-on the chain's spec does not define. The router refuses that url. |
+| `not-run` | The check never started, because the upstream's checks ran out of time first. It says nothing about the check itself. |
+| `rate-limited` | The upstream has been out since startup, and so far it has only answered with rate limits. The gauge shows it, the counter never does. |
+| `unknown` | The upstream is out of rotation, and the router has no check on record for it. |
+
+When a series appears and when it clears:
+
+- **At startup**, a failure is published as soon as the check fails.
+- **At each epoch** ([`--epoch-duration`](cli.md#lifecycle-health), default `15m`), the router
+  checks every upstream again. An add-on or extension is switched off at the first failed
+  re-check. A node url or an upstream that was serving is taken out only after it fails two
+  re-checks in a row. The counter shows both runs. The gauge shows the failure from the second
+  run on.
+- **An upstream that failed at startup** is retried every 3 minutes. While its chain has
+  nothing else serving, the retry starts at 2 seconds and doubles up to 3 minutes. Every other
+  failure waits for the next epoch.
+- **A series clears** at the first re-check that passes, so it can stay up to one epoch after
+  the node recovered.
+- **An upstream that moves to another check** in the same `scope` and `service` keeps its start
+  time. A node that first refused connections and then returned the wrong chain id has one
+  failure, not two.
+- **A check the spec marks `Warning`** publishes no series. It is only logged.
+
+`smartrouter_endpoint_serving_tier` drops only when a whole tier is gone, so one upstream that
+fails its checks while others serve does not move it. These series are the per-upstream view.
+They name the upstream, not the url: to see which node url failed, run
+[`smartrouter health <config>`](cli.md#subcommands).
+
+```promql
+# Switched off for more than 30 minutes, per upstream and what it lost
+time() - min by (spec, apiInterface, provider, tier, scope, service) (
+  smartrouter_provider_verification_failed) > 1800
+
+# Failed check runs in the last hour, per upstream and check (forgiven first failures included)
+sum by (spec, apiInterface, provider, check) (
+  increase(smartrouter_provider_verification_check_failures_total[1h]))
+```
+
+The first query takes the earliest start across checks, so a failure that moves to another
+check keeps its start and does not reset an alert. The value already holds the start time, so
+an alert on it needs no `for`. Keep the threshold above one epoch: a recovered upstream keeps
+its series until the next re-check passes.
 
 #### WebSocket
 
