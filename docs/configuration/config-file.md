@@ -116,6 +116,7 @@ direct-rpc:
 | `url` | Connection URL. Schemes: `http(s)://`, `ws(s)://`, `grpc(s)://`. A `jsonrpc` backend on an ETH1-derived spec needs a paired `wss://` url. A `graphql` backend's url is the full GraphQL endpoint, path included (e.g. `https://graphql.mainnet.sui.io/graphql`): the router POSTs to it as-is. |
 | `timeout` | Per-URL request timeout, e.g. `10s`. Defaults to the spec value. |
 | `addons` | Add-ons this URL serves, e.g. `["archive", "debug"]`. The router only routes matching methods here. |
+| `standalone-addons` | `true` makes this URL serve only the add-ons in `addons`, and no base-collection traffic. Use it when the add-on is a separate service, for example an EVM endpoint beside a Substrate node, or a service that only accepts transactions. The router then reads the block height from the add-on's own methods. If the add-on has no block-height method, the router runs no block tracker on this URL: it does not poll it, it reports `rpc_endpoint_url_block_tracking` as `0` for it, and the dashboard shows **No block height**. Such a URL is checked only by the requests it serves, so the router learns it is down when a request to it fails. Default `false`. Ignored when `addons` is empty. |
 | `methods` | Restrict this URL to a specific method list. When set, only those methods route here. |
 | `internal-path` | Path override when proxying through a gateway. |
 | `ip-forwarding` | Forward the client IP via `X-Forwarded-For` to the upstream. |
