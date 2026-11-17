@@ -30,18 +30,18 @@ The router decides archive routing once, before the first attempt, from the bloc
 
 | Limit | Value | Notes |
 |---|---|---|
-| Error-retry limit | `--set-relay-retry-limit` (default `2`) | Errors tolerated before the relay gives up. `0` turns retries off completely. This is the setting you tune. |
+| Error-retry limit | `--set-relay-retry-limit` (default `3`) | Errors tolerated before the relay gives up. `0` turns retries off completely. This is the setting you tune. |
 | Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries`. It is an upper bound on *total* attempts, including ticker-driven [hedges](hedge.md). It is separate from the error-retry limit and is not available as a flag. |
 | Overall budget | `--default-processing-timeout` (default `30s`) | Ends retries even if attempts remain. |
 | Per-attempt window | `--min-relay-timeout` floor, or `lava-relay-timeout` header | When the window passes, the next node is tried in parallel, and the attempt in flight keeps running. See [Timeout](timeout.md). |
 
 The cap you control is `--set-relay-retry-limit`. The error-retry path stops after
-that many errors (default 2). The hardcoded `10` is only the ceiling that the
+that many errors (default 3). The hardcoded `10` is only the ceiling that the
 ticker/hedge path can reach. Most relays stop much sooner.
 
 ## Turning retries down or off
 
-Retries are on by default and tolerate `--set-relay-retry-limit` errors (default 2). To change this, set the flag:
+Retries are on by default and tolerate `--set-relay-retry-limit` errors (default 3). To change this, set the flag:
 
 - `--set-relay-retry-limit 0` - **disable retries**. The first error is returned immediately.
 - `--set-relay-retry-limit 5` - tolerate more errors before giving up.
