@@ -181,7 +181,7 @@ lava-extension: archive
 
 This header forces a request onto an extension (e.g. `archive`). Without it, the router infers the extension from the requested block. The value is case-insensitive. Only nodes whose config declares the matching add-on are eligible. See the per-chain [Upstream capabilities](../reference/chains/ethereum.md#upstream-capabilities).
 
-If **no** node on the router declares the add-on, the router does not refuse the request. An ordinary node serves it without the extension, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension. For `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension, so the operator can add a node that supports it.
+If **no** node on the router can take the request with the add-on, the router does not refuse the request. That is the case when no node declares it, when the nodes that declare it failed their check or were unreachable at startup, or when [`lava-providers-block`](#steer-node-selection) excludes them. An ordinary node serves it without the extension, and the response carries `Lava-Extension-Unavailable` naming what was dropped. Treat such an answer as coming from a node without the extension. For `archive`, a historical query may come back incomplete or empty. The router also logs a warning once per extension, so the operator can add a node that supports it.
 
 **When to use:** a historical query the router would otherwise route to a non-archive node.
 
@@ -253,7 +253,7 @@ Smart Router adds metadata to every response about how the relay was served. The
 | `lava-identified-node-error` | The body is a node error that the router recognised, not a router failure. Present whether the error came from a live node or from a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ`. In that case the node answered correctly and is not penalised. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
-| `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |
+| `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router could take this request with. The response was served **without** them. Absent when every requested extension was honoured. |
 | `Lava-Relay-Timeout-Applied` | The per-attempt timeout the router used, as a Go duration, after [bounding `lava-relay-timeout`](#override-the-per-attempt-timeout). Only present on a request that sent that header. When the router ignored the value, it carries the router's own timeout. Absent when the request failed without any reply. |
 | `lava-selection-stats` | Node-selection debug stats. Only present when the router runs with `--enable-selection-stats`. |
 
