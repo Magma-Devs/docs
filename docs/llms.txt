@@ -33,7 +33,7 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 ## Configure
 
 - [Configure](https://docs.magmadevs.com/configuration/): Overview of routing, node selection, caching, and failover configuration.
-- [Connect your app](https://docs.magmadevs.com/api/url/): Endpoint URLs and client samples for viem, ethers, web3.py, and cosmjs.
+- [Connect your app](https://docs.magmadevs.com/api/url/): Endpoint URLs, client samples for viem, ethers, web3.py, and cosmjs, and the WebSocket subscription id (`rs_…`, not `0x` hex).
 - [Config file](https://docs.magmadevs.com/configuration/config-file/): Structure of the Smart Router YAML config file - projects, upstreams, selection, and failover.
 - [Authentication](https://docs.magmadevs.com/configuration/authentication/): Secure your router endpoints with authentication and access control.
 - [Request headers](https://docs.magmadevs.com/api/directives/): Per-request header directives to pin a provider, force a cache refresh, override the timeout, or enable debug logging.
