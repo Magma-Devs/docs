@@ -124,7 +124,7 @@ The router's list of supported add-ons is built from both tiers. When no primary
 Once an attempt has gone to an archive node, the request is never downgraded. If the archive backup fails, the retry goes to another archive node, or the request ends with the archive node's error. A switched-off archive backup is lent to the request as a [last chance](#what-the-caller-gets-when-neither-tier-can-serve) rather than skipped.
 
 !!! warning "When the archive backup is not in rotation"
-    The router decides that `archive` is offered from the config file, before it checks the nodes. If the only node tagged `archive` is out of rotation, because it was unreachable at startup or failed its archive check, an archive request is answered by an ordinary primary. A deep-block read gets the pruned node's error or an empty result. A request with `lava-extension: archive` currently gets that answer **without** `Lava-Extension-Unavailable`. This is a known issue and will be fixed to set the header. Until then, run `smartrouter health --include-backup` after each deploy to confirm the archive backup passed its checks.
+    The router decides that `archive` is offered from the config file, before it checks the nodes. If the only node tagged `archive` is out of rotation, because it was unreachable at startup or failed its archive check, an archive request is answered by an ordinary primary. A request with `lava-extension: archive` gets that answer with `Lava-Extension-Unavailable: archive`, and the reply is not cached. Before v1.6.8 it carried no header and was cached. A deep-block read gets the pruned node's error or an empty result with **no** header, because the router added `archive` itself. Run `smartrouter health --include-backup` after each deploy to confirm the archive backup passed its checks.
 
 Things to know about this setup:
 
@@ -149,7 +149,7 @@ These are JSON-RPC replies. REST and gRPC carry the same outcome in their own er
 | a write that no node answered | `500` | `transaction status unclear: …`. The write may already be on chain, so check before you resend it |
 | no node could be selected at all | `500` | `No pairings available.`, no `Lava-*` headers |
 | an add-on no node declares | `500` | `No Providers For Addon`, no `Lava-*` headers |
-| an extension no node declares (`lava-extension: archive`) | `200` | an ordinary node's answer, with `Lava-Extension-Unavailable` |
+| an extension no node can take (`lava-extension: archive`) | `200` | an ordinary node's answer, with `Lava-Extension-Unavailable` |
 
 Before it gives up on blocked nodes, the router lends one switched-off URL to the request as a last chance: blocked primaries first, then blocked backups. So when everything is blocked, the caller usually gets that node's own answer or error rather than `No pairings available.`.
 
