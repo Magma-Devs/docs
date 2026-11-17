@@ -83,6 +83,15 @@ with different ids shares one entry. The cache stores:
 - **"Latest"-style reads** (non-finalised). These are cached only briefly, because the
   answer changes as the chain advances. A longer non-finalised TTL means fewer upstream
   calls but older "latest" data. This is the main trade-off when you tune the cache.
+- **Reads whose answer differs from node to node**, such as a fee or gas estimate, a
+  transaction simulation (Cosmos `/cosmos/tx/v1beta1/simulate`), a trace or a log query.
+  They follow the same block rules as any other read. One at `latest` is kept under the
+  chain tip for the short non-finalised TTL, so only the same request, sent before the
+  tip moves, gets the stored answer. A spec that marks such a method
+  `deterministic: false` does not keep it out of the cache: that flag only tells
+  [cross-validation](../../configuration/failover/cross-validation.md#observability)
+  not to count a different answer as a content outlier. To get a fresh answer every time,
+  send [`lava-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh).
 - **Block hash → height mappings.** Small, long-lived lookups that the router reuses to
   resolve block references.
 - **Finalised node errors.** A deterministic error on a finalised block can also be cached

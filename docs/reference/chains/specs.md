@@ -21,7 +21,7 @@ that the router loads at startup.
 | --- | --- |
 | **API methods** | Every RPC method the chain exposes, per interface (`jsonrpc` / `rest` / `grpc` / `tendermintrpc` / `graphql`). |
 | **Parser rules** | How to read a method's request and response, for example which param holds the block number. The router uses this to cache, route, and apply [consistency](../../configuration/failover/integrity.md) correctly. |
-| **Categories** | Flags for each method: read or write (stateful), whether it is cacheable, and which addon/extension it needs (archive, debug). The router uses them for [node selection](../../configuration/projects/selection-policies.md) and caching. |
+| **Categories** | Flags for each method: read or write (stateful), whether every node should give the same answer (deterministic), and which addon/extension it needs (archive, debug). The router uses them for [node selection](../../configuration/projects/selection-policies.md) and caching. A write is never cached. `deterministic` is read only by [cross-validation](../../configuration/failover/cross-validation.md); it does not decide [what is cached](../../deployment/cache/index.md#whats-actually-cached). |
 | **Finality parameters** | Block times and finalization distance. The router uses them for the integrity lag gate and for the cache TTLs of finalized and non-finalized data. |
 | **Imports** | A spec can import another spec and inherit its methods and addons (for example, Arbitrum imports `ETH1`). The router resolves imports transitively. |
 
