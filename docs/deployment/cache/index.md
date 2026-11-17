@@ -144,6 +144,11 @@ The seen-block state and sticky sessions work through either backend. The chain-
 gate is a sidecar RPC, so it needs `cache-be:`. A router on the
 [RESP backend](redis.md#caveats) polls locally and logs a warning.
 
+When you upgrade, upgrade the sidecar before the routers. A router newer than its sidecar
+gets an error on any call that the sidecar does not have yet. The chain-tracker gate then
+polls locally and logs a warning. Sticky sessions fail requests instead: see
+[Upgrading from a release older than v1.5.2](../../configuration/sticky-sessions.md#upgrading-from-a-release-older-than-v152).
+
 See the [CLI reference](../../reference/cli.md#cache-shared-state) for the safety floors.
 To confirm it is working, check
 [`rpc_endpoint_tracker_gate_skips_total`](../../reference/metrics.md#endpoint-scoped-rpc_endpoint_).

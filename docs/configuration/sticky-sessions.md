@@ -83,14 +83,23 @@ A session's choice lasts about two router epochs (30 minutes at the default `--e
 
 ## Configuration
 
-Sticky sessions work across router replicas only when **both** of these are true:
+Sticky sessions work across router replicas only when **all** of these are true:
 
 | Requirement | How |
 |---|---|
 | A cache backend is configured | `cache-be:` in the [config file](config-file.md), or the [Redis / Valkey backend](../deployment/cache/redis.md) |
 | Shared state is enabled | `--shared-state` ([CLI flags](../reference/cli.md)) |
+| Every router replica runs v1.5.2 or later | Upgrade every replica. With the cache sidecar, upgrade the sidecar first (see [Upgrading from a release older than v1.5.2](#upgrading-from-a-release-older-than-v152)) |
 
-If either is missing, each replica keeps its own private table. The header still works **within** a single replica. Behind a load balancer, the same id can then reach a different node on each replica, which is the behaviour sticky sessions exist to prevent.
+If any of these is missing, each replica, or each older replica, keeps its own private table. The header still works **within** a single replica. Behind a load balancer, the same id can then reach a different node on each replica, which is the behaviour sticky sessions exist to prevent.
+
+### Upgrading from a release older than v1.5.2
+
+Upgrade the [cache sidecar](../deployment/cache/index.md) **before** the routers. A router on v1.5.2 or later stores session choices through calls that an older sidecar does not have. The router does not fall back to its own table when those calls fail. Every request with `lava-stickiness` fails on that router until the sidecar is upgraded. Requests without the header are served as usual.
+
+The [Redis / Valkey backend](../deployment/cache/redis.md) has no sidecar, so only the routers need upgrading.
+
+While the routers roll, a replica still on an older release keeps its own table. The same id can reach one node through it and another node through the upgraded replicas. Sessions are shared across the fleet again once the last replica is upgraded.
 
 ## What happens when the session cannot be honoured
 
