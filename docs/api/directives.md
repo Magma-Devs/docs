@@ -51,7 +51,7 @@ The name must be a `direct-rpc` (primary) node. A [backup](../configuration/fail
     (see [Response headers](#response-headers)). If you send it as a *request* header, it
     has no effect and the router silently ignores it.
 
-**When to use:** debugging an upstream, sticky requests within a session, or an A/B comparison of responses.
+**When to use:** debugging an upstream, or an A/B comparison of responses. For a sequence of calls that has to stay on one node, use [`lava-stickiness`](#keep-a-session-on-one-node) instead: after an error, a plain pin is retried on another node.
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
@@ -73,7 +73,7 @@ curl -X POST http://127.0.0.1:3360 \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
-If the node is unreachable, the request then fails with an error instead of returning a cached answer.
+If the node is unreachable, the request then does not return a cached answer. It is retried on another node, so check [`Lava-Provider-Address`](#response-headers): the pinned node is listed first and the node that answered last. With `lava-select-provider-strict: true` the request fails instead.
 
 !!! note "A pinned write goes to the pinned node only"
     A write, such as `eth_sendRawTransaction`, is normally sent to every node at once, so one
@@ -82,6 +82,10 @@ If the node is unreachable, the request then fails with an error instead of retu
     is sent to the pinned node only and gives up that broadcast. The reply's
     [`lava-fast-tx-participants`](#response-headers) header names the nodes that received the write.
     To keep the broadcast, send writes without a pin.
+
+    One exception: if the pinned node refuses the write with a rate limit (`429`), the node did
+    not take it. A plain `lava-select-provider` write is then sent to the other nodes. A sticky
+    write, or one with `lava-select-provider-strict: true`, gets the `429`.
 
 ## Keep a session on one node
 
@@ -239,12 +243,12 @@ The [response headers](#response-headers) come back as response metadata with lo
 
 ## Response headers
 
-Smart Router adds metadata to every response about how the relay was served. These headers are the main signal for debugging routing and failover from the client side. A request that failed with no answer from any node (for example, every node was silent until the budget ended) carries none of them. Its request id is in the body at `error.data.guid`. See [What the caller gets](../configuration/failover/backup.md#what-the-caller-gets-when-neither-tier-can-serve).
+Smart Router adds metadata to every response about how the relay was served. These headers are the main signal for debugging routing and failover from the client side. A failed request carries them too, both when a node's error is passed back and when the router answers with its own error because no node answered. Only a request that reached no node at all (for example `No pairings available.`) carries none of them. Its request id is then only in the body, at `error.data.guid`. See [What the caller gets](../configuration/failover/backup.md#what-the-caller-gets-when-neither-tier-can-serve).
 
 | Header | Meaning |
 |---|---|
-| `Lava-Provider-Address` | The node that finally served the response. When the request was retried or hedged, it is a comma-separated list of every node asked, in the order they were asked, with the node whose answer was returned last. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node, even when the request named one with `lava-select-provider`. No header marks a [backup](../configuration/failover/backup.md). Compare the names with your `backup-direct-rpc` list. |
-| `Lava-Retries` | Number of attempts after the first, retries and hedges alike, including a hedge still running when the reply was built. Absent when `0`. Always `0` for a write, which goes to several nodes at once by design. |
+| `Lava-Provider-Address` | The node that finally served the response. When the request was retried or hedged, it is a comma-separated list of every node asked, in the order they were asked, with the node whose answer was returned last. When no node answered, it lists the nodes asked. The literal value **`Cached`** means the [cache](../deployment/cache/index.md) answered and the router contacted *no* node, even when the request named one with `lava-select-provider`. No header marks a [backup](../configuration/failover/backup.md). Compare the names with your `backup-direct-rpc` list. |
+| `Lava-Retries` | Number of attempts after the first, retries and hedges alike, including a hedge still running when the reply was built. Absent when `0`, and always absent on a write. A request with `lava-stickiness` or `lava-select-provider-strict: true` makes one attempt, so it never carries this header. |
 | `Provider-Latest-Block` | Latest block the serving node reported. |
 | `lava-fast-tx-participants` | On a write only: the nodes the router sent it to, in brackets and space-separated, e.g. `[node-a node-b]`. A single name means the write was not broadcast, for example because it was [pinned](#pin-to-a-specific-node). |
 | `Lava-Guid` | Unique request id. Use it to find the request in logs and traces. |
@@ -253,7 +257,7 @@ Smart Router adds metadata to every response about how the relay was served. The
 | `lava-identified-node-error` | The body is a node error that the router recognised, not a router failure. Present whether the error came from a live node or from a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ`. In that case the node answered correctly and is not penalised. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
-| `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |
+| `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers, or that no node could serve for this request (for example, the only `archive` node is out of rotation). The response was served **without** them. Absent when every requested extension was honoured. |
 | `Lava-Relay-Timeout-Applied` | The per-attempt timeout the router used, as a Go duration, after [bounding `lava-relay-timeout`](#override-the-per-attempt-timeout). Only present on a request that sent that header. When the router ignored the value, it carries the router's own timeout. Absent when the request failed without any reply. |
 | `lava-selection-stats` | Node-selection debug stats. Only present when the router runs with `--enable-selection-stats`. |
 

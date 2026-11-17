@@ -44,7 +44,7 @@ For each attempt, the router first picks from the primaries. A primary drops out
 | not connected, or at its session limit | **Yes** |
 | **rate-limited (held off after a `429`)** | **No.** A held-off primary is skipped only while another primary is ready. When every primary is held off, the one whose hold-off ends soonest is used. See [Rate-limited upstreams](retry.md#rate-limited-upstreams) |
 | **slow** | **Not directly.** After the [per-attempt window](timeout.md) the router asks the next primary while the slow attempt keeps running. A backup is asked only once every primary is busy on the request |
-| named by `lava-select-provider` | **No.** A pinned request never goes to a backup. See [Pinning](#pinning) |
+| named by `lava-select-provider` | **Not on the first attempt.** The named primary gets the first attempt. If it fails, the retry goes through normal selection and can reach a backup. With `lava-select-provider-strict: true` the request never leaves the named primary. See [Pinning](#pinning) |
 
 A URL is switched off after `--bench-after` consecutive failures (default `50`). A provider is blocked when all of its URLs are switched off. Only failures that are the node's fault count: a rate limit, an unsupported method or a caller mistake does not.
 
@@ -55,7 +55,7 @@ A request stops when it has seen more than `--set-relay-retry-limit` errors (def
 | Primaries | All fail fast (5xx, refused connection, node error), default limit `2` |
 |---|---|
 | 1 or 2 | the backup is asked next and can answer |
-| 3 or more | **the request stops after the third error.** No backup is asked, and the caller gets a node's error (see [What the caller gets](#what-the-caller-gets-when-neither-tier-can-serve)) |
+| 3 or more | **the request stops after the third error.** No backup is asked. The caller gets a primary's answer as is, or the router's `502` when no primary answered (see [What the caller gets](#what-the-caller-gets-when-neither-tier-can-serve)) |
 
 This is how the router is designed: the limit bounds how much one request costs. It changes once the failing primaries are blocked. A blocked primary is not selected at all, so later requests go straight to the backups. That takes `--bench-after` failures per URL.
 
@@ -124,7 +124,12 @@ The router's list of supported add-ons is built from both tiers. When no primary
 Once an attempt has gone to an archive node, the request is never downgraded. If the archive backup fails, the retry goes to another archive node, or the request ends with the archive node's error. A switched-off archive backup is lent to the request as a [last chance](#what-the-caller-gets-when-neither-tier-can-serve) rather than skipped.
 
 !!! warning "When the archive backup is not in rotation"
-    The router decides that `archive` is offered from the config file, before it checks the nodes. If the only node tagged `archive` is out of rotation, because it was unreachable at startup or failed its archive check, an archive request is answered by an ordinary primary. A deep-block read gets the pruned node's error or an empty result. A request with `lava-extension: archive` currently gets that answer **without** `Lava-Extension-Unavailable`. This is a known issue and will be fixed to set the header. Until then, run `smartrouter health --include-backup` after each deploy to confirm the archive backup passed its checks.
+    The router decides that `archive` is offered from the config file, before it checks the nodes. If the only node tagged `archive` is out of rotation, because it was unreachable at startup or failed its archive check, an archive request is answered by an ordinary primary:
+
+    - A request with `lava-extension: archive` gets that answer with `Lava-Extension-Unavailable: archive`. The router does not cache it.
+    - A deep-block read that the router sent to archive on its own gets the pruned node's error or an empty result, with no header.
+
+    Run `smartrouter health --include-backup` after each deploy to confirm the archive backup passed its checks.
 
 Things to know about this setup:
 
@@ -135,39 +140,54 @@ Things to know about this setup:
 
 ## What the caller gets when neither tier can serve
 
-The reply depends on whether any node produced an answer. If one did, the router returns it with the usual [response headers](../../api/directives.md#response-headers). If none did, the reply is a router error with **no `Lava-*` headers**. The request id is then only in the body, at `error.data.guid`.
+The reply depends on whether any node answered:
 
-These are JSON-RPC replies. REST and gRPC carry the same outcome in their own error format.
+- **A node answered.** The caller gets that node's answer as is: its HTTP status, its body byte for byte, and its `Content-Type`. The router adds nothing to the body. The request id is in the `Lava-Guid` header.
+- **No node answered.** The router replies with its own error: `502` or `504`, or `500` for a write whose outcome is unclear. The request id is in the `Lava-Guid` header and also in the body, at `error.data.guid`.
+
+Both kinds of reply carry the usual [response headers](../../api/directives.md#response-headers), and `Lava-Provider-Address` names every node asked. The exception is a request that reached no node at all, such as `No pairings available.`: it carries **no `Lava-*` headers**, and its request id is only in the body.
+
+These are JSON-RPC replies. REST and Tendermint RPC return the same statuses and pass a node's answer through the same way. GraphQL and gRPC return the router's own errors in their own error format.
 
 | Situation | HTTP status | Body |
 |---|---|---|
 | every node answered with a node error inside HTTP 200 | `200` | the node's error, unchanged. `lava-identified-node-error: true` |
-| every node returned HTTP 5xx | the node's status | the node's body when it is a JSON-RPC error; otherwise a router error with `data.upstream_status` and `data.upstream_body` |
-| every node refused or dropped the connection | `502` | `no answer from upstream: …` |
-| every node was rate-limited (`429`) | `503` | a router error. The node's `Retry-After` is not forwarded |
-| no node answered before the budget ended | `500` | `context deadline exceeded`, no `Lava-*` headers |
-| a write that no node answered | `500` | `transaction status unclear: …`. The write may already be on chain, so check before you resend it |
+| every node answered with an HTTP error status, such as `500` or `503` | the node's status | the node's body as is, whether JSON, HTML or empty |
+| every node was rate-limited (`429`) | `429` | the node's body as is. The node's `Retry-After` is not forwarded |
+| some nodes were rate-limited and the others answered with an error status | the error status | that node's body as is. An error beats a rate limit: one `503` next to two `429`s is the `503` |
+| every node refused or dropped the connection | `502` | `no answer from upstream: <cause>` |
+| no node answered before the budget ended | `504` | `no answer from upstream within <budget>` |
+| a write that may have reached a node, with no clear answer (the node was silent, the connection broke after the send, or a gateway in front of the node answered `502` or `504`) | `500` | `transaction status unclear: …`. The write may already be on chain, so check before you resend it |
+| a write that every node answered, for example with `503` or `429` | the node's status | the node's answer as is, the same as for a read |
 | no node could be selected at all | `500` | `No pairings available.`, no `Lava-*` headers |
-| an add-on no node declares | `500` | `No Providers For Addon`, no `Lava-*` headers |
-| an extension no node declares (`lava-extension: archive`) | `200` | an ordinary node's answer, with `Lava-Extension-Unavailable` |
+| an add-on no node declares | `500` | `No Providers For Addon …`, no `Lava-*` headers |
+| an extension no node can serve (`lava-extension: archive`) | `200` | an ordinary node's answer, with `Lava-Extension-Unavailable` |
 
 Before it gives up on blocked nodes, the router lends one switched-off URL to the request as a last chance: blocked primaries first, then blocked backups. So when everything is blocked, the caller usually gets that node's own answer or error rather than `No pairings available.`.
 
-**No header says that a backup served a reply.** `Lava-Provider-Address` names the node, so to see a backup you have to know which names are backups. When the request was retried, the header lists every node asked, in order, and the node whose answer was returned is last. See [Observability](#observability).
+**No header says that a backup served a reply.** `Lava-Provider-Address` names the node, so to see a backup you have to know which names are backups. When the request was retried, the header lists every node asked, in order, and the node whose answer was returned is last. When no node answered, it lists the nodes asked. See [Observability](#observability).
 
 ## How failover works with other features
 
 ### Pinning
 
-[`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) names a **primary**. A backup cannot be pinned: naming one fails the request with `Selected provider not available`. A pin also never falls through to the backups. If the pinned primary is blocked or unknown, the request fails without trying any other node. If the pinned primary was asked and returned an error, the retry goes through normal selection, which can reach a backup.
+[`lava-select-provider`](../../api/directives.md#pin-to-a-specific-node) names a **primary**. A backup cannot be pinned: naming one fails the request with `500` and `Selected provider not available`. A pin also never falls through to the backups. If the pinned primary is blocked or unknown, the request fails the same way, and no other node is tried.
+
+What happens once the named primary is asked depends on the headers:
+
+- **`lava-select-provider` alone.** The pin covers the first attempt only. If the primary returns an error or is slow, the retry or hedge goes through normal selection: the other primaries first, then the backups.
+- **With `lava-select-provider-strict: true`.** The named primary answers, or the request fails. Its error goes back to the caller as is, with no `Lava-Retries` header. If it stays silent, the caller gets `504` when the budget ends. Nothing is sent to another node, so a backup is never asked.
+
+A [sticky](#sticky-sessions) request behaves like a strict pin.
 
 ### Sticky sessions
 
-A [sticky session](../sticky-sessions.md) binds a session to a **primary**. Backups are never bound.
+A [sticky session](../sticky-sessions.md) binds a session to a **primary**. Backups are never bound. A sticky request is answered by its node or fails with that node's error. It is never retried or hedged on another node, in either tier.
 
-- When the bound primary is blocked, or this request already tried it, the binding is dropped and the session is bound to another primary.
+- When the bound primary answers with an error, or is busy (no free session or connection), the request fails. The session keeps its node.
+- When the bound primary is blocked, the next request binds the session to another primary. With `--shared-state` this works differently, see below.
 - When no primary is left, sticky requests are served by the backups **without** a binding. Two calls in the same session can land on different backups.
-- With `--shared-state`, a binding shared across router pods is kept even when its primary is down, and requests in that session fail with `Selected provider not available` until the binding expires, about two epochs after it was made. Requests without the sticky header are served by the other primaries or the backups in the meantime. During such an outage a **new** session can also be bound to a primary that is down; this is a known issue.
+- With `--shared-state`, a binding shared across router pods is kept even when its primary is down, and requests in that session fail with `Selected provider not available` until the binding expires, about two epochs after it was made. Requests without the sticky header, and new sessions, are served by the other primaries or the backups in the meantime.
 - After the primaries recover, the next sticky request is bound to a primary again. It may be a different one from before.
 
 ### WebSocket and gRPC subscriptions
