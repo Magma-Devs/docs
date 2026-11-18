@@ -13,13 +13,20 @@ router uses it for logging, metrics, and retry decisions. Each code has a name, 
 and a **retryable** flag. The failover state machine reads this flag to decide whether
 to rotate to another node.
 
-!!! info "These codes are internal - clients never see them"
-    Smart Router is a transparent hop. Your client always receives the **original**
-    error from the upstream node, unchanged: the same JSON-RPC / HTTP / gRPC error you
-    would get from the node directly. Lava error codes appear only in the router's
-    **logs** and in the [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
-    metric. Use this page to read those logs and metrics, not to handle codes on the
-    wire.
+!!! info "A node's error reaches your client unchanged"
+    Smart Router is a transparent hop. When a node answers with an error, your client
+    receives that **original** error: the same JSON-RPC / HTTP / gRPC error you would get
+    from the node directly. On gRPC only the status code and message pass. Lava error
+    codes appear in the router's **logs** and in the
+    [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
+    metric. Use this page to read those logs and metrics. The router writes a reply
+    itself only in a few cases: a request it refuses, a write whose outcome is unknown,
+    and a request no node answered. On JSON-RPC and Tendermint RPC, that last reply
+    carries the code as `router_error_code` and `router_error_name`. These pages list
+    the replies the router writes: [JSON-RPC](../interfaces/jsonrpc.md#replies-the-router-writes),
+    [gRPC](../interfaces/grpc.md#replies-the-router-writes),
+    [Tendermint RPC](../interfaces/tendermintrpc.md#replies-the-router-writes),
+    [GraphQL](../interfaces/graphql.md#replies-the-router-writes).
 
 The codes, with their names and retryable flags, live in
 [`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go).
@@ -90,65 +97,8 @@ detected before either tier and always take precedence. Anything unmatched becom
 
 ### REST status codes
 
-A REST node has no error object, so the router reads the HTTP status instead: **every
-status outside 2xx is a node error**. The body still reaches the caller unchanged. The
-REST rules run specific-to-general. A body that names what went wrong is matched first,
-whatever the status; the status alone is the fallback. *Counts against the node* means
-the reply is evidence that the node is broken: it is marked unhealthy and advances the
-node's consecutive-failure count (see [`--bench-after`](cli.md)).
-
-| Reply | Code | Retried on another node? | Counts against the node? |
-| --- | --- | --- | --- |
-| Body says `endpoint not found`, `route not found` or `path not found`, any status | `NODE_ENDPOINT_NOT_FOUND` (2009) | Yes | No |
-| Body says `method not allowed`, any status | `NODE_METHOD_NOT_ALLOWED` (2010) | Yes | No |
-| Body says the block is beyond the node's head (`larger than the current largest block`, `requested block height is bigger then the chain length`, or a 400 with `unknown block`) | `CHAIN_BLOCK_NOT_FOUND` (3201) | Yes | No |
-| 500 with `is not available, lowest height` (Cosmos, pruned height) | `CHAIN_STATE_PRUNED` (3204) | Yes | No |
-| 500 with `unable to retrieve header and parent` (Substrate sidecar, unknown block) | `CHAIN_BLOCK_NOT_FOUND` (3201) | Yes | No |
-| 500 with `transaction not found` (MultiversX) | `CHAIN_TX_NOT_FOUND` (3202) | Yes | No |
-| 500 with `decoding bech32 failed` (Cosmos, malformed address) | `USER_INVALID_PARAMS` (4003) | No | No |
-| **404** | `NODE_DATA_NOT_HELD` (2017) | **Yes** | No |
-| **401, 402, 403, 407, 426, 451** | `NODE_ACCESS_DENIED` (2018) | **Yes** | No |
-| 405 | `NODE_METHOD_NOT_ALLOWED` (2010) | Yes | No |
-| 501 | `NODE_UNIMPLEMENTED` (2008) | Yes | No |
-| 410 | `CHAIN_STATE_PRUNED` (3204) | Yes | No |
-| 429 | `NODE_RATE_LIMITED` (2005) | Yes, and the node is held off | No |
-| 408, 503 | `NODE_SERVICE_UNAVAILABLE` (2006) | Yes | Yes |
-| 500, any other body | `NODE_INTERNAL_ERROR` (2003) | Yes | Yes |
-| 502 | `NODE_BAD_GATEWAY` (2015) | Yes | Yes |
-| 504, 522, 524 | `NODE_GATEWAY_TIMEOUT` (2014) | Yes | Yes |
-| 520, 521, 523, 525, 526, 527, 530 | `NODE_SERVER_ERROR` (2004) | Yes | Yes |
-| 409 | `CHAIN_TX_ALREADY_KNOWN` (3007) | No | No |
-| 400, 406, 411, 412, 414, 415, 416, 417, 428, 431 | `USER_INVALID_REQUEST` (4002) | No | No |
-| 422 | `USER_INVALID_PARAMS` (4003) | No | No |
-| 413 | `USER_REQUEST_TOO_LARGE` (4006) | No | No |
-| Any other status, including 3xx | `UNKNOWN_ERROR` (0) | Yes | No, but it lowers the node's availability score |
-
-**A REST 404 is retried.** A plain 404 means "not here": the node does not hold the
-data, has not seen it yet, or a gateway in front of it does not route the path. Another
-node may answer, so the router tries one, as it does for a JSON-RPC block-not-found or
-transaction-not-found. The node that answered 404 is not scored. The reply then
-carries a `Lava-Retries` header counting the extra attempt (see
-[Response headers](../api/directives.md#response-headers)). A 404 whose body names a
-missing endpoint, route or path is a route refusal instead, `NODE_ENDPOINT_NOT_FOUND`.
-Since v1.6.0 that is also retried on another node, under the
-[node-refusal rule](#retry-cu-and-caching). Before v1.6.0 it was terminal.
-
-**A REST 401, 402, 403, 407, 426 or 451 is retried.** These are the endpoint refusing
-the router itself: its credentials, its plan or quota, a WAF or IP rule, a proxy that
-wants credentials, a protocol it will not speak, or a region it will not serve. Each
-provider has its own credentials and rules, so another provider can serve the same
-request. The router tries one and does not blame the refusing node. On JSON-RPC and
-gRPC a 401 named in the error message stays `NODE_UNAUTHORIZED`, which since v1.6.0 is
-retried the same way.
-
-A 500 is read as the caller's answer only when its body is one of the forms listed
-above. Any other 500 stays `NODE_INTERNAL_ERROR` and counts against the node, so a
-broken node that answers 500 with an empty or HTML body is still taken out of rotation.
-
-These retries are for reads. A write goes to several nodes at once and is not sent
-again, unless every node it went to was rate limited (a 429 or a rate-limit error). A
-rate-limited node turns a write away before running it, so sending it again cannot run
-it twice. The first node that accepts it answers the caller, whatever the others replied.
+How the router reads each HTTP status from a REST node, which statuses it retries and which
+count against the node, is on the [REST](../interfaces/rest.md) page.
 
 ### Retry, CU, and caching
 
@@ -166,12 +116,10 @@ question, read from the code's sub-category. Four groups have their own behaviou
   non-retryable error instead, such as a revert, the caller gets that error. A
   refusal of a method the chain spec does not list is final at the first node, because
   every node is expected to refuse it. `NODE_LIMIT_EXCEEDED` is the exception and stays
-  terminal, because the limit is usually one that every node shares. Before v1.6.0,
-  codes 2001, 2008, 2009, 2010 and 2016 were terminal, and the first four also cost
-  zero CU and had their response cached. No code carries that zero-CU carve-out any
-  more.
+  terminal, because the limit is usually one that every node shares. No code is charged
+  zero CU.
 - **Data not held** (`NODE_DATA_NOT_HELD`, `NODE_RESOURCE_NOT_FOUND`,
-  `NODE_RESOURCE_UNAVAILABLE`, the `CHAIN_*` state and data codes 3201–3206, and the
+  `NODE_RESOURCE_UNAVAILABLE`, the `CHAIN_*` state and data codes 3201-3206, and the
   Solana, Starknet and NEAR codes 3303, 3309, 3311, 3331, 3332, 3360 and 3361) is a
   node answering truthfully that it does not have the data. Retried, so another node
   in the same pool can answer. A retry does not add `archive`; see
@@ -187,7 +135,7 @@ question, read from the code's sub-category. Four groups have their own behaviou
 
 ---
 
-## Layer A - Protocol errors (`PROTOCOL_*`, 1000–1999)
+## Layer A - Protocol errors (`PROTOCOL_*`, 1000-1999) {#layer-a-protocol-errors-protocol_-10001999}
 
 Category: **Internal**. The Lava protocol itself raises these errors, not nodes or
 chains.
@@ -235,7 +183,7 @@ chains.
 
 ---
 
-## Layer B - Node errors (`NODE_*`, 2000–2999)
+## Layer B - Node errors (`NODE_*`, 2000-2999) {#layer-b-node-errors-node_-20002999}
 
 Category: **External**. The blockchain node itself returns these errors (they are not
 execution or state errors). "Standard code" is the protocol-level code that the
@@ -270,18 +218,17 @@ matcher looks for.
 Codes 2001, 2002, 2008, 2009, 2010, 2016 and 2018 are **node refusals**, and 2012,
 2013 and 2017 are **data not held**. Both groups are retried on another node without
 blaming the node that answered; see [Retry, CU, and caching](#retry-cu-and-caching).
-The refusals 2001, 2008, 2009, 2010 and 2016 were terminal before v1.6.0. On REST, the
-status-to-code map is in [REST status codes](#rest-status-codes).
+On REST, the status-to-code map is on the [REST](../interfaces/rest.md#how-the-router-reads-a-rest-reply) page.
 
 ---
 
-## Layer C - Blockchain errors (`CHAIN_*`, 3000–3999)
+## Layer C - Blockchain errors (`CHAIN_*`, 3000-3999) {#layer-c-blockchain-errors-chain_-30003999}
 
 Category: **External**. These errors come from the blockchain execution and state
 layer: transaction failures, state queries, and similar. Tier-2 (chain-specific) codes
 exist only where retryability differs from the generic pattern.
 
-### Transaction errors (3000–3099)
+### Transaction errors (3000-3099) {#transaction-errors-30003099}
 
 | Code | Name | Description | Retryable | Chains |
 | --- | --- | --- | --- | --- |
@@ -302,7 +249,7 @@ exist only where retryability differs from the generic pattern.
 | 3015 | `CHAIN_DOUBLE_SPEND` | Double spend / UTXO already spent | No | Bitcoin/UTXO |
 | 3016 | `CHAIN_INVALID_SIGNATURE` | Invalid transaction signature | No | Universal |
 
-### Execution errors (3100–3199)
+### Execution errors (3100-3199) {#execution-errors-31003199}
 
 | Code | Name | Description | Retryable | Chains |
 | --- | --- | --- | --- | --- |
@@ -315,7 +262,7 @@ exist only where retryability differs from the generic pattern.
 | 3107 | `CHAIN_ACCOUNT_NOT_FOUND` | Account/contract does not exist | No | Cosmos |
 | 3108 | `CHAIN_ZKEVM_OUT_OF_COUNTERS` | Polygon zkEVM prover exceeded circuit counter budget | No | EVM (Polygon zkEVM) |
 
-### State / data errors (3200–3299)
+### State / data errors (3200-3299) {#state-data-errors-32003299}
 
 | Code | Name | Description | Retryable | Chains |
 | --- | --- | --- | --- | --- |
@@ -327,8 +274,8 @@ exist only where retryability differs from the generic pattern.
 | 3206 | `CHAIN_BLOCK_TOO_OLD` | Block results only for recent blocks | Yes | Cosmos |
 | 3207 | `CHAIN_LOG_RESPONSE_TOO_LARGE` | Log query returned too many results | No | EVM |
 
-Chain-specific Tier-2 ranges also exist for **Solana** (3300–3319), **Starknet**
-(3320–3339), **Bitcoin/UTXO** (3340–3359), and **NEAR** (3360–3379). See the
+Chain-specific Tier-2 ranges also exist for **Solana** (3300-3319), **Starknet**
+(3320-3339), **Bitcoin/UTXO** (3340-3359), and **NEAR** (3360-3379). See the
 [registry source](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go)
 for the full list. Most are non-retryable. The retryable exceptions are the Solana
 `CHAIN_SOLANA_LEDGER_JUMP`, `CHAIN_SOLANA_BLOCK_STATUS_UNAVAILABLE`, and
@@ -339,7 +286,7 @@ block/chunk garbage-collection codes (`CHAIN_NEAR_UNKNOWN_BLOCK`, `CHAIN_NEAR_UN
 
 ---
 
-## Layer D - User errors (`USER_*`, 4000–4999)
+## Layer D - User errors (`USER_*`, 4000-4999) {#layer-d-user-errors-user_-40004999}
 
 Category: **External**. These are malformed or invalid client requests. They are
 classified by the nature of the error, whether Lava catches it before forwarding or the

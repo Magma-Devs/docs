@@ -18,6 +18,9 @@ and per-chain walkthroughs: [Ethereum](ethereum.md), [Solana](solana.md),
 [Bitcoin](bitcoin.md), [Hyperliquid](hyperliquid.md), [Cosmos](cosmos.md), and
 [Aptos](aptos.md).
 
+Each chain serves one or more interfaces (JSON-RPC, REST, gRPC, Tendermint RPC or
+GraphQL). [Interfaces](../../interfaces/index.md) explains how the router handles each one.
+
 ## Browse chains
 
 The catalog lists **{{ chains.total }} chains**: {{ chains.mainnet }} with a mainnet and {{ chains.testnet }} with a testnet. Search or

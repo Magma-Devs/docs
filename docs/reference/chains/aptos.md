@@ -13,6 +13,7 @@ Smart Router serves Aptos mainnet over the REST fullnode API. This page covers t
 |---|---|
 | Default port | `3360` (override per `endpoints[]` entry) |
 | Calling convention | REST - `GET /v1/...`, `POST /v1/view`, etc. |
+| Interfaces | [`rest`](../../interfaces/rest.md) |
 | `chain-id` | `APT1` |
 | Spec | [`specs/aptos.json`](https://github.com/Magma-Devs/smart-router/blob/main/specs/aptos.json) |
 

@@ -13,6 +13,7 @@ Smart Router serves Bitcoin mainnet over Bitcoin Core JSON-RPC. This page covers
 |---|---|
 | Default port | `3360` (override per `endpoints[]` entry) |
 | Calling convention | `POST /` with a JSON-RPC body |
+| Interfaces | [`jsonrpc`](../../interfaces/jsonrpc.md) |
 | `chain-id` | `BTC` |
 | Spec | [`specs/btc.json`](https://github.com/Magma-Devs/smart-router/blob/main/specs/btc.json) |
 
