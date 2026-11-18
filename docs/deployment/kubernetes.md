@@ -20,3 +20,12 @@ your cluster, or for help with one you already run, [talk to us](https://magmade
   `/readyz` answers `503` unconditionally (see [CLI flags](../reference/cli.md)).
 - **The image.** `ghcr.io/magma-devs/smart-router:vX.Y.Z`, for `linux/amd64` and `linux/arm64`,
   carries the same binary as the [release](https://github.com/Magma-Devs/smart-router/releases).
+
+## The Helm chart
+
+Magma Devs deploys the router with its Helm chart. The chart passes `--min-relay-timeout=10s` to
+every router, not the router's own `1s` default. Set it with `miscellaneous.routers.minRelayTimeout`,
+or per chain with `minRelayTimeout` on a `routers[]` entry. For a method under 50 CU, the `10s`
+window and the `30s` budget mean three or more quiet primaries use up the budget before any
+backup is asked. See
+[Quiet nodes](../configuration/failover/backup.md#quiet-nodes-the-window-and-the-budget).
