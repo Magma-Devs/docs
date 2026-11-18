@@ -160,6 +160,26 @@ from ordinary traffic, or a transaction-submit service your spec defines as an a
 - Ignored, with a warning at startup, when `addons` lists no add-on: empty, or only
   extensions such as `archive`.
 
+#### A URL with no block height
+
+Available from v1.6.N.
+
+If none of its add-ons has a block-height method (most don't, `debug` and `trace`
+included), the router runs no chain tracker on this URL and never polls it. The URL
+has no block height by design, and the router does not report that as a fault.
+
+- **Nothing checks it between requests.** Its score moves only with the requests it
+  serves, so the router learns it is down when one fails, and that it is back when
+  one succeeds. A URL that failed gets few requests, so with little traffic it can
+  take a while to come back. The startup checks of its add-ons still run.
+- **Metric.** `rpc_endpoint_url_block_tracking` is `0` for this URL and `1` for a URL
+  the router tracks. See [Metrics](../reference/metrics.md#endpoint-scoped-rpc_endpoint_).
+- **Dashboard.** When every URL of a provider is like this, the dashboard (v0.69.6 or
+  later) shows the provider as **No block height**. A provider that also has a
+  tracked URL is judged by that URL.
+- If another provider lists the same URL without `standalone-addons`, the router
+  tracks the URL for both.
+
 ### `accept-encoding` - compressed upstream replies
 
 By default the router asks every upstream for uncompressed replies
