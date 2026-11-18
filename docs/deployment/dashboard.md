@@ -78,11 +78,84 @@ An API that cannot reach the router at `ROUTER_RELAY_HOST` answers every test wi
     dashboard API is reachable from elsewhere, turn authentication on or set
     `ROUTER_RELAY_ENABLED=false`.
 
+## Usage data
+
+Dashboard 0.71.0 and later can send how the dashboard is used to the Mixpanel
+project whose token it holds: Magma's, where Magma hosts the dashboard. On a
+self-hosted install it is **off**, and you do not need to do anything to keep it
+off. Dashboard 0.70.0 sends a smaller set of its own events from the API instead,
+under the same settings and the same banner.
+
+It is on only when all of these hold:
+
+| Condition | Setting |
+| --- | --- |
+| Accounts are on | `AUTH_MODE=enabled` |
+| The deployment has it on | `USAGE_ANALYTICS=on`. Unset, it is on where Magma hosts the dashboard (`DEPLOYMENT_MODE=managed`) and off on a self-hosted install (`DEPLOYMENT_MODE` unset or `onprem`). |
+| A project token is set | `MIXPANEL_TOKEN` |
+| The person at the browser accepted | the consent banner, which asks each account once in each browser |
+
+Until a person accepts, their browser loads no Mixpanel code and keeps nothing
+but their answer. **Decline** and the banner's close button send nothing, and the
+**Account** page changes the answer later. Another account signing in on the
+same browser is asked again, and signing out clears what Mixpanel kept in the
+browser. A browser that sends Do Not Track sends nothing either way. The banner
+and the Account page link Magma's Privacy Policy and Terms.
+
+After an acceptance, the browser loads Mixpanel's SDK, which ships inside the
+dashboard, and sends straight to Mixpanel:
+
+- clicks, page views, scrolling, rage and dead clicks, that a field changed and
+  that a form was submitted, never what is typed into a field;
+- the dashboard's own events: look-ups (their kind, result and time, never what
+  was looked up), chain and time-range picks, rows and panels opened, and how
+  long a view takes to load;
+- a session replay of the visit, with all text and all inputs masked, and
+  heatmaps;
+- a profile under an opaque per-user id that carries the deployment, the user's
+  role and whether they are Magma staff, never a name or an email.
+
+Mixpanel also sees the browser's IP address, from which it derives a city and a
+country, and the browser and operating system. The SDK keeps its state in the
+browser's `localStorage`, `sessionStorage` and IndexedDB; it sets no cookie.
+
+Addresses and element attributes are cleaned in the browser before anything
+leaves it, in events and replays alike: a request ID, a hash or a typed value
+in an address becomes `:id`, and titles, labels and other attributes that carry
+such values are dropped. A link's marketing parameters (`utm_*`, click ids) are
+not sent, and the two-factor enrolment screen is never recorded. A replay
+upload that cannot be cleaned is not sent.
+
+The API never talks to Mixpanel. It hands the project token to every signed-in
+browser while usage data is on, before the person answers the banner. A
+Mixpanel project token is public by design: it can send events and read
+nothing.
+
+Five settings on the API, read when it starts; the web reads none. The
+dashboard's Docker Compose files pass each one through from your shell or
+`.env`.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `USAGE_ANALYTICS` | `on` with `DEPLOYMENT_MODE=managed`, `off` otherwise | Turns usage data on or off. |
+| `MIXPANEL_TOKEN` | unset | The project token. Without it usage data is off. |
+| `MIXPANEL_API_HOST` | `https://api-eu.mixpanel.com` | The one Mixpanel host the browser contacts: your project's region's API host. `https` only (`http` for a loopback mock); any other value turns usage data off, and the API logs why. |
+| `USAGE_TENANT` | `TENANT_ID`, else `unnamed` | The deployment name every event and profile carries. |
+| `USAGE_STAFF_DOMAINS` | `magmadevs.com` | Comma-separated email domains whose users are marked as staff. The address itself is never sent. |
+
+!!! note "Behind a Content-Security-Policy or a browser egress allowlist"
+    With usage data on, allow the `MIXPANEL_API_HOST` (`connect-src` in a CSP). With
+    it blocked, nothing is sent. No script loads from a Mixpanel CDN.
+
+The full list of what is sent and what never is lives in the dashboard repo's
+[`docs/USAGE-DATA.md`](https://github.com/Magma-Devs/smart-router-dashboard/blob/main/docs/USAGE-DATA.md).
+
 ## How it fits together
 
 ```
 browser ──▶ web (:3000) ──▶ api (:8000) ──▶ Prometheus (:9090) ──▶ router (:7779/metrics)
-                                 └────────▶ router (:3360, the tests you send)
+   │                             └────────▶ router (:3360, the tests you send)
+   └──▶ MIXPANEL_API_HOST (usage data, only when it is on and accepted)
 ```
 
 The dashboard is not in the request path. It is read-only with respect to traffic: it
