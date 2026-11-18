@@ -83,6 +83,6 @@ These docs are for the open-source core (PolyForm Noncommercial license); manage
 ## Optional
 
 - [Blog](https://www.magmadevs.com/blog): Engineering deep dives and RPC security analysis.
-- [Case studies](https://www.magmadevs.com/case-studies): Kraken, Fireblocks, and Hypernative.
+- [Case studies](https://www.magmadevs.com/case-studies): Customer case studies on the main site.
 - [Community on Telegram](https://t.me/magmadevs): Support and discussion.
 - [X / Twitter (@magmadevs)](https://x.com/magmadevs): Updates and announcements.
