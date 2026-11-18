@@ -46,11 +46,11 @@ You can turn on cross-validation in two ways. The router combines them for each 
 **1. Per-request, by the client.** Send both headers and the router cross-validates that single request:
 
 ```
-lava-cross-validation-max-participants: 3
-lava-cross-validation-agreement-threshold: 2
+router-cross-validation-max-participants: 3
+router-cross-validation-agreement-threshold: 2
 ```
 
-See [Directives](../../api/directives.md). The router reports the outcome in the response headers (`lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, and on failure `lava-cross-validation-failure-reason`).
+See [Directives](../../api/directives.md). The router reports the outcome in the response headers (`router-cross-validation-status`, `router-cross-validation-agreeing-providers`, and on failure `router-cross-validation-failure-reason`).
 
 **2. Operator policy.** An operator can **mandate** cross-validation for a `(chain, interface, method)`, with floors and caps, or **forbid** clients from requesting it for a method. Policies go in a top-level `cross-validation` block in the [smart router config file](../config-file.md#cross-validation):
 
