@@ -16,7 +16,8 @@ to rotate to another node.
 !!! info "A node's error reaches your client unchanged"
     Smart Router is a transparent hop. When a node answers with an error, your client
     receives that **original** error: the same JSON-RPC / HTTP / gRPC error you would get
-    from the node directly. On gRPC only the status code and message pass. Lava error
+    from the node directly. On gRPC that is the status code, the message and the status
+    details. Lava error
     codes appear in the router's **logs** and in the
     [`smartrouter_errors_total`](metrics.md#classified-errors-smartrouter_errors_)
     metric. Use this page to read those logs and metrics. The router writes a reply
