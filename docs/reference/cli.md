@@ -61,7 +61,7 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 | `--bench-after` | `50` | Consecutive failed requests to one URL before the router takes it out of rotation. A success resets the count. A provider with every URL out is blocked, and requests go to the other primaries or the backups. Must be greater than 0. |
 | `--read-your-writes-window` | `30s` | How long a written transaction's sender and hash stay tied to the node that accepted it, so the sender's follow-up reads go there first (a backup included). Pod-local, first attempt only. `0` turns it off. |
 | `--default-processing-timeout` | `30s` | Total time budget for one relay, including all retries and hedges. |
-| `--min-relay-timeout` | `1s` | Lower limit for the per-attempt window, which sets when the router tries the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. |
+| `--min-relay-timeout` | `1s` | Lower limit for the per-attempt window, which sets when the router tries the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. The [Helm chart](../deployment/kubernetes.md#the-helm-chart) sets `10s`. |
 | `--max-caller-relay-timeout` | `0` | The longest time a caller's `lava-relay-timeout` header can make the router hold one request. The flag only lets the header extend a request past the budget it gets without the header. It never shortens a request. `0` allows no extension. An extended request does not hedge. |
 | `--max-sessions-per-provider` | `1000` | Max concurrent sessions per node. |
 | `--maximum-streams-per-connection` | `100` | Max parallel streams over a single gRPC connection. |

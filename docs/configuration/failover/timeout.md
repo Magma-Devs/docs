@@ -14,6 +14,10 @@ Two timeouts apply to every relay: an **overall budget** for the whole request, 
 | Overall (whole relay) | `30s` | `--default-processing-timeout` CLI flag |
 | Per-attempt window | `1s` floor | `--min-relay-timeout` CLI flag, or `lava-relay-timeout` header |
 
+A method's window is its compute units × `100ms`, raised to the `--min-relay-timeout` floor. With the `1s` floor, `eth_blockNumber` (10 CU) gets `1s` and `eth_call` (20 CU) gets `2s`. A method whose chain spec sets its own timeout uses that timeout instead, and a hanging call adds twice the chain's block time.
+
+The [Helm chart](../../deployment/kubernetes.md#the-helm-chart) sets the floor to `10s`, so on a chart install every method up to 100 CU gets a `10s` window.
+
 If both are set:
 
 - The **overall** timeout caps the whole relay, including all retries and hedges. When it fires, the client gets the most useful result available (the best partial response, or a timeout error). It is never shorter than the per-attempt window.

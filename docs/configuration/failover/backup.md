@@ -74,7 +74,14 @@ t = 2 × W   primary 3   (quiet, keeps running)
 t = 3 × W   backup 1    answers
 ```
 
-For `N` primaries and a window `W`, a backup answers about `N × W` after the start, **if that is still inside the request's budget**. The default window floor is `1s` (`--min-relay-timeout`; heavier methods get a longer window) and the default budget is `30s` (`--default-processing-timeout`). With those defaults, for a typical read, three quiet primaries reach a backup after about 3 seconds. If you raise the window, for example to `10s`, three quiet primaries use up the 30-second budget and the request ends with no backup asked.
+For `N` primaries and a window `W`, a backup answers about `N × W` after the start, **if that is still inside the request's budget**. `W` depends on the method and on `--min-relay-timeout` (see [Timeout](timeout.md#the-two-timeouts)). A method under 50 CU has a budget of `--default-processing-timeout`, `30s` by default. For `eth_getBalance` (20 CU) and three quiet primaries:
+
+| Install | `--min-relay-timeout` | `W` | What the caller gets |
+|---|---|---|---|
+| Router flags at their defaults | `1s` | `2s` | the backup's answer, after about 6 seconds |
+| [Helm chart](../../deployment/kubernetes.md#the-helm-chart) values at their defaults | `10s` | `10s` | an error after 30 seconds. The budget runs out at the backup's turn, so no backup is asked (see [What the caller gets](#what-the-caller-gets-when-neither-tier-can-serve)) |
+
+On a chart install, a method under 50 CU reaches a backup only while at most two primaries are quiet, after about 10 or 20 seconds. With three or more primaries, lower the chart's `minRelayTimeout`.
 
 Keep `N × W` below the budget. A caller can also shorten the window for one request with [`lava-relay-timeout`](timeout.md#the-header-override).
 
@@ -195,7 +202,7 @@ Subscriptions fail over differently from requests:
 Put your own nodes under `direct-rpc` and the paid provider under `backup-direct-rpc`, as in the example at the top. Normal traffic, including writes, stays on your nodes. Then check:
 
 - **The retry limit.** With four or more primaries, raise `--set-relay-retry-limit` to the number of primaries if an error burst should reach the paid provider at once. Otherwise it is reached only after the primaries are blocked.
-- **The window.** Keep `N × --min-relay-timeout` below `--default-processing-timeout`, so quiet primaries leave time for a backup.
+- **The window.** Keep `N × --min-relay-timeout` below `--default-processing-timeout`, so quiet primaries leave time for a backup. The Helm chart sets `10s`, so with three or more primaries lower it.
 - **Writes.** Leave `--stateful-to-backup` off unless writes should also go to the paid provider while your nodes are up.
 - **Archive and debug.** If the paid provider is also your only archive or debug node, those requests go to it on every call. See the next recipe.
 
