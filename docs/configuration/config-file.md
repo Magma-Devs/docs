@@ -115,7 +115,8 @@ direct-rpc:
 | --- | --- |
 | `url` | Connection URL. Schemes: `http(s)://`, `ws(s)://`, `grpc(s)://`. A `jsonrpc` backend on an ETH1-derived spec needs a paired `wss://` url. A `graphql` backend's url is the full GraphQL endpoint, path included (e.g. `https://graphql.mainnet.sui.io/graphql`): the router POSTs to it as-is. |
 | `timeout` | Per-URL request timeout, e.g. `10s`. Defaults to the spec value. |
-| `addons` | Add-ons this URL serves, e.g. `["archive", "debug"]`. The router only routes matching methods here. |
+| `addons` | Add-ons and extensions this URL serves, e.g. `["archive", "debug"]`. A request for an add-on goes only to URLs that list it. The URL still takes ordinary requests unless `standalone-addons` is set. |
+| `standalone-addons` | `true` makes this URL serve only the add-ons in `addons`, and no ordinary traffic. Default `false`. See [A URL that serves only its add-ons](#standalone-addons-a-url-that-serves-only-its-add-ons). |
 | `methods` | Restrict this URL to a specific method list. When set, only those methods route here. |
 | `internal-path` | Path override when proxying through a gateway. |
 | `ip-forwarding` | Forward the client IP via `X-Forwarded-For` to the upstream. |
@@ -134,6 +135,30 @@ direct-rpc:
             x-api-key: "${RPC_KEY_ETH}"
       - url: "wss://your-eth-provider.example.com/websocket"
 ```
+
+### `standalone-addons` - a URL that serves only its add-ons
+
+A URL with `addons` takes two kinds of requests: requests for those add-ons, and
+ordinary requests for the chain's normal API. Set `standalone-addons: true` when the
+URL can answer only the add-on methods. The router then sends it requests for its
+add-ons and nothing else.
+
+Use it when the add-on is a separate service and not a full node with extra methods.
+Examples are an EVM endpoint beside a Substrate node, a `debug` node you keep away
+from ordinary traffic, or a transaction-submit service your spec defines as an add-on.
+
+```yaml
+    node-urls:
+      - url: "https://node.example.com"
+      - url: "https://debug.example.com"
+        addons: ["debug"]
+        standalone-addons: true
+```
+
+- The router reads the block height of such a URL from its add-ons' own methods,
+  never from the chain's normal API, which the URL may not serve.
+- Ignored, with a warning at startup, when `addons` lists no add-on: empty, or only
+  extensions such as `archive`.
 
 ### `accept-encoding` - compressed upstream replies
 
