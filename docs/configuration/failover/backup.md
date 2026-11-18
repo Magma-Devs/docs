@@ -145,7 +145,7 @@ The reply depends on whether any node answered:
 - **A node answered.** The caller gets that node's answer as is: its HTTP status, its body byte for byte, and its `Content-Type`. The router adds nothing to the body. The request id is in the `Lava-Guid` header.
 - **No node answered.** The router replies with its own error: `502` or `504`, or `500` for a write whose outcome is unclear. The request id is in the `Lava-Guid` header and also in the body, at `error.data.guid`.
 
-Both kinds of reply carry the usual [response headers](../../api/directives.md#response-headers), and `Lava-Provider-Address` names every node asked. The exception is a request that reached no node at all, such as `No pairings available.`: it carries **no `Lava-*` headers**, and its request id is only in the body.
+Both kinds of reply carry the usual [response headers](../../api/directives.md#response-headers), and `Lava-Provider-Address` names every node asked. A request that reached no node at all, such as `No pairings available.`, carries them too, but has no `Lava-Provider-Address`, because no node was asked. Its request id is in the `Lava-Guid` header and in the body.
 
 These are JSON-RPC replies. REST and Tendermint RPC return the same statuses and pass a node's answer through the same way. GraphQL and gRPC return the router's own errors in their own error format.
 
@@ -159,8 +159,8 @@ These are JSON-RPC replies. REST and Tendermint RPC return the same statuses and
 | no node answered before the budget ended | `504` | `no answer from upstream within <budget>` |
 | a write that may have reached a node, with no clear answer (the node was silent, the connection broke after the send, or a gateway in front of the node answered `502` or `504`) | `500` | `transaction status unclear: …`. The write may already be on chain, so check before you resend it |
 | a write that every node answered, for example with `503` or `429` | the node's status | the node's answer as is, the same as for a read |
-| no node could be selected at all | `500` | `No pairings available.`, no `Lava-*` headers |
-| an add-on no node declares | `500` | `No Providers For Addon …`, no `Lava-*` headers |
+| no node could be selected at all | `500` | `No pairings available.`, with `Lava-Guid` and no `Lava-Provider-Address` |
+| an add-on no node declares | `500` | `No Providers For Addon …`, with `Lava-Guid` and no `Lava-Provider-Address` |
 | an extension no node can serve (`lava-extension: archive`) | `200` | an ordinary node's answer, with `Lava-Extension-Unavailable` |
 
 Before it gives up on blocked nodes, the router lends one switched-off URL to the request as a last chance: blocked primaries first, then blocked backups. So when everything is blocked, the caller usually gets that node's own answer or error rather than `No pairings available.`.
