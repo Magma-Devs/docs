@@ -87,8 +87,10 @@ Each gRPC node URL can carry a `grpc-config` block.
 **From the node to you:**
 
 - The router passes only the node's `Content-Type`, `Content-Encoding`, `Retry-After`
-  and `Date`, plus the headers the chain's spec declares for replies.
-- The node's trailers are not forwarded.
+  and `Date`, plus the headers the chain's spec declares for replies. The same rule
+  applies to the node's trailers.
+- On success the node's headers come as response headers and its trailers as trailers.
+  An error reply is trailers-only, so on an error both come as trailers.
 - The router adds its own [response headers](../api/directives.md#response-headers). On
   success they come as response headers, and on an error as trailers.
 
@@ -213,8 +215,11 @@ When the router speaks for itself, you get one of these statuses.
 
 `Error_GUID` matches the `Lava-Guid` header.
 
-A node's error reaches you with its status code and message only. Its status details and
-trailers are dropped, and secrets in the message are removed.
+A node's error reaches you as the node sent it: the same status code, message and status
+details, for example a `google.rpc.BadRequest` that names the field that is wrong, with
+the trailers the spec passes. When every node answers with an error, you get one node's
+status, message and details, never a mix. Secrets are removed from the message and from
+the details. A detail of a type the router cannot read is left out if it holds one.
 
 ## Example requests and replies
 
@@ -255,6 +260,30 @@ grpcurl -plaintext -H 'x-cosmos-block-height: 1000000' \
 
 ```json
 {"balance": {"denom": "uatom", "amount": "..."}}
+```
+
+**A node's error.** The node's status, message and details reach you as the node sent
+them. A Sui node names the field that is wrong in a `google.rpc.BadRequest` detail.
+
+```bash
+grpcurl -plaintext -d '{"object_id":"0xZZ"}' 127.0.0.1:3361 sui.rpc.v2.LedgerService/GetObject
+```
+
+```text
+ERROR:
+  Code: InvalidArgument
+  Message: invalid object_id: Unable to parse Address (must be hex string of length 32)
+  Details:
+  1)  {
+        "@type": "/google.rpc.BadRequest",
+        "fieldViolations": [
+          {
+            "field": "requests[0].object_id",
+            "description": "invalid object_id: Unable to parse Address (must be hex string of length 32)",
+            "reason": "FIELD_INVALID"
+          }
+        ]
+      }
 ```
 
 **A request the router refuses.** A router refusal arrives as `UNKNOWN`, with the
