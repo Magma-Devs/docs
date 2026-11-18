@@ -50,16 +50,16 @@ A URL is switched off after `--bench-after` consecutive failures (default `50`).
 
 ### Errors: the retry limit can end a request before any backup
 
-A request stops when it has seen more than `--set-relay-retry-limit` errors (default `2`), counting errors from every node, rate limits included. The limit does not know a backup is still untried. So when every primary fails at the same time, a backup is reached only if the limit allows as many errors as there are primaries:
+A request stops when it has seen more than `--set-relay-retry-limit` errors (default `3`), counting errors from every node, rate limits included. The limit does not know a backup is still untried. So when every primary fails at the same time, a backup is reached only if the limit allows as many errors as there are primaries:
 
-| Primaries | All fail fast (5xx, refused connection, node error), default limit `2` |
+| Primaries | All fail fast (5xx, refused connection, node error), default limit `3` |
 |---|---|
-| 1 or 2 | the backup is asked next and can answer |
-| 3 or more | **the request stops after the third error.** No backup is asked, and the caller gets a node's error (see [What the caller gets](#what-the-caller-gets-when-neither-tier-can-serve)) |
+| 1 to 3 | the backup is asked next and can answer |
+| 4 or more | **the request stops after the fourth error.** No backup is asked, and the caller gets a node's error (see [What the caller gets](#what-the-caller-gets-when-neither-tier-can-serve)) |
 
 This is how the router is designed: the limit bounds how much one request costs. It changes once the failing primaries are blocked. A blocked primary is not selected at all, so later requests go straight to the backups. That takes `--bench-after` failures per URL.
 
-If you run three or more primaries and want an error burst to reach the backups right away, raise `--set-relay-retry-limit` to at least the number of primaries. Each extra retry is one more upstream call.
+If you run four or more primaries and want an error burst to reach the backups right away, raise `--set-relay-retry-limit` to at least the number of primaries. Each extra retry is one more upstream call.
 
 A non-retryable error, such as `execution reverted` or a malformed request, ends the request at once on any tier. See [Retry](retry.md#whats-retryable).
 
@@ -194,7 +194,7 @@ Subscriptions fail over differently from requests:
 
 Put your own nodes under `direct-rpc` and the paid provider under `backup-direct-rpc`, as in the example at the top. Normal traffic, including writes, stays on your nodes. Then check:
 
-- **The retry limit.** With three or more primaries, raise `--set-relay-retry-limit` to the number of primaries if an error burst should reach the paid provider at once. Otherwise it is reached only after the primaries are blocked.
+- **The retry limit.** With four or more primaries, raise `--set-relay-retry-limit` to the number of primaries if an error burst should reach the paid provider at once. Otherwise it is reached only after the primaries are blocked.
 - **The window.** Keep `N × --min-relay-timeout` below `--default-processing-timeout`, so quiet primaries leave time for a backup.
 - **Writes.** Leave `--stateful-to-backup` off unless writes should also go to the paid provider while your nodes are up.
 - **Archive and debug.** If the paid provider is also your only archive or debug node, those requests go to it on every call. See the next recipe.
