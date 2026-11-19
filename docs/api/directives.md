@@ -17,7 +17,7 @@ You send them as HTTP headers, or as call metadata on a gRPC listener ([Over gRP
 | `lava-stickiness` | [Keep a session](#keep-a-session-on-one-node) on one upstream across replicas. |
 | `lava-providers-block` | [Exclude](#steer-node-selection) named nodes (comma-separated). |
 | `lava-extension` | [Force an extension](#override-the-extension) such as `archive`. |
-| `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) and refresh the entry. |
+| `lava-force-cache-refresh` | [Bypass the cache](#force-a-cache-refresh) for this request. The answer is not cached. |
 | `lava-relay-timeout` | [Override the per-attempt timeout](#override-the-per-attempt-timeout) (Go duration). |
 | `lava-cross-validation-max-participants` + `lava-cross-validation-agreement-threshold` | [Request cross-validation](#request-cross-validation). |
 | `lava-debug-relay` | [Verbose per-attempt logging](#enable-debug-logging-for-one-request) for this request. |
@@ -114,11 +114,15 @@ To work across replicas, the header needs a cache backend and `--shared-state`. 
 lava-force-cache-refresh: true
 ```
 
-This header bypasses the cache for this request. The relay goes upstream, and the router returns the response and refreshes the cache entry.
+This header keeps the request out of the cache both ways. The router does not look the request up, so the relay goes upstream. It does not write the answer to the cache either. You get a fresh answer, and nothing changes for anyone else. An entry already in the cache stays as it was, and requests without the header keep getting it until it expires.
 
 The header's **presence** triggers the refresh, not its value. `lava-force-cache-refresh: false` (or any other value) still forces it. Send the header only when you want a refresh.
 
-**When to use:** a known-stale entry, a suspected reorg, a check after a deploy, and any request whose purpose is to reach a *specific node* and not to get data (see [the pin caveat](#pin-to-a-specific-node)).
+**When to use:** you want a node's answer and not the cache's: a suspected stale entry, a suspected reorg, a check after a deploy, and any request whose purpose is to reach a *specific node* and not to get data (see [the pin caveat](#pin-to-a-specific-node)).
+
+!!! note "v1.6.8 and earlier wrote the answer to the cache"
+    On those versions the router wrote the refreshed answer to the cache, replacing the
+    entry for every later request without the header. A refresh no longer changes the cache.
 
 ```bash
 curl -X POST http://127.0.0.1:3360 \
