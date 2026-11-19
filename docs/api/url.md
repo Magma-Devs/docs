@@ -103,5 +103,7 @@ The per-client WebSocket connection limit (`--limit-parallel-websocket-connectio
 - A connection from a trusted proxy is counted against the first address, read from the right of the header, that is not a trusted proxy.
 - Any other connection is counted against its own address.
 - Entries to the left of that address are the client's own claims and are never read, and neither is its `User-Agent`.
+- The header's lines are read in order as one list, so a proxy that adds its own `X-Forwarded-For` line instead of appending to the one it received is read too.
+- If the walk reaches an entry that is not an IP address, or runs out of entries, the connection is counted against the last address it read.
 
 If a CDN sits in front of your gateway, add its ranges, or every client behind one CDN edge shares one allowance.
