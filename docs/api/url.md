@@ -1,6 +1,6 @@
 ---
 title: "Connect your app"
-description: "Endpoint URLs and ready-to-paste client samples for viem, ethers, web3.py, and cosmjs."
+description: "Endpoint URLs, ready-to-paste client samples for viem, ethers, web3.py, and cosmjs, and the WebSocket subscription id."
 ---
 
 # Connect your app
@@ -82,6 +82,37 @@ Each `endpoints[]` entry has a `network-address` field (e.g. `0.0.0.0:3360`). Yo
     import { StargateClient } from '@cosmjs/stargate';
     const client = await StargateClient.connect('http://127.0.0.1:3362');
     ```
+
+## Subscriptions over WebSocket
+
+Subscriptions (`eth_subscribe`, Solana's `accountSubscribe` and the rest, Tendermint's `subscribe`) run over a WebSocket on the same listener:
+
+```
+ws://<host>:<port>/ws
+```
+
+`/websocket` works too.
+
+### The subscription id is the router's
+
+The id in the subscribe reply is issued by the router, not by the node. The router shares one node subscription among all the clients that ask for the same thing. When a node connection drops, it subscribes again. Through all of that, each client keeps the id it was given. The node's own id is never sent to you. Every notification carries your id in `params.subscription`, and you unsubscribe with it.
+
+The id's shape follows the chain:
+
+| The chain's nodes name subscriptions with | You get | Example |
+|---|---|---|
+| A string (Ethereum and other EVM chains, Substrate) | A string: `rs_`, a 6-character hex hash, `_`, then a counter of at least 5 digits | `"rs_a1b2c3_00042"` |
+| A number (Solana) | A JSON number, so you can pass it straight back to `accountUnsubscribe` and the rest | `1099512085310` |
+| A query (Tendermint) | No id. The subscription is named by its query, and you unsubscribe with the same query | `tm.event='NewBlock'` |
+
+!!! warning "A string id is not `0x` hex"
+    geth and most EVM nodes return a `0x` hex id, such as `"0x9cef478923ff08bf67fde6c64013158d"`. The router returns `rs_…` instead. A client, proxy or validator that requires a `0x` hex quantity rejects it, and the subscription is lost. Accept any string.
+
+How to handle the id:
+
+- **Treat it as opaque.** Store it as you got it, and send it back unchanged. Do not parse it. Only the shape above is stable, not what the hash or the counter mean.
+- **Use it on the connection that created it.** An unsubscribe sent on another WebSocket connection is refused.
+- **Do not count with it.** The counter in a string id is shared by all clients, not yours alone, and a numeric id is not sequential.
 
 ## TLS
 
