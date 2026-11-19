@@ -201,7 +201,8 @@ Latency is never shared, because a peer's round-trip says nothing about this pod
 | --- | --- | --- |
 | `--rate-limit-websocket-requests-per-connection` | `-1` (unlimited) | Per-second request rate limit per WS connection. |
 | `--ban-duration-for-websocket-rate-limit-exceeded` | no ban | Ban duration once the WS rate limit is hit. |
-| `--limit-parallel-websocket-connections-per-ip` | `0` (unlimited) | Max parallel WS connections per IP. |
+| `--limit-parallel-websocket-connections-per-ip` | `0` (unlimited) | Max parallel WS connections per client address: the connection's own, or the one `X-Forwarded-For` names through `--websocket-trusted-proxies`. See [Forwarded client IP](../api/url.md#forwarded-client-ip). |
+| `--websocket-trusted-proxies` | loopback and private ranges | Proxies trusted to name the client in `X-Forwarded-For` for the per-client WS connection limit, as comma-separated IP addresses and CIDR ranges. Empty trusts none. The default is `127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,::1/128,fc00::/7`. |
 | `--limit-websocket-connection-idle-time` | `1200` | WS idle timeout (seconds; default 20 min). |
 | `--skip-websocket-verification` | `false` | Skip startup WS verification for chains that require ws/wss endpoints. |
 
