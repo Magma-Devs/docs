@@ -1,6 +1,6 @@
 ---
 title: "gRPC"
-description: "How Smart Router serves gRPC: what the listener accepts, reflection and descriptors, which metadata passes, how it reads a node's status, how writes and streaming work, and the statuses the router sends itself."
+description: "How Smart Router serves gRPC: what the listener accepts and refuses, reflection and descriptors, which metadata passes, how it reads a node's status, how writes and streaming work, the health check, and the statuses the router sends itself."
 ---
 
 # gRPC
@@ -15,15 +15,17 @@ sends itself.
 
 | What comes in | What the router does |
 | --- | --- |
-| A unary call to any service and method | Forwards your request bytes to a node on the same method path. The router does not decode the message. |
+| A unary call to any service and method | Forwards your request bytes, unchanged, to a node on the same method path. |
+| A request whose bytes are not a protobuf message | Refused with `INVALID_ARGUMENT` before any node is asked. See [Replies the router writes](#replies-the-router-writes). |
 | A call to a method the chain's spec does not list | Forwards it anyway. If that node refuses it, for example with `UNIMPLEMENTED`, the refusal is the answer and no other node is asked. |
 | A method the chain's spec marks as a write, for example `cosmos.tx.v1beta1.Service/BroadcastTx` | Sends it to several nodes at once. See [Writes](#writes). |
+| A method the chain's spec switches off (`"enabled": false`) | Refused with `UNIMPLEMENTED` before any node is asked. See [Calls the router does not serve](#calls-the-router-does-not-serve). |
 | A server-streaming call to a method the chain's spec declares as a subscription | Opens a stream. See [Streaming](#streaming). |
-| Any other server-streaming call | Refused with `UNKNOWN`. See [Streaming](#streaming). |
-| A client-streaming call | The router reads only the first message and sends it as a unary call. |
+| Any other server-streaming call | Refused with `UNIMPLEMENTED`. See [Calls the router does not serve](#calls-the-router-does-not-serve). |
+| A client-streaming or two-way-streaming call | Refused with `UNIMPLEMENTED`. See [Calls the router does not serve](#calls-the-router-does-not-serve). |
 | Server reflection, for example `grpcurl list` | Answered by the router. See [Reflection and descriptors](#reflection-and-descriptors). |
-| `grpc.health.v1.Health` | Answered by the router. It never reaches a node. |
-| gRPC-Web | Served on the same port. |
+| `grpc.health.v1.Health` | Answered by the router, with the same answer as the HTTP health check. It never reaches a node. See [Health check](#health-check). |
+| gRPC-Web | Served on the same port, by the same rules and with the same statuses as gRPC. |
 | A JSON request body (first byte `{` or `[`) | Converted to protobuf with the method's descriptor. The reply is protobuf. |
 | `GET` on the health path (default `/lava/health`) | `200 Healthy` or `503 Unhealthy` |
 | `OPTIONS` | `204`, with the CORS headers |
@@ -74,7 +76,9 @@ Each gRPC node URL can carry a `grpc-config` block.
 **From you to the node:**
 
 - The router forwards only the headers the chain's spec declares for gRPC. For Cosmos
-  Hub, that is `x-cosmos-block-height` and `grpc-metadata-x-cosmos-block-height`.
+  Hub, that is `x-cosmos-block-height` and `grpc-metadata-x-cosmos-block-height`. For Sui,
+  it is `x-sui-client-protocol-version`, which Sui's own clients send and which picks the
+  shape of a `SimulateTransaction` reply. A forwarded header is part of the cache key.
 - [Request headers](../api/directives.md) such as `lava-stickiness` are read by the
   router and not forwarded.
 - The router adds the node URL's `auth-headers` and, when tracing is on, the trace
@@ -89,6 +93,11 @@ Each gRPC node URL can carry a `grpc-config` block.
 - The router passes only the node's `Content-Type`, `Content-Encoding`, `Retry-After`
   and `Date`, plus the headers the chain's spec declares for replies. The same rule
   applies to the node's trailers.
+- On Sui, the spec declares the headers a Sui node puts on every reply, and they reach you
+  with the node's values: `x-sui-checkpoint-height`, `x-sui-timestamp-ms`,
+  `x-sui-timestamp`, `x-sui-epoch`, `x-sui-chain-id`, `x-sui-chain`,
+  `x-sui-lowest-available-checkpoint` and `x-sui-lowest-available-checkpoint-objects`. The
+  node's `server` header does not.
 - On success the node's headers come as response headers and its trailers as trailers.
   An error reply is trailers-only, so on an error both come as trailers.
 - The router adds its own [response headers](../api/directives.md#response-headers). On
@@ -98,6 +107,10 @@ Each gRPC node URL can carry a `grpc-config` block.
 for: `latest`, `earliest` or a number. The router uses it to pick a node that holds that
 block, and in the cache key. The header is forwarded to the node, and the node's own
 `x-cosmos-block-height` comes back to you. The router never writes this header itself.
+
+On Sui, every reply's `x-sui-checkpoint-height` is the node's latest checkpoint. The router
+takes it as that node's latest block, whatever the method, so it learns how far each node
+has got from your own traffic. A node's latest block never moves backwards.
 
 ## How the router reads a gRPC reply
 
@@ -145,14 +158,25 @@ retried and count against the node.
 | The node's name does not resolve | `PROTOCOL_DNS_FAILURE` (1003) |
 | Network or host unreachable | `PROTOCOL_NETWORK_UNREACHABLE` (1009) |
 | Any other failure to reach the node, for example a failed TLS handshake | `PROTOCOL_PROVIDER_UNAVAILABLE` (1012) |
+| The connection broke during the call, before the node's status arrived: a reset, a closed connection, a stream reset by the node's side | `PROTOCOL_CONNECTION_RESET` (1005) or `PROTOCOL_CONNECTION_CLOSED` (1006) |
+
+A connection that breaks during the call is not the node's answer, even though gRPC
+reports it as `UNAVAILABLE`. It counts as no answer whether it breaks before any reply byte
+or after the reply's headers. A write the node had may have run, so it is not sent again
+(see [Writes](#writes)). The `UNAVAILABLE` row in the first table is only for a status the
+node sent.
 
 A call the router cancelled itself, for example because you went away or another node
-answered first, does not count against the node. A `DEADLINE_EXCEEDED` the node sends
-before the router's deadline is the node's own error, and falls in the last row of the
-first table.
+answered first, does not count against the node. Neither does a call that ends at your own
+deadline (`grpc-timeout`): the router stops waiting, and no node is blamed. A
+`DEADLINE_EXCEEDED` the node sends before the router's deadline is the node's own error,
+and falls in the last row of the first table.
 
 **When every node fails**, you get one node's own status: the first error that is not
-retried, or else the first node error.
+retried, or else the first node error. **When no node answered**, you get the router's own
+status, `UNAVAILABLE` or `DEADLINE_EXCEEDED` (see
+[Replies the router writes](#replies-the-router-writes)), never the connection's error
+text.
 
 ## Writes
 
@@ -162,9 +186,23 @@ every interface (see [Writes on every interface](index.md#writes-on-every-interf
 
 - The first `OK` reply answers you.
 - If no node accepted the write and one of them may have received it, you get `UNKNOWN`
-  with a message that contains `transaction status unclear`.
+  with a message that contains `transaction status unclear`. A node whose connection broke
+  while it had the write may have received it.
 - A node error that arrives after another node accepted the write does not count against
   that node.
+
+On Sui the write is `sui.rpc.v2.TransactionExecutionService/ExecuteTransaction`. The router
+reads each node's error by Sui's own meaning:
+
+- `RESOURCE_EXHAUSTED` is a throttle, with or without a retry delay. The node is held off
+  for the delay it names, or for the default hold-off, and the write is not sent again.
+  Retry after the delay.
+- `FAILED_PRECONDITION` means the transaction's objects are locked by another transaction.
+  It does not count against the node.
+- Any other node error is passed to you as the node sent it.
+
+`SimulateTransaction` is a read, and it is never cached, because nodes on different versions
+answer it differently.
 
 !!! warning "On gRPC, a refused transaction can answer you"
     A Cosmos node that refuses a transaction at its first check still replies `OK`, with
@@ -180,10 +218,8 @@ a subscription. Cosmos Hub declares none, so it has no streaming. Sui's spec dec
 three: `sui.rpc.v2.SubscriptionService/SubscribeCheckpoints`, `SubscribeEvents` and
 `SubscribeTransactions`.
 
-- **Other server-streaming calls** are refused with `UNKNOWN`. The router tries other
-  nodes up to its retry limit, and the nodes are not marked unhealthy. Two kinds of call
-  are not caught and go out as a unary call instead: a method the spec does not list,
-  and a call whose descriptor the router has not loaded yet.
+- **Other server-streaming calls** are refused with `UNIMPLEMENTED`. See
+  [Calls the router does not serve](#calls-the-router-does-not-serve).
 - **Shared.** Clients that call the same method with the same request bytes share one
   stream on the node. Each client gets its own subscription id, in the response header
   `x-lava-grpc-sub-id`. The node's stream closes when the last client leaves.
@@ -202,13 +238,72 @@ three: `sui.rpc.v2.SubscriptionService/SubscribeCheckpoints`, `SubscribeEvents` 
 | You fall 100 messages behind | It ends with `UNAVAILABLE` |
 | The router shuts down | It ends with `UNAVAILABLE`, `router is shutting down` |
 
+## Calls the router does not serve
+
+The router serves single-reply calls, and the server streams the chain's spec declares as
+subscriptions. It refuses every other call with `UNIMPLEMENTED`, before any node is asked,
+and no node is blamed. A refusal ends that call only: the next call on the same connection
+is served. Do not retry a refused call: use another method.
+
+| Call | Message |
+| --- | --- |
+| A method the chain's spec switches off | `The router does not serve this method` |
+| A client-streaming call (many requests, one reply) | `The router does not serve this gRPC call type: it serves single-reply calls, and the server streams the chain spec names as subscriptions` |
+| A two-way-streaming call (many requests, many replies) | The same |
+| A server-streaming call to a method the spec does not declare as a subscription | The same |
+
+The router knows a call's shape from the method's descriptor (see
+[Reflection and descriptors](#reflection-and-descriptors)). When it has none yet, it tells
+the shape by what the call does, and refuses it the same way:
+
+- When you send a second request message, the call is refused. Your first message may
+  already have reached one node.
+- When a node sends a second reply message, the call is refused. One node was asked, and it
+  is not blamed. No other node is asked.
+- A two-way call that sends one message and then waits for a reply, without closing its
+  side, cannot be told from a single-reply call. It is sent as one.
+
+**Methods switched off on Sui and Concordium.** These stream their replies, and the router
+does not serve them yet. Their specs switch them off, so a call to one is refused at once.
+The testnet specs inherit the switch-off.
+
+| Chain | Methods |
+| --- | --- |
+| Sui | `sui.rpc.v2.LedgerService/ListCheckpoints`, `ListTransactions`, `ListEvents` |
+| Concordium | `concordium.v2.Queries/GetAccountList`, `GetAncestors`, `GetBakerList`, `GetBlockItems`, `DryRun` |
+
+## Health check
+
+The router answers the standard gRPC health service, `grpc.health.v1.Health`, itself. A load
+balancer can use it the way it uses the HTTP health check.
+
+- `Check` with the empty service name answers `SERVING` when the HTTP health check would
+  answer `200 Healthy`, and `NOT_SERVING` when it would answer `503 Unhealthy`.
+- Any other service name gets `NOT_FOUND`.
+- `Watch` sends the status at once, then each change. The router checks for a change every
+  second.
+- `List` returns the empty service name with its status.
+
+```bash
+grpcurl -plaintext 127.0.0.1:3361 grpc.health.v1.Health/Check
+```
+
+```json
+{"status": "SERVING"}
+```
+
 ## Replies the router writes
 
 When the router speaks for itself, you get one of these statuses.
 
 | Status | When |
 | --- | --- |
-| `UNKNOWN` (2), message `Failed to SendRelay ErrMsg: {"Error_GUID":"<guid>","Error":"<reason>"}` | A request refused before any node is called, no node answered, a refused streaming call, a write whose outcome is unclear, or a failed cross-validation. Any router headers, for example the cross-validation ones, come as trailers. |
+| `UNAVAILABLE` (14), message `no provider answered the request` | No node answered: every node was unreachable, or its connection broke during the call. The request id is in the `lava-guid` trailer. |
+| `DEADLINE_EXCEEDED` (4), message `no provider answered within <timeout>`, for example `within 30s` | No node answered, and every node ran out of the router's time. The request id is in the `lava-guid` trailer. |
+| `INVALID_ARGUMENT` (3), message `the request message is not a valid protobuf message` | Your request bytes are not a protobuf message, so no node could read them. The router checks the wire format of every binary request, and decodes it with the method's descriptor when it already has one. No node is asked. Fix the request. The request id is in the `lava-guid` trailer. |
+| `INVALID_ARGUMENT` (3), message `Selected provider is not configured` | `lava-select-provider` names a provider the router does not have. No node is asked. The request id is in the `lava-guid` trailer. |
+| `UNIMPLEMENTED` (12) | A call the router does not serve: a switched-off method, a client or two-way stream, a server stream the spec does not declare. See [Calls the router does not serve](#calls-the-router-does-not-serve). |
+| `UNKNOWN` (2), message `Failed to SendRelay ErrMsg: {"Error_GUID":"<guid>","Error":"<reason>"}` | A request refused before any node is called for another reason, a write whose outcome is unclear, or a failed cross-validation. Any router headers, for example the cross-validation ones, come as trailers. |
 | `UNKNOWN` (2), message starting with `failed to start gRPC subscription` | A stream could not start |
 | `UNAVAILABLE` (14) | The method name could not be read, or the router gave up a stream |
 | `CANCELED`, `DEADLINE_EXCEEDED` | You cancelled a stream, or its deadline passed |
@@ -286,8 +381,29 @@ ERROR:
       }
 ```
 
-**A request the router refuses.** A router refusal arrives as `UNKNOWN`, with the
-reason inside the message.
+**A method the router does not serve.** On Sui, `ListCheckpoints` is switched off, so the
+router refuses it before any node is asked.
+
+```bash
+grpcurl -plaintext -d '{}' 127.0.0.1:3361 sui.rpc.v2.LedgerService/ListCheckpoints
+```
+
+```text
+ERROR:
+  Code: Unimplemented
+  Message: The router does not serve this method
+```
+
+**No node answered.** Every node was unreachable, or its connection broke during the call.
+
+```text
+ERROR:
+  Code: Unavailable
+  Message: no provider answered the request
+```
+
+**Another request the router refuses.** Any other refusal still arrives as `UNKNOWN`, with
+the reason inside the message.
 
 ```text
 ERROR:
