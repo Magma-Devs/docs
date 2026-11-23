@@ -250,7 +250,7 @@ Smart Router adds metadata to every response about how the relay was served. The
 | `Lava-Guid` | Unique request id. Use it to find the request in logs and traces. |
 | `Lava-Errored-Providers` | Nodes that errored on this request. |
 | `Lava-Node-Errors-providers` | Nodes that returned a node-level error. |
-| `lava-identified-node-error` | The body is a node error that the router recognised, not a router failure. Present whether the error came from a live node or from a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ`. In that case the node answered correctly and is not penalised. |
+| `lava-identified-node-error` | The body is a node error that the router recognised, not a router failure. Present whether the error came from a live node or from a cache replay. **Not always a fault signal:** on an XRP Ledger `submit` it also marks a ledger verdict such as `tefPAST_SEQ`, and on a Cosmos broadcast (`POST /cosmos/tx/v1beta1/txs`) a refusal such as an account sequence mismatch (see [Cosmos broadcast refusals](../reference/error-codes.md#cosmos-broadcast-refusals)). In both cases the node answered correctly and is not penalised. |
 | `Lava-Reported-Providers` | Nodes reported as misbehaving. |
 | `Smart-Router-Version` | Router build serving the request. |
 | `Lava-Extension-Unavailable` | Comma-separated extensions requested with [`lava-extension`](#override-the-extension) that no node on this router offers. The response was served **without** them. Absent when every requested extension was honoured. |

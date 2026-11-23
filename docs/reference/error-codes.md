@@ -291,10 +291,10 @@ exist only where retryability differs from the generic pattern.
 | 3004 | `CHAIN_GAS_TOO_LOW` | Intrinsic gas too low | No | EVM |
 | 3005 | `CHAIN_GAS_LIMIT_EXCEEDED` | Exceeds block gas limit | No | EVM |
 | 3006 | `CHAIN_TX_UNDERPRICED` | Transaction gas price too low | No | EVM |
-| 3007 | `CHAIN_TX_ALREADY_KNOWN` | Transaction already in mempool | No | EVM, Starknet, XRP |
+| 3007 | `CHAIN_TX_ALREADY_KNOWN` | Transaction already in mempool | No | EVM, Starknet, XRP, Cosmos |
 | 3008 | `CHAIN_TX_REPLACEMENT_UNDERPRICED` | Replacement tx gas too low | No | EVM |
 | 3009 | `CHAIN_MEMPOOL_FULL` | Mempool/tx pool is full | No | EVM, Cosmos |
-| 3010 | `CHAIN_TX_TOO_LARGE` | Transaction exceeds size limit | No | EVM, Solana |
+| 3010 | `CHAIN_TX_TOO_LARGE` | Transaction exceeds size limit | No | EVM, Solana, Cosmos |
 | 3011 | `CHAIN_MAX_FEE_BELOW_BASE` | Max fee per gas below base fee | No | EVM (EIP-1559) |
 | 3012 | `CHAIN_INVALID_SEQUENCE` | Invalid sequence (Cosmos nonce equivalent) | No | Cosmos |
 | 3013 | `CHAIN_INSUFFICIENT_FEE` | Insufficient fee | No | Cosmos |
@@ -389,6 +389,40 @@ such as the one `simulate` returns, is the answer the caller asked for. A batch 
 carries a submit is refused with `USER_INVALID_REQUEST` before any node is called.
 The reason is that a batch is classified by its envelopes alone, so a rejection
 inside one would again read as a success.
+
+---
+
+## Cosmos broadcast refusals
+
+A Cosmos node refuses a transaction broadcast with HTTP 200 and says so in
+`tx_response.code`, where `0` means it took the transaction. So on a REST
+`POST /cosmos/tx/v1beta1/txs` reply, the router reads `tx_response.code` and
+`tx_response.codespace` and classifies the refusal by them, whether or not the reply
+has a `raw_log`:
+
+| Refusal (`codespace` / `code`) | Code |
+| --- | --- |
+| `sdk` / 32 (account sequence mismatch) | `CHAIN_INVALID_SEQUENCE` |
+| `sdk` / 19 (transaction already in the mempool) | `CHAIN_TX_ALREADY_KNOWN` |
+| `sdk` / 13 (insufficient fee) | `CHAIN_INSUFFICIENT_FEE` |
+| `sdk` / 5 (insufficient funds) | `CHAIN_INSUFFICIENT_FUNDS` |
+| `sdk` / 4 (signature verification failed) | `CHAIN_INVALID_SIGNATURE` |
+| `sdk` / 9 (unknown signer account) | `CHAIN_ACCOUNT_NOT_FOUND` |
+| `sdk` / 11 (out of gas) | `CHAIN_OUT_OF_GAS` |
+| `sdk` / 20 (mempool is full) | `CHAIN_MEMPOOL_FULL` |
+| `sdk` / 21 (transaction too large) | `CHAIN_TX_TOO_LARGE` |
+| Any other code, or a module's own codespace | `CHAIN_TX_REJECTED` |
+
+As on the XRP Ledger, this matters for writes. A broadcast goes to every upstream and
+the caller gets the first acceptance, so a refusal that arrives first, such as one
+from a node that already has the transaction, does not end the broadcast. When every
+node refuses, the caller gets the first refusal unchanged, with HTTP 200 and
+`lava-identified-node-error: true` (see
+[Response headers](../api/directives.md#response-headers)). A refusal is
+non-retryable and is **not** charged against the node that sent it: it is about the
+transaction, and every node would say the same.
+
+Only the broadcast is read this way.
 
 ---
 
