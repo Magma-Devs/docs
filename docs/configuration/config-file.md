@@ -74,7 +74,7 @@ Each entry opens one listening socket for one chain + interface.
 | `chain-id` | yes | Spec chain id (`ETH1`, `SOLANA`, `COSMOSHUB`, …). Must resolve from `--use-static-spec`. |
 | `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, `tendermintrpc`, or `graphql`. The chain spec must support it. A `graphql` listener accepts HTTP `POST` only (any path; other methods get `405`) and serves no subscriptions. |
 | `tls-enabled` | no | Serve this listener over TLS using a self-signed certificate. Default `false`. |
-| `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/router/health`. |
+| `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/router/health`, from v1.7.0. |
 
 ```yaml
 endpoints:

@@ -9,6 +9,8 @@ Directives are request headers that change how Smart Router handles one request.
 
 You send them as HTTP headers, or as call metadata on a gRPC listener ([Over gRPC](#over-grpc)).
 
+The `router-*` and `Router-*` header names on this page are available from v1.7.0.
+
 ## Request headers at a glance
 
 | Header | Effect |
