@@ -366,8 +366,11 @@ the router logs a warning that names it.
 - Each failing check has its own schedule. A retry runs only the checks that are due, on each
   node url that has them, and keeps every other result from the run before. With `debug` and
   `archive` both failing, each is retried on its own schedule, and the checks that pass, such
-  as the chain id, are not run again before the next epoch. A failure no single check owns, such
-  as a url the router could not connect to, is retried with every check of the upstream.
+  as the chain id, are not run again before the next epoch. A url the router could not connect
+  to is retried by its dial alone: that url alone is dialed and checked again, and the
+  upstream's other urls keep their results. So is a url a run left out while the upstream's
+  rate-limit hold-off lasted. Any other failure no single check owns is retried with every
+  check of the upstream.
 - The epoch re-check still runs every check, and counts as a retry for each check it finds
   failing. So at the longest wait, a failing check runs about once an epoch.
 - While a chain has nothing serving, every upstream out of rotation is retried with all its
@@ -463,7 +466,7 @@ configured upstream with what it is failing and when each failing check is retri
 | `retryDelay`, `retryMaxDelay` | The retry delays in force (`--verification-retry-delay`, `--verification-retry-max-delay`). |
 | `inPairing` | Whether the upstream is in rotation. `false` for an upstream with a `scope="provider"` failure. |
 | `failing` | The series `smartrouter_provider_verification_failed` publishes for the upstream. `since` is the gauge's value, as a time. |
-| `retries` | One entry per check on the retry schedule, the next one due first. `check`, `addon` and `extension` name the spec check and the add-on and extension it covers. `wholePass` is `true` instead for a failure no single check owns, such as a url the router could not connect to: its next retry runs every check of the upstream. `attempts` is how many runs in a row found it failing, `pendingSince` when it started failing, and `nextRetryAt` when the next retry is due. |
+| `retries` | One entry per check on the retry schedule, the next one due first. `check`, `addon` and `extension` name the spec check and the add-on and extension it covers. `check` is `connect` for a url the router could not connect to, or one a run left out during a rate-limit hold-off: its next retry dials that url alone. `wholePass` is `true` instead for another failure no single check owns: its next retry runs every check of the upstream. `attempts` is how many runs in a row found it failing, `pendingSince` when it started failing, and `nextRetryAt` when the next retry is due. |
 
 Times are RFC 3339. An upstream with nothing failing and nothing to retry has two empty lists.
 No field carries a node url.
