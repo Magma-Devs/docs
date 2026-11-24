@@ -41,7 +41,7 @@ per-client rate limiting. See [Authentication → Authenticating your clients](a
 
 ## Chain specs
 
-Chain specs live in [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs). Smart Router ships with a few ready-to-use chain specs (Ethereum, Arbitrum, Base, Lava, Solana) and three reusable building blocks for the Cosmos ecosystem. It resolves the rest from the catalog at startup. See [Supported chains](../reference/chains/index.md).
+Chain specs live in [`specs/`](https://github.com/Magma-Devs/smart-router/tree/main/specs). Smart Router ships with ready-to-use chain specs for Ethereum, Arbitrum, Base, Bitcoin, Solana, Aptos, Hyperliquid and Cosmos Hub, and the reusable building blocks Cosmos Hub imports. It resolves the rest from the catalog at startup. See [Supported chains](../reference/chains/index.md).
 
 Pass the spec directory at startup with `--use-static-spec specs/`.
 
