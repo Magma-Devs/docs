@@ -154,7 +154,7 @@ want to query. For example, use `3364` for the Cosmos Hub REST listener:
 curl -s http://localhost:3364/cosmos/base/tendermint/v1beta1/blocks/latest
 ```
 
-A successful relay also has `Smart-Router-*` response headers that name the upstream
+A successful relay also has `Router-*` response headers that name the upstream
 that served it. Add `-i` to the `curl` command to see them. If you keep getting `error`
 responses or refused connections, the listener never came up. Check the container logs
 (`docker compose -f docker/docker-compose.yml logs router`) to find the failing upstream
