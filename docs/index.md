@@ -61,7 +61,7 @@ The request goes through the full pipeline (upstream selection, retry, hedging, 
 
 -   **Supported chains**
 
-    {{ chains.total }} chains, including Ethereum and Lava, each configured by a chain spec.
+    {{ chains.total }} chains, including Ethereum, Solana and Cosmos Hub, each configured by a chain spec.
 
     [Browse chains →](reference/chains/index.md)
 

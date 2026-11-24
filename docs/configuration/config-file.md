@@ -96,8 +96,8 @@ Each entry is one named backend that serves one chain + interface, with one or m
 | `chain-id` | yes | Chain this backend serves. Must match an `endpoints[]` entry. |
 | `api-interface` | yes | Interface this backend serves. Must match the listener. |
 | `node-urls` | yes | One or more URL entries (below). |
-| `stake` | no | Optional weight (in ulava) for selection scoring. Omit it (or set `0`) to apply the default static-node boost. |
-| `group-label` | no | Optional provider-group id (e.g. `tier-1`, `external`) for [cross-validation](failover/cross-validation.md) group-diversity policies. Has no effect unless a policy requires group spread. |
+| `stake` | no | Optional weight for selection scoring. Omit it (or set `0`) to apply the default static-node boost. |
+| `group-label` | no | Optional provider-group id (e.g. `quicknode`, `alchemy`, `infura`, or a tier such as `tier-1`) for [cross-validation](failover/cross-validation.md) group-diversity policies. Has no effect unless a policy requires group spread. |
 
 ```yaml
 direct-rpc:

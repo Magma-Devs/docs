@@ -60,7 +60,7 @@ once, with one listener per chain/interface as in the table above.
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `SR_CONFIG` | `config/smartrouter_examples/smartrouter_eth.yml` | Which config the router runs. |
-| `SR_SPEC` | `specs/` | Spec source: the bundled snapshot, or a lava-specs GitHub/GitLab URL to resolve any chain (e.g. `LAV1`). See [the wizard's `SR_SPEC` note](wizard.md#which-specs-the-router-loads-sr_spec). |
+| `SR_SPEC` | `specs/` | Spec source: the bundled snapshot, or a lava-specs GitHub/GitLab URL to resolve any chain (e.g. `POLYGON`). See [the wizard's `SR_SPEC` note](wizard.md#which-specs-the-router-loads-sr_spec). |
 | `SR_LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error`. |
 | `SR_LOG_FORMAT` | `json` | `json` or `text`. |
 

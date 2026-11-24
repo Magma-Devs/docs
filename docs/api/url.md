@@ -29,9 +29,9 @@ The example configs use these ports:
 | Chain × interface | Default port |
 |---|---|
 | Ethereum (JSON-RPC) | `3360` |
-| Lava REST | `3360` |
-| Lava gRPC | `3361` |
-| Lava Tendermint RPC | `3362` |
+| Cosmos Hub REST | `3360` |
+| Cosmos Hub gRPC | `3361` |
+| Cosmos Hub Tendermint RPC | `3362` |
 
 Each `endpoints[]` entry has a `network-address` field (e.g. `0.0.0.0:3360`). You can change it as needed.
 
