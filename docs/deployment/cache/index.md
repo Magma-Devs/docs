@@ -89,23 +89,38 @@ with different ids shares one entry. The cache stores:
   (briefly), so a known-bad query is not sent again to every node.
 
 What is **not** cached: writes (`eth_sendRawTransaction` and similar), pending/`latest`
-mutable state beyond its short TTL, and anything a client marks with
-[`router-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh). Each chain's
+mutable state beyond its short TTL, anything a client marks with
+[`router-force-cache-refresh`](../../api/directives.md#force-a-cache-refresh), a JSON-RPC or
+Tendermint RPC reply whose `result` is `null` or `[]` (a batch with one such element
+included), and the answer to a request pinned to a node with
+[`router-select-provider`](../../api/directives.md#pin-to-a-specific-node) or
+[`router-stickiness`](../../api/directives.md#keep-a-session-on-one-node). A `null` or `[]`
+can be a lagging node's answer for data it has not seen yet, so the caller that asked gets
+it and the cache never does: a repeat of such a read reaches a node again. A pinned node's
+answer is that node's view, not the chain's. Each chain's
 [spec](../../reference/chains/specs.md) categories decide which methods can be cached at
 all. It is not a setting on the cache.
 
-The cache lookup is skipped in exactly three cases: a stateful (write) method, a request
-carrying `router-force-cache-refresh`, and a request running
-[cross-validation](../../configuration/failover/cross-validation.md), which needs fresh
-answers from several nodes to compare.
+The cache lookup is skipped for:
 
-!!! warning "Pinning a node does not bypass the cache"
-    [`router-select-provider`](../../api/directives.md#pin-to-a-specific-node) is a
-    *selection* preference, and the cache is checked before selection runs. So a pinned
-    request that hits a warm entry returns `Router-Provider-Address: Cached` without
-    contacting the named node. That response cannot tell you whether the node is
-    reachable. Monitoring checks and any test that asserts on a specific node must also
-    send `router-force-cache-refresh`, or use a request the cache cannot answer.
+- a stateful (write) method, and a method whose answer belongs to the node that gave it,
+  such as its mempool, its peers or its sync status;
+- a request carrying `router-force-cache-refresh`;
+- a request running [cross-validation](../../configuration/failover/cross-validation.md),
+  which needs fresh answers from several nodes to compare;
+- a retry after a node error the cache answered, which would find the same entry again;
+- a request that chooses its node with
+  [`router-select-provider`](../../api/directives.md#pin-to-a-specific-node),
+  [`router-stickiness`](../../api/directives.md#keep-a-session-on-one-node) or
+  [`router-providers-block`](../../api/directives.md#steer-node-selection). It is answered by a
+  node it allows, never by an entry another node wrote. A request that names or keeps a node
+  does not write the cache either. The answer to a request that only excludes nodes is still
+  cached for other requests.
+
+On v1.6.7 and earlier the cache was read first, so on those versions a check of one node
+must also send `router-force-cache-refresh`. On v1.7.0 and earlier a `null` or `[]` result
+was cached (a `null` only for a block above the router's tip), and a pinned request's
+answer was written.
 
 ## Tuning flags
 
