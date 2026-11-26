@@ -86,7 +86,7 @@ compose passes it to the router as `--use-static-spec ${SR_SPEC:-specs/}`:
 | `SR_SPEC` | Meaning |
 | --- | --- |
 | `specs/` *(default)* | The lava-specs snapshot **bundled into the image**: the chains in the repo's `specs/` directory. |
-| `https://github.com/Magma-Devs/lava-specs/tree/main` | The **live lava-specs repo**. It resolves every chain in the catalog, including ones not bundled (e.g. `LAV1`). It is fetched and cached at startup. |
+| `https://github.com/Magma-Devs/lava-specs/tree/main` | The **live lava-specs repo**. It resolves every chain in the catalog, including ones not bundled (e.g. `POLYGON`). It is fetched and cached at startup. |
 
 You can override `SR_SPEC` by hand on any `docker compose … up`. The router accepts a
 local directory or a GitHub/GitLab URL, the same as the [`--use-static-spec` flag](../reference/cli.md#specs).

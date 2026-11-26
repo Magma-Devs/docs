@@ -46,11 +46,11 @@ You can turn on cross-validation in two ways. The router combines them for each 
 **1. Per-request, by the client.** Send both headers and the router cross-validates that single request:
 
 ```
-lava-cross-validation-max-participants: 3
-lava-cross-validation-agreement-threshold: 2
+router-cross-validation-max-participants: 3
+router-cross-validation-agreement-threshold: 2
 ```
 
-See [Directives](../../api/directives.md). The router reports the outcome in the response headers (`lava-cross-validation-status`, `lava-cross-validation-agreeing-providers`, and on failure `lava-cross-validation-failure-reason`).
+See [Directives](../../api/directives.md). The router reports the outcome in the response headers (`router-cross-validation-status`, `router-cross-validation-agreeing-providers`, and on failure `router-cross-validation-failure-reason`).
 
 **2. Operator policy.** An operator can **mandate** cross-validation for a `(chain, interface, method)`, with floors and caps, or **forbid** clients from requesting it for a method. Policies go in a top-level `cross-validation` block in the [smart router config file](../config-file.md#cross-validation):
 
@@ -79,7 +79,7 @@ Each bound takes `{ floor, cap }`. A **bare number** is shorthand for a floor wi
 
 Group-diversity policies require the quorum to span multiple **independent** operator groups. Nodes that all share a vendor, image or data source can agree on the *same wrong answer*, so a plain count of agreeing nodes can hide a correlated fault.
 
-Groups come from the `group-label` you set on each provider in the config file (e.g. `tier-1`, `external`, a vendor name). See [`group-label`](../config-file.md#direct-rpc-upstream-nodes) under `direct-rpc`. Providers with no label all go into one default group. Two policy fields act on these groups:
+Groups come from the `group-label` you set on each provider in the config file (e.g. a vendor name such as `quicknode`, `alchemy` or `infura`, or a tier such as `tier-1`). See [`group-label`](../config-file.md#direct-rpc-upstream-nodes) under `direct-rpc`. Providers with no label all go into one default group. Two policy fields act on these groups:
 
 | Field | Meaning |
 |---|---|
@@ -102,7 +102,7 @@ cross-validation:
 Diversity depends on your labels. If every upstream has the same `group-label`, `min-groups` can never be satisfied and the relay fails the policy. Label providers by how independent they really are (distinct vendors, regions or clients), not by name alone.
 
 !!! tip "Runnable example"
-    The repo includes a ready-to-run multi-chain config. It pairs two vendor groups (`lava` + `publicnode`) per chain and mandates `min-groups: 2` cross-validation on several read methods: [`config/smartrouter_examples/smartrouter_multichain_cross_validation.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_multichain_cross_validation.yml).
+    The repo includes a ready-to-run multi-chain config. It labels each upstream by its vendor, pairs two vendor groups per chain and mandates `min-groups: 2` cross-validation on several read methods: [`config/smartrouter_examples/smartrouter_multichain_cross_validation.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples/smartrouter_multichain_cross_validation.yml).
 
 With no operator policy, the caller's headers alone decide. With no headers and no policy, cross-validation is off (`{MaxParticipants: 1, AgreementThreshold: 1}` is in effect disabled). The `CrossValidationParams` shape is defined in [`protocol/common/types.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/types.go).
 

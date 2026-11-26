@@ -11,12 +11,12 @@ For the next attempt, the pool holds only nodes that have not already failed for
 
 ## What's retryable
 
-The error classifier ([`protocol/common/error_registry.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_registry.go)) gives every failure a coded classification with a **retryable** flag. This flag is the main signal. A non-retryable classification stops retries at once for *every* terminal error: connection failures, malformed requests and chain-level rejections alike.
+The error classifier ([`protocol/common/error_classifier.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_classifier.go)) gives every failure a coded classification, and each code carries a **retryable** flag ([`protocol/common/error_codes.go`](https://github.com/Magma-Devs/smart-router/blob/main/protocol/common/error_codes.go)). This flag is the main signal. A non-retryable classification stops retries at once for *every* terminal error: connection failures, malformed requests and chain-level rejections alike.
 
 | Layer | Examples | Behaviour |
 |---|---|---|
 | **`PROTOCOL_*`** (connection / session) | network timeout, connection reset, node unavailable | mostly retryable; rotate node |
-| **`NODE_*`** (node response) | 5xx upstream, rate limited, node syncing → retryable; method not found / unimplemented → terminal | per-code; unsupported methods are zero-CU and cached |
+| **`NODE_*`** (node response) | 5xx upstream, rate limited, node syncing, data not held (a REST 404) → retryable; a node's own refusal (method not found, unimplemented, endpoint not found, access denied) → retried on another node without blaming the node; request exceeds node limit → terminal | per-code |
 | **`CHAIN_*`** (execution / state) | `eth_call` reverted, out of gas, nonce too low → terminal; block/tx not found, state pruned → retryable | per-code |
 | **`USER_*`** (bad request) | malformed JSON, invalid params, invalid address | always terminal; charges normal CU |
 
@@ -24,24 +24,24 @@ The full code tables and per-code retryability are in [Error codes](../../refere
 
 A retry re-sends the **same request** to a different node. It does not change what the request asks for. No extension such as `archive` is added on retry, so the retry pool is the same pool the first attempt used, minus the nodes that already failed. Each request starts with its own retry budget. Nothing is remembered between requests.
 
-The router decides archive routing once, before the first attempt, from the block the request names. If the router cannot read the block from a request, it does not route that request to archive automatically. This covers methods that name a block or transaction by hash (such as `eth_getTransactionReceipt` or `debug_traceTransaction`), and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects such as `{"blockHash": …}` or `{"blockNumber": …}`. To send one of those to an archive node, set the [`lava-extension: archive`](../../api/directives.md#override-the-extension) directive.
+The router decides archive routing once, before the first attempt, from the block the request names. If the router cannot read the block from a request, it does not route that request to archive automatically. This covers methods that name a block or transaction by hash (such as `eth_getTransactionReceipt` or `debug_traceTransaction`), and [EIP-1898](https://eips.ethereum.org/EIPS/eip-1898) block objects such as `{"blockHash": …}` or `{"blockNumber": …}`. To send one of those to an archive node, set the [`router-extension: archive`](../../api/directives.md#override-the-extension) directive.
 
 ## Limits
 
 | Limit | Value | Notes |
 |---|---|---|
-| Error-retry limit | `--set-relay-retry-limit` (default `2`) | Errors tolerated before the relay gives up. `0` turns retries off completely. This is the setting you tune. |
+| Error-retry limit | `--set-relay-retry-limit` (default `3`) | Errors tolerated before the relay gives up. `0` turns retries off completely. This is the setting you tune. |
 | Hard attempt ceiling | `10` | Hardcoded constant `MaximumNumberOfTickerRelayRetries`. It is an upper bound on *total* attempts, including ticker-driven [hedges](hedge.md). It is separate from the error-retry limit and is not available as a flag. |
 | Overall budget | `--default-processing-timeout` (default `30s`) | Ends retries even if attempts remain. |
-| Per-attempt window | `--min-relay-timeout` floor, or `lava-relay-timeout` header | When the window passes, the next node is tried in parallel, and the attempt in flight keeps running. See [Timeout](timeout.md). |
+| Per-attempt window | `--min-relay-timeout` floor, or `router-relay-timeout` header | When the window passes, the next node is tried in parallel, and the attempt in flight keeps running. See [Timeout](timeout.md). |
 
 The cap you control is `--set-relay-retry-limit`. The error-retry path stops after
-that many errors (default 2). The hardcoded `10` is only the ceiling that the
+that many errors (default 3). The hardcoded `10` is only the ceiling that the
 ticker/hedge path can reach. Most relays stop much sooner.
 
 ## Turning retries down or off
 
-Retries are on by default and tolerate `--set-relay-retry-limit` errors (default 2). To change this, set the flag:
+Retries are on by default and tolerate `--set-relay-retry-limit` errors (default 3). To change this, set the flag:
 
 - `--set-relay-retry-limit 0` - **disable retries**. The first error is returned immediately.
 - `--set-relay-retry-limit 5` - tolerate more errors before giving up.
@@ -70,11 +70,12 @@ With the default `--disable-batch-request-retry true`, `--batch-node-error-on-an
 
 Some failures look retryable on the wire but do not recover when the router switches nodes. For example:
 
-- A bad request (malformed JSON, unknown method), which is always terminal.
+- A bad request (malformed JSON, invalid params), which is always terminal.
 - A consensus-level error returned by every healthy node (the chain itself rejected it).
-- A method your nodes do not support.
 
 The classifier handles these cases without using up the budget.
+
+A method that none of your nodes supports is different. A node's refusal (method not found, unimplemented, endpoint not found, access denied) is that node's claim about itself, so the router asks another node. When every node refuses, the request uses its retry budget and the caller gets the first refusal. If a node returns a non-retryable error instead, such as a revert, the caller gets that error. The refusing nodes are not blamed. A refusal of a method the chain spec does not list at all stays final. See [Error codes](../../reference/error-codes.md#retry-cu-and-caching).
 
 ## Rate-limited upstreams
 
@@ -96,7 +97,7 @@ skips it for the rest of this relay, and for later relays, until the hold-off ex
   error, its hold-off and strike count are cleared.
 - **You still get an answer.** If every candidate is held off, the router uses the one
   whose hold-off expires soonest. The router never creates its own `429` for the client,
-  and never forwards `Retry-After`. A `lava-select-provider` pin and existing sticky
+  and never forwards `Retry-After`. A `router-select-provider` pin and existing sticky
   sessions bypass the hold-off, because an explicit request takes priority.
 
 The same hold-off also covers spec re-verification, recovery probes and WebSocket
@@ -104,7 +105,7 @@ subscriptions, so a rate-limited node is not re-probed on a fixed schedule eithe
 
 ## Pinning to one node
 
-The `lava-select-provider` header pins the request to a specific upstream. If that upstream fails, retry runs **on the rest of the pool**. Pinning does not turn off retry. See [Directives](../../api/directives.md).
+The `router-select-provider` header pins the request to a specific upstream. If that upstream fails, retry runs **on the rest of the pool**. Pinning does not turn off retry. See [Directives](../../api/directives.md).
 
 ## Observability
 

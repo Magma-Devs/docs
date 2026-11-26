@@ -45,7 +45,7 @@ request ──► primary cache ──hit──► served ("Cached")
   request hits the primary directly. So for an explicit-block query, the router checks the
   secondary once per entry, not once per request.
 - **Node errors are labelled the same from either tier.** A cached node error is served
-  with the `lava-identified-node-error` response header, exactly like a live one. A
+  with the `router-identified-node-error` response header, exactly like a live one. A
   replayed error is never mistaken for a success, and the caller sees the same thing
   whichever cache answered.
 - **Independent of the primary.** The secondary keeps serving while the primary is down.
@@ -71,7 +71,7 @@ is used, so nothing unsanitised can reach your primary either.
 | Block-hash→height mappings | Not requested from the secondary, so there is nothing to strip. The lookup asks for none. |
 
 So the caller sees the response body, its content type, and the router's own locally
-created headers (`Lava-Provider-Address: Cached`, the GUID, `Provider-Latest-Block`). This
+created headers (`Router-Provider-Address: Cached`, the GUID, `Provider-Latest-Block`). This
 is the same header set that a primary-cache hit produces.
 
 The last two rows stop your router from adopting another zone's view of the chain. If left
@@ -90,7 +90,7 @@ with no cache configured.
 
 | Situation | What the router does | How you see it |
 | --- | --- | --- |
-| **Primary misses, secondary has it** | Serves the secondary's answer, then copies it into the primary. No upstream call. | `Lava-Provider-Address: Cached`; `smartrouter_cache_success_total{cache_tier="secondary"}` increments |
+| **Primary misses, secondary has it** | Serves the secondary's answer, then copies it into the primary. No upstream call. | `Router-Provider-Address: Cached`; `smartrouter_cache_success_total{cache_tier="secondary"}` increments |
 | **Both tiers miss** | Goes to your upstream nodes, exactly as it would without the tier. The only cost is the one extra lookup, limited by the timeout. | `smartrouter_cache_failed_total{cache_tier="secondary",outcome="miss"}` increments; the response carries a real upstream address |
 | **Secondary is down, slow, or unreachable** | Skips the tier and goes to upstreams. Reconnects in the background. Serving is unaffected. | `outcome="error"` or `outcome="timeout"`; latency stays inside `secondary-cache-timeout` |
 | **No secondary configured** (the default) | Same as previous releases. Nothing is added to the request path. | No `cache_tier="secondary"` series exist at all |
@@ -187,7 +187,7 @@ and always appears when a secondary is configured.
 
 !!! tip "The response headers don't name the tier"
     Both tiers answer with the same locally created header set and the same body bytes.
-    So `Lava-Provider-Address: Cached` alone cannot tell you which tier served the
+    So `Router-Provider-Address: Cached` alone cannot tell you which tier served the
     response. Use the `cache_tier` counter to tell them apart.
 
 ## Limits

@@ -56,13 +56,13 @@ See [RPC Node selection](../configuration/projects/selection-policies.md).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--set-relay-retry-limit` | `2` | Errors a request tolerates, across every node and error type (rate limits included), before it stops. `0` disables retries. The count does not know that a backup is still untried: with more primaries than this limit, a request whose primaries all fail stops before any backup. See [Primary and backup nodes](../configuration/failover/backup.md#errors-the-retry-limit-can-end-a-request-before-any-backup). |
+| `--set-relay-retry-limit` | `3` | Errors a request tolerates, across every node and error type (rate limits included), before it stops. `0` disables retries. The count does not know that a backup is still untried: with more primaries than this limit, a request whose primaries all fail stops before any backup. See [Primary and backup nodes](../configuration/failover/backup.md#errors-the-retry-limit-can-end-a-request-before-any-backup). |
 | `--stateful-to-backup` | `false` | Also broadcast writes (transaction submission) to the backup tier. A write goes to every node it selects, so this sends **every** write to the backups, including the ones the primaries serve fine. See [Writes and batches](../configuration/failover/backup.md#writes-and-batches). |
 | `--bench-after` | `50` | Consecutive failed requests to one URL before the router takes it out of rotation. A success resets the count. A provider with every URL out is blocked, and requests go to the other primaries or the backups. Must be greater than 0. |
 | `--read-your-writes-window` | `30s` | How long a written transaction's sender and hash stay tied to the node that accepted it, so the sender's follow-up reads go there first (a backup included). Pod-local, first attempt only. `0` turns it off. |
 | `--default-processing-timeout` | `30s` | Total time budget for one relay, including all retries and hedges. |
-| `--min-relay-timeout` | `1s` | Lower limit for the per-attempt window, which sets when the router tries the next node. It does not cancel the attempt in flight. The `lava-relay-timeout` header overrides it. |
-| `--max-caller-relay-timeout` | `0` | The longest time a caller's `lava-relay-timeout` header can make the router hold one request. The flag only lets the header extend a request past the budget it gets without the header. It never shortens a request. `0` allows no extension. An extended request does not hedge. |
+| `--min-relay-timeout` | `1s` | Lower limit for the per-attempt window, which sets when the router tries the next node. It does not cancel the attempt in flight. The `router-relay-timeout` header overrides it. |
+| `--max-caller-relay-timeout` | `0` | The longest time a caller's `router-relay-timeout` header can make the router hold one request. The flag only lets the header extend a request past the budget it gets without the header. It never shortens a request. `0` allows no extension. An extended request does not hedge. |
 | `--max-sessions-per-provider` | `1000` | Max concurrent sessions per node. |
 | `--maximum-streams-per-connection` | `100` | Max parallel streams over a single gRPC connection. |
 | `--disable-batch-request-retry` | `true` | Don't retry, fail over, or hedge JSON-RPC batch requests. A batch can carry a write. See [Batch requests](../configuration/failover/retry.md#batch-requests). |
@@ -261,9 +261,9 @@ See [Metrics](metrics.md).
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--debug-relays` | `false` | Add debug info to relay response metadata (pairs with the `lava-debug-relay` header). |
+| `--debug-relays` | `false` | Add debug info to relay response metadata (pairs with the `router-debug-relay` header). |
 | `--debug-probes` | `false` | Add debug info to probe responses. |
-| `--enable-selection-stats` | `false` | Emit the `lava-selection-stats` response header. |
+| `--enable-selection-stats` | `false` | Emit the `router-selection-stats` response header. |
 | `--debug-address` | - | Debug HTTP server for integration tests. It exposes `/debug/*`, including [`/debug/sticky-claims`](metrics.md#cross-pod-sticky-sessions). |
 | `--test-mode` | `false` | Send dummy data and print all listener metadata. |
 | `--allow-insecure-provider-dialing` | `false` | Allow non-TLS upstream connections. Dev/test only. |

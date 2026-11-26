@@ -60,7 +60,7 @@ once, with one listener per chain/interface as in the table above.
 | Variable | Default | Effect |
 | --- | --- | --- |
 | `SR_CONFIG` | `config/smartrouter_examples/smartrouter_eth.yml` | Which config the router runs. |
-| `SR_SPEC` | `specs/` | Spec source: the bundled snapshot, or a lava-specs GitHub/GitLab URL to resolve any chain (e.g. `LAV1`). See [the wizard's `SR_SPEC` note](wizard.md#which-specs-the-router-loads-sr_spec). |
+| `SR_SPEC` | `specs/` | Spec source: the bundled snapshot, or a lava-specs GitHub/GitLab URL to resolve any chain (e.g. `POLYGON`). See [the wizard's `SR_SPEC` note](wizard.md#which-specs-the-router-loads-sr_spec). |
 | `SR_LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error`. |
 | `SR_LOG_FORMAT` | `json` | `json` or `text`. |
 
@@ -154,7 +154,7 @@ want to query. For example, use `3364` for the Cosmos Hub REST listener:
 curl -s http://localhost:3364/cosmos/base/tendermint/v1beta1/blocks/latest
 ```
 
-A successful relay also has `Smart-Router-*` response headers that name the upstream
+A successful relay also has `Router-*` response headers that name the upstream
 that served it. Add `-i` to the `curl` command to see them. If you keep getting `error`
 responses or refused connections, the listener never came up. Check the container logs
 (`docker compose -f docker/docker-compose.yml logs router`) to find the failing upstream
