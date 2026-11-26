@@ -93,6 +93,7 @@ Because the tier is chosen per request, traffic returns to a primary as soon as 
 | its URLs were switched off after repeated failures | the background prober (every `--probe-loop-interval`, default `5s`) switches a URL back on after 3 healthy probes in a row. The URL then gets a short trial: 3 new failures switch it off again, not another 50 |
 | it was rate-limited | when the hold-off expires (30 seconds at first, doubling for repeated `429`s), or as soon as it answers a request |
 | it was behind the tip | when its block moves forward |
+| it failed a spec check | when a retry finds the checks it failed passing. The first retry comes 30 seconds after the failure, and the wait doubles on each failed retry, up to 15 minutes (`--verification-retry-delay`, `--verification-retry-max-delay`). See [Spec verification failures](../../reference/metrics.md#spec-verification-failures) |
 
 At each epoch boundary (`--epoch-duration`, default `15m`) the router re-checks every node. A blocked node is let back in only when its probe passes.
 

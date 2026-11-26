@@ -37,7 +37,7 @@ The spec file linked above has the full method list.
 
 ## Run this example
 
-The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_solana.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses two public upstreams (PublicNode and the Solana Labs public RPC) and needs no API key. The example is HTTP-only, so run it with `--skip-websocket-verification`:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_solana.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses two public upstreams (PublicNode and the Solana Labs public RPC) and needs no API key. The example is HTTP-only, so the router serves it without subscriptions and publishes the websocket's [`missing-url`](../metrics.md#the-websocket-as-its-own-part). No extra flag is needed:
 
 === "Docker Compose"
 
@@ -50,7 +50,7 @@ The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_
 
     ```bash
     smartrouter config/smartrouter_examples/smartrouter_solana.yml \
-      --use-static-spec specs/ --skip-websocket-verification
+      --use-static-spec specs/
     ```
 
 Then call it:

@@ -52,8 +52,12 @@ For another chain, change the filename to that chain's config. Then send a reque
 
 !!! tip "Most examples are HTTP-only"
     The Solana, Bitcoin, Hyperliquid (jsonrpc) and Aptos (rest) examples have no
-    websocket leg, so add `--skip-websocket-verification` when you run them. Only
-    the Ethereum example pairs each https url with a wss one, because the ETH1
-    spec needs websocket for subscriptions. It runs without the extra flag.
+    websocket leg. Each upstream serves everything over http but subscriptions, with
+    or without `--skip-websocket-verification`. On Solana, whose spec has
+    subscriptions, each one publishes the websocket's
+    [`missing-url`](../../metrics.md#the-websocket-as-its-own-part). The Ethereum
+    example pairs each https url with a wss one, so every upstream in it serves
+    subscriptions. In the Cosmos Hub example, only the PublicNode Tendermint RPC
+    upstream has a wss url, so the Polkachu one publishes `missing-url`.
 
 See [Run Smart Router](../../../deployment/index.md) for the cache and dashboard overlays, and [The config file](../../../configuration/config-file.md) for the config format.
