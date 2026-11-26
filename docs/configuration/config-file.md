@@ -74,7 +74,7 @@ Each entry opens one listening socket for one chain + interface.
 | `chain-id` | yes | Spec chain id (`ETH1`, `SOLANA`, `COSMOSHUB`, …). Must resolve from `--use-static-spec`. |
 | `api-interface` | yes | `jsonrpc`, `rest`, `grpc`, `tendermintrpc`, or `graphql`. The chain spec must support it. A `graphql` listener accepts HTTP `POST` only (any path; other methods get `405`) and serves no subscriptions. |
 | `tls-enabled` | no | Serve this listener over TLS using a self-signed certificate. Default `false`. |
-| `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/lava/health`. |
+| `health-check-path` | no | HTTP path that returns `200` for liveness probes. Default `/router/health`, from v1.7.0. |
 
 ```yaml
 endpoints:
@@ -96,8 +96,8 @@ Each entry is one named backend that serves one chain + interface, with one or m
 | `chain-id` | yes | Chain this backend serves. Must match an `endpoints[]` entry. |
 | `api-interface` | yes | Interface this backend serves. Must match the listener. |
 | `node-urls` | yes | One or more URL entries (below). |
-| `stake` | no | Optional weight (in ulava) for selection scoring. Omit it (or set `0`) to apply the default static-node boost. |
-| `group-label` | no | Optional provider-group id (e.g. `tier-1`, `external`) for [cross-validation](failover/cross-validation.md) group-diversity policies. Has no effect unless a policy requires group spread. |
+| `stake` | no | Optional weight for selection scoring. Omit it (or set `0`) to apply the default static-node boost. |
+| `group-label` | no | Optional provider-group id (e.g. `quicknode`, `alchemy`, `infura`, or a tier such as `tier-1`) for [cross-validation](failover/cross-validation.md) group-diversity policies. Has no effect unless a policy requires group spread. |
 
 ```yaml
 direct-rpc:
