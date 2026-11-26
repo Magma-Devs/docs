@@ -35,7 +35,7 @@ The spec file linked above has the full method list.
 
 ## Run this example
 
-The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_aptos.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses two public upstreams (PublicNode and the Aptos Labs fullnode) and needs no API key. REST has no websocket leg, so run it with `--skip-websocket-verification`:
+The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_aptos.yml`](https://github.com/Magma-Devs/smart-router/blob/main/config/smartrouter_examples). It uses two public upstreams (PublicNode and the Aptos Labs fullnode) and needs no API key. REST has no websocket leg, so the example is HTTP-only and has no subscriptions to miss:
 
 === "Docker Compose"
 
@@ -48,7 +48,7 @@ The repo has a ready-to-run config at [`config/smartrouter_examples/smartrouter_
 
     ```bash
     smartrouter config/smartrouter_examples/smartrouter_aptos.yml \
-      --use-static-spec specs/ --skip-websocket-verification
+      --use-static-spec specs/
     ```
 
 Then call it:

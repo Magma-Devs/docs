@@ -55,8 +55,9 @@ For another chain, change the filename to that chain's config. Then send a reque
     websocket leg. Each upstream serves everything over http but subscriptions, with
     or without `--skip-websocket-verification`. On Solana, whose spec has
     subscriptions, each one publishes the websocket's
-    [`missing-url`](../../metrics.md#the-websocket-as-its-own-part). Only the
-    Ethereum example pairs each https url with a wss one, so only it serves
-    subscriptions.
+    [`missing-url`](../../metrics.md#the-websocket-as-its-own-part). The Ethereum
+    example pairs each https url with a wss one, so every upstream in it serves
+    subscriptions. In the Cosmos Hub example, only the PublicNode Tendermint RPC
+    upstream has a wss url, so the Polkachu one publishes `missing-url`.
 
 See [Run Smart Router](../../../deployment/index.md) for the cache and dashboard overlays, and [The config file](../../../configuration/config-file.md) for the config format.

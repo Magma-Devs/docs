@@ -341,7 +341,7 @@ the router logs a warning that names it.
 | `tier` | `static` for a primary upstream, `backup` for a backup. |
 | `scope` | What the failure switched off. `provider`: the whole upstream is out of rotation, because it failed at startup or a later re-check took it out. `service`: the upstream still serves, but without the add-on or extension in `service`. `url`: the upstream still serves, but one of its node urls was refused: the whole url when `service` is empty, else only for `service`, which another url of the upstream still serves. `none`: a `Warning` check is failing, and nothing was switched off. |
 | `service` | The add-on or extension that was switched off (`archive`, `debug`, ...), or `websocket` for the upstream's subscriptions (see [The websocket](#the-websocket-as-its-own-part) below). For `scope="none"`, the add-on or extension the failing check covers. Empty for `scope="provider"`, for an http(s) url refused whole, and for a basic check. |
-| `severity` | The check's severity, as above. `Fail` when the failure took a node url or the whole upstream out, `PartialFail` when it switched off only `service`, `Warning` when it switched off nothing. |
+| `severity` | What the failure cost, which is not always the check's own severity. `Fail` when it took an http(s) node url or the whole upstream out. `PartialFail` when it switched off only `service`, so a ws(s) url refused by a `Fail` check reads `PartialFail`. `Warning` when it switched off nothing. |
 | `check` | The spec check that failed, by the name the spec gives it (`chain-id`, `pruning`, ...). These are the names [`skip-verifications`](../configuration/config-file.md#node-urls-per-url-options) takes. Or one of the names in the next table. |
 
 | `check` | Meaning |
@@ -349,11 +349,11 @@ the router logs a warning that names it.
 | `connect` | The router could not connect to the node url. |
 | `config` | The configured urls cannot work as given: there is no http(s) url, or none that serves the chain's root path. |
 | `latest-block` | A check needs the url's latest block, and reading it failed. |
-| `unsupported-addon` | The node url names an add-on the chain's spec does not define. The router ignores that name, and the url serves the rest. The series carries the name as `service`. Only a url that serves its add-ons alone (`standalone-addons`) and names no add-on the spec defines is refused whole. |
+| `unsupported-addon` | The node url names an add-on the chain's spec does not define. The router ignores that name, and the url serves the rest. The series carries the name as `service`. Only a url that serves its add-ons alone (`standalone-addons`) and names no add-on the spec defines is refused whole, as `unknown`, because it has nothing left to serve. |
 | `missing-url` | Always `service="websocket"`, `scope="service"`, `PartialFail`: the upstream has no ws(s) url on a chain with subscriptions. It serves everything else over http. Nothing ran and no retry is scheduled, because only a config change can fix it. The gauge shows it, the counter never does. |
 | `not-run` | The check never started, because the upstream's checks ran out of time first. It says nothing about the check itself. |
 | `rate-limited` | The upstream has been out since startup, and so far it has only answered with rate limits. The gauge shows it, the counter never does. |
-| `unknown` | The upstream is out of rotation, and the router has no check on record for it. |
+| `unknown` | No check is named for the failure: the upstream is out of rotation with no check on record, or a url was refused for a reason no check names, such as a `standalone-addons` url left with nothing to serve. |
 
 **Retries.** A failed check is retried without waiting for the next epoch:
 
@@ -364,7 +364,7 @@ the router logs a warning that names it.
   retry it at the same moment. A retry never comes before the upstream's
   [rate-limit hold-off](#rate-limit-hold-off) ends.
 - Each failing check has its own schedule. A retry runs only the checks that are due, on each
-  node url that has them, and keeps every other result from the run before. With `debug` and
+  node url that failed them, and keeps every other result from the run before. With `debug` and
   `archive` both failing, each is retried on its own schedule, and the checks that pass, such
   as the chain id, are not run again before the next epoch. A url the router could not connect
   to is retried by its dial alone: that url alone is dialed and checked again, and the
@@ -375,20 +375,20 @@ the router logs a warning that names it.
   failing. So at the longest wait, a failing check runs about once an epoch.
 - While a chain has nothing serving, every upstream out of rotation is retried with all its
   checks, from 2 seconds, doubling up to 3 minutes.
-- A `Warning` check and an add-on name the spec does not define are checked again at each
-  epoch only. A missing websocket url is not retried at all.
+- A `Warning` check and an add-on name the spec does not define get no retry of their own: the
+  epoch checks them again. A missing websocket url is not retried at all.
 
 When a series appears and when it clears:
 
 - **At startup**, a failure is published as soon as the check fails.
 - **An add-on or extension** is switched off at its first failed run. **A node url or an
-  upstream that was serving** is taken out only after the check that failed fails two runs in
-  a row: the first, then that check's own retry, about 30 seconds later, or the epoch if it
-  comes first. A retry of another check does not count. The counter shows both runs. The gauge
-  shows the failure from the second run on.
-- **A series clears** at the first retry or epoch that finds the check passing: 30 seconds
-  after the failure at the earliest, and at most `--verification-retry-max-delay` into a long
-  outage.
+  upstream that was serving** is taken out only after two runs in a row find it failing: the
+  first, then the retry of what failed, about 30 seconds later, or the epoch if it comes first.
+  A retry that keeps the failing result without running that check again does not count. The
+  counter shows both runs. The gauge shows the failure from the second run on.
+- **A series clears** at the first retry or epoch that finds the check passing. After the node
+  recovers, that takes at most the check's current wait: in a long outage,
+  `--verification-retry-max-delay` plus up to 20%, or less when the next epoch comes first.
 - **An upstream that moves to another check** in the same `scope` and `service` keeps its start
   time. A node that first refused connections and then returned the wrong chain id has one
   failure, not two.
@@ -412,8 +412,9 @@ sum by (spec, apiInterface, provider, check) (
 
 The first query takes the earliest start across checks, so a failure that moves to another
 check keeps its start and does not reset an alert. The value already holds the start time, so
-an alert on it needs no `for`. Keep the threshold above `--verification-retry-max-delay`
-(15 minutes by default): a recovered upstream keeps its series until its next retry passes.
+an alert on it needs no `for`. Keep the threshold above `--verification-retry-max-delay` plus
+20%, or above one epoch if that is shorter (15 minutes by default): a recovered upstream keeps
+its series until its next retry or epoch passes.
 `scope!="none"` leaves out `Warning` checks, which switch nothing off.
 
 ##### The websocket as its own part
@@ -436,10 +437,11 @@ upstream's parts, `service="websocket"`, like an add-on:
 
 Each change is logged once, not on every retry:
 
-- `verification check failing` when a check starts failing, at `error` level, or `warning` for a
-  `Warning` check. It carries `chain`, `apiInterface`, `tier`, `provider`, `scope`, `service`,
-  `check`, `severity` and `since` (when the failure started), and `previousCheck` when the
-  failure moved from another check in the same `scope` and `service`.
+- `verification check failing` when a check starts failing, at `error` level, or `warn` for a
+  `Warning` check and for `missing-url`. It carries `chain`, `apiInterface`, `tier`,
+  `provider`, `scope`, `service`, `check`, `severity` and `since` (when the failure started),
+  and `previousCheck` when the failure moved from another check in the same `scope` and
+  `service`.
 - `verification check passes again` at `info` level, with the same fields and `failedFor`.
 
 No line carries a node url.
@@ -463,10 +465,10 @@ configured upstream with what it is failing and when each failing check is retri
 
 | Field | Meaning |
 | --- | --- |
-| `retryDelay`, `retryMaxDelay` | The retry delays in force (`--verification-retry-delay`, `--verification-retry-max-delay`). |
-| `inPairing` | Whether the upstream is in rotation. `false` for an upstream with a `scope="provider"` failure. |
+| `retryDelay`, `retryMaxDelay` | `--verification-retry-delay` and `--verification-retry-max-delay` as set. A `retryDelay` of `0s` means the default `30s`. |
+| `inPairing` | Whether the upstream is registered to serve. `false` for an upstream with a `scope="provider"` failure. An upstream that `smartrouter_csm_provider_blocked` shows blocked is still `true`. |
 | `failing` | The series `smartrouter_provider_verification_failed` publishes for the upstream. `since` is the gauge's value, as a time. |
-| `retries` | One entry per check on the retry schedule, the next one due first. `check`, `addon` and `extension` name the spec check and the add-on and extension it covers. `check` is `connect` for a url the router could not connect to, or one a run left out during a rate-limit hold-off: its next retry dials that url alone. `wholePass` is `true` instead for another failure no single check owns: its next retry runs every check of the upstream. `attempts` is how many runs in a row found it failing, `pendingSince` when it started failing, and `nextRetryAt` when the next retry is due. |
+| `retries` | One entry per check on the retry schedule, the next one due first. `check`, `addon` and `extension` name the spec check and the add-on and extension it covers. `check` is `connect` for a url the router could not connect to, or one a run left out during a rate-limit hold-off: its next retry dials that url alone. `wholePass` is `true` instead for another failure no single check owns: its next retry runs every check of the upstream. `attempts` is how many runs in a row found it failing or were kept from answering by a rate limit, `pendingSince` when it started failing, and `nextRetryAt` when the next retry is due. |
 
 Times are RFC 3339. An upstream with nothing failing and nothing to retry has two empty lists.
 No field carries a node url.
