@@ -215,6 +215,7 @@ Declare `archive` (and `debug`, `trace`) only on the backup's URL, as in [Method
 | `rpc_endpoint_total_relays_serviced{endpoint_id="<backup name>"}` | requests each backup served |
 | `smartrouter_csm_blocked_providers` | how many primaries are blocked. When it reaches your primary count, the backups carry the traffic |
 | `smartrouter_endpoint_serving_tier` | `2` primaries registered, `1` only backups registered, `0` none. It follows registration at startup and at each epoch, **not** runtime failover: it stays `2` while blocked primaries leave all traffic to the backups |
+| `smartrouter_provider_verification_failed{tier="backup"}` | which backup is failing which check right now, and what it lost: an add-on (`scope="service"`), a node url (`scope="url"`) or the whole backup (`scope="provider"`). See [Spec verification failures](../../reference/metrics.md#spec-verification-failures) |
 | `smartrouter health <config> --include-backup` | whether each backup URL and add-on passes its checks |
 
 See the [Metrics reference](../../reference/metrics.md) for labels.
